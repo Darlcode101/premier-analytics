@@ -1,0 +1,36 @@
+[project]
+name = "premier-analytics"
+version = "0.1.0"
+description = "Multi-agent explainable match intelligence over synthetic football events"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6.100",
+    "jsonschema>=4.23",
+    "pytest-cov>=5",
+]
+llm = [
+    "openai>=1.50",
+    "python-dotenv>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+premier_analytics = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+markers = ["slow: many-seed statistical tests"]
