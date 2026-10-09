@@ -290,7 +290,7 @@ def fast_overlay(m: Moment, a: Audience, names: Names) -> Overlay:
 
 # ---------- validator ----------
 
-def validate(o: Overlay, m: Moment, now_elapsed_ms: int) -> Overlay:
+def validate(o: Overlay, m: Moment, now_elapsed_ms: int, stale_ms: int = STALE_MS) -> Overlay:
     """Raise ValidationError unless the overlay is safe to put on screen."""
     if o.moment_id != m.id:
         raise ValidationError("moment mismatch")
@@ -303,7 +303,7 @@ def validate(o: Overlay, m: Moment, now_elapsed_ms: int) -> Overlay:
         raise ValidationError("body too long")
     if o.clock_out_ms <= o.clock_in_ms:
         raise ValidationError("timing: out before in")
-    if o.source == "ai" and now_elapsed_ms - m.elapsed_ms > STALE_MS:
+    if o.source == "ai" and now_elapsed_ms - m.elapsed_ms > stale_ms:
         raise ValidationError("stale: AI result arrived too late")
     return o
 
