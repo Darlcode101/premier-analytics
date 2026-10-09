@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import random
 
+from .engine import xg as expected_goals
 from .league import Club, League, Player, load_league
 from .schema import PITCH_LENGTH as L
 from .schema import PITCH_WIDTH as W
@@ -20,6 +21,8 @@ from .schema import Event, Lineup, Match, MatchMeta, Weather
 SEC = 1000
 MIN = 60 * SEC
 GOAL_Y = (W / 2 - 3.66, W / 2 + 3.66)
+SHOOTING_RANGE_X = 80.0  # 25 m out: speculative shots from further are rare
+FINISHING = 0.93         # global finishing multiplier on xG
 
 # Who tends to be on the ball in each third (own, middle, final), by position.
 _ZONE_WEIGHTS = {
@@ -89,7 +92,7 @@ class _Sim:
     def strength(self, team: str) -> float:
         """Multiplier from momentum and numbers on the pitch (red cards hurt)."""
         m = self.momentum if team == self.home.id else -self.momentum
-        home_adv = 0.04 if team == self.home.id else -0.04
+        home_adv = 0.012 if team == self.home.id else -0.012
         return math.exp(0.22 * m + home_adv) * (len(self.on_pitch[team]) / 11) ** 1.5
 
     def pick(self, team: str, x: float, exclude: str | None = None) -> str:
@@ -157,9 +160,9 @@ class _Sim:
         self.tick(self.rng.uniform(20, 45) * SEC)
         disc = self.clubs[fouler_team].discipline
         r = self.rng.random()
-        if r < 0.003:
+        if r < 0.0012:
             card = "red"
-        elif r < 0.003 + 0.24 * (1.25 - disc) * (0.5 if fouler in self.booked else 1.0):
+        elif r < 0.0012 + 0.27 * (1.25 - disc) * (0.2 if fouler in self.booked else 1.0):
             card = "second_yellow" if fouler in self.booked else "yellow"
         else:
             return False
@@ -228,10 +231,10 @@ class _Sim:
                 last_pass = None
 
             # Shoot?
-            if x >= 76:
+            if x >= SHOOTING_RANGE_X:
                 centrality = 1 - min(abs(y - W / 2) / (W / 2), 1)
-                depth = (x - 76) / (L - 76)
-                p_shot = (0.011 + 0.17 * depth ** 1.4) * (0.4 + 1.2 * centrality) * (0.2 + 1.4 * club.attack) * s ** 0.5
+                depth = (x - SHOOTING_RANGE_X) / (L - SHOOTING_RANGE_X)
+                p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 1.08 * s ** 0.5
                 if rng.random() < p_shot:
                     return self.shoot(team, x, y, carrier, last_pass, pressed)
 
@@ -247,27 +250,28 @@ class _Sim:
             dx = rng.gauss(3.0 + 9.0 * directness - (4 if x > 85 else 0), 10.0)
             if x < 20 and c.position == "GK":
                 dx = abs(dx) + rng.uniform(10, 45 * directness + 10)
-            dy = rng.gauss(0, 11.0)
+            dy = rng.gauss(0, 7.0 + 8.0 * directness)
             # Wide players cross towards the box.
             if x > 80 and abs(y - W / 2) > 18 and rng.random() < 0.35:
-                dx, dy = rng.uniform(L - 2 - x - 12, L - 2 - x), (W / 2 - y) * rng.uniform(0.6, 1.0)
-            ex, ey = x + dx, y + dy
+                dx, dy = rng.uniform(L - 14 - x, L - 6 - x), (W / 2 - y) * rng.uniform(0.6, 1.0)
+            # Players aim inside the pitch; the ball only goes out when a pass fails.
+            ex, ey = _clamp(x + dx, 1.0, L - 4.0), _clamp(y + dy, 1.0, W - 1.0)
+            dx, dy = ex - x, ey - y
             length = math.hypot(dx, dy)
             progress = max(0.0, ex - x) / 30
             p_ok = (
-                1.08
+                0.92
                 - 0.0045 * max(0.0, length - 12)
                 - 0.10 * progress * (1.5 - club.attack)
                 - (0.08 if pressed else 0.0)
                 - (0.10 if ex > 88 else 0.0)
                 - (0.025 if self.wet else 0.0)
                 + 0.10 * (c.passing - 0.65)
-                + 0.14 * (club.possession - 0.55)
+                + 0.20 * (club.possession - 0.55)
                 - 0.06 * (opp_club.defence - 0.65)
             ) * s ** 0.25
-            out = ex < 0 or ex > L or ey < 0 or ey > W
-            self.tick((0.9 + length / 15 + rng.uniform(0, 1.0)) * SEC)
-            if not out and rng.random() < _clamp(p_ok, 0.25, 0.97):
+            self.tick((1.9 + length / 11 + rng.uniform(0, 1.6)) * SEC)
+            if rng.random() < _clamp(p_ok, 0.25, 0.985):
                 receiver = self.pick(team, ex, exclude=carrier)
                 last_pass = self.emit(
                     "pass", team_id=team, player_id=carrier, x=x, y=y, end_x=ex, end_y=ey,
@@ -277,7 +281,7 @@ class _Sim:
                 continue
 
             ex, ey = _clamp(ex, 0, L), _clamp(ey, 0, W)
-            if out or rng.random() < 0.12:
+            if rng.random() < 0.25:
                 self.emit("pass", team_id=team, player_id=carrier, x=x, y=y, end_x=ex, end_y=ey,
                           outcome="out", under_pressure=pressed)
                 self.change(opp, "out_of_play", L - ex, W - ey)
@@ -307,16 +311,17 @@ class _Sim:
         header = last_pass is not None and abs(last_pass.y - W / 2) > 18 and dist < 14 and rng.random() < 0.55
         body = "head" if header else rng.choices(["right_foot", "left_foot"], [0.7, 0.3])[0]
 
-        base = 1 / (1 + math.exp(-(-1.0 + 1.6 * angle - 0.11 * dist)))
-        if header:
-            base *= 0.55
+        # Finishing = the engine's xG for this chance, adjusted for the shooter, the
+        # defence, the attack and the current balance of play. Adjustments are centred on
+        # a league-average player so total goals track total xG.
         s = self.strength(team) / self.strength(opp)
-        p_goal = _clamp(
-            base * 0.76 * (0.90 + 0.75 * (p.shooting - 0.6)) * (1.15 - 0.6 * (self.clubs[opp].defence - 0.5))
-            * (0.45 + 1.0 * self.clubs[team].attack)
-            * (0.85 if pressed else 1.0) * s ** 0.3,
-            0.005, 0.85,
+        skill = (
+            (1 + 0.9 * (p.shooting - 0.62))
+            * (1 - 0.8 * (self.clubs[opp].defence - 0.64))
+            * (1 + 0.8 * (self.clubs[team].attack - 0.66))
+            * s ** 0.3
         )
+        p_goal = _clamp(expected_goals(x, y, header=header, under_pressure=pressed) * skill * FINISHING, 0.005, 0.9)
         speed = rng.gauss(58, 7) if header else rng.gauss(78 + 25 * p.shooting - 0.4 * dist, 11)
         speed = round(_clamp(speed, 35, 135), 1)
 

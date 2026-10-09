@@ -55,9 +55,11 @@ def shot_geometry(x: float, y: float) -> tuple[float, float]:
 
 def xg(x: float, y: float, header: bool = False, under_pressure: bool = False) -> float:
     """Expected goals from shot location. A logistic model on distance and goal angle,
-    with penalties for headers and pressure."""
+    with penalties for headers and pressure. Coefficients are fitted so that, over a
+    simulated season, conversion inside and outside the box matches the real 2024/25
+    league (14.7 % and 4.2 %, docs/REALISM.md)."""
     distance, angle = shot_geometry(x, y)
-    z = -1.45 + 1.55 * angle - 0.105 * distance
+    z = -2.2 + 1.8 * angle - 0.06 * distance
     if header:
         z -= 0.75
     if under_pressure:

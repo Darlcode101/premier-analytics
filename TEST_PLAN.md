@@ -30,7 +30,7 @@ Anything deterministic is tested exactly; anything LLM-generated is tested by **
 | `test_players_on_pitch_only` | D-5 | no event by a player before sub-on / after sub-off / after red card |
 | `test_sub_limits` | D-5 | ≤ 5 subs per team (modern rule), ≤ 11 on pitch |
 | `test_possession_coherent` | D-5 | a pass's next event is by the receiving team, or a possession change event exists |
-| `prop_realistic_ranges` (≥1k seeds, on averages) | D-4 | passes/team 350–650; pass completion 70–90 %; shots/team 8–18; goals/match mean 2.4–3.2; fouls/team 8–15; yellows 1–3 |
+| `test_realism.py` (380-match synthetic season) | D-4 | every metric within tolerance of the **real 2024/25 Premier League average**: goals, passes, completion, shots, outside-box share, conversion (inside/outside box), fouls, cards, home/draw/away split, club spread. Targets + sources: [docs/REALISM.md](docs/REALISM.md) |
 | `test_storyline_present` | D-6 | ≥ 1 momentum swing detected in ≥ 80 % of seeds |
 | `test_no_real_names` | RC-2 | club/player names not in a blocklist of real PL clubs/players |
 

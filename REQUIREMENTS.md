@@ -45,7 +45,7 @@ Product name: **Premier Analytics**. Fictional league/clubs/players only. No PL 
 | D-1 | M | Generator produces a full 90-min (+stoppage) match as a time-ordered event stream: pass, shot, tackle, interception, possession change, pressure, foul, card, sub, goal, kickoff/half/full-time, plus match metadata (teams, line-ups, venue, weather) |
 | D-2 | M | Events carry: id, match clock (ms), type, team, player, x/y start (+ end where relevant) on a 105×68 m pitch, outcome, and type-specific fields (e.g. shot speed) |
 | D-3 | M | Deterministic: same seed ⇒ byte-identical match |
-| D-4 | M | Football-realistic: aggregate stats fall in realistic ranges (see TEST_PLAN §2) |
+| D-4 | M | Football-realistic: a simulated season matches published real 2024/25 Premier League averages within stated tolerances ([docs/REALISM.md](docs/REALISM.md)). Aggregate published figures only; no third-party event data (StatsBomb licence rejected, see REALISM.md) |
 | D-5 | M | Internally consistent: score equals goal events; players only act while on pitch; sent-off players never act again; possession sequences are coherent |
 | D-6 | S | Matches have "storylines" (momentum swings, pressure spells, late winner) so there is something to explain |
 | D-7 | S | Fictional league: ≥ 6 clubs, full squads with names, positions, attributes |

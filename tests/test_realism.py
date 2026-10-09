@@ -1,13 +1,21 @@
-"""D-4: aggregate stats over 200 matches land in real-football ranges (TEST_PLAN §2)."""
+"""D-4: a synthetic 380-match season matches real 2024/25 Premier League averages.
+
+Targets and sources: docs/REALISM.md. Each test states the real value and tolerance.
+"""
+from collections import defaultdict
 from statistics import mean
 
 import pytest
 
+from premier_analytics.engine import MatchEngine
+
 pytestmark = pytest.mark.slow
+
+BOX_X = 105 - 16.5
+BOX_Y = (34 - 20.16, 34 + 20.16)
 
 
 def per_team(matches, fn):
-    """fn(match, team_id) for both teams of every match, flattened."""
     return [fn(m, t) for m in matches for t in (m.meta.home_id, m.meta.away_id)]
 
 
@@ -22,84 +30,154 @@ def count(m, t, etype, **attrs):
     )
 
 
-def test_passes_per_team(many_matches):
-    assert 350 <= mean(per_team(many_matches, lambda m, t: len(passes(m, t)))) <= 650
+def shots(matches):
+    return [e for m in matches for e in m.events if e.type == "shot"]
 
 
-def test_pass_completion(many_matches):
+def in_box(s):
+    return s.x >= BOX_X and BOX_Y[0] <= s.y <= BOX_Y[1]
+
+
+def near(actual, target, tol):
+    return abs(actual - target) <= tol
+
+
+# ---------- sourced targets ----------
+
+def test_goals_per_match(season):
+    g = mean(sum(e.type == "goal" for e in m.events) for m in season)
+    assert near(g, 2.93, 0.25), g
+
+
+def test_passes_per_team(season):
+    p = mean(per_team(season, lambda m, t: len(passes(m, t))))
+    assert near(p, 447, 44.7), p
+
+
+def test_pass_completion(season):
+    done = sum(e.outcome == "complete" for m in season for e in m.events if e.type == "pass")
+    total = sum(e.type == "pass" for m in season for e in m.events)
+    assert near(done / total, 0.834, 0.025), done / total
+
+
+def test_shots_per_team(season):
+    s = mean(per_team(season, lambda m, t: count(m, t, "shot")))
+    assert near(s, 13.1, 1.5), s
+
+
+def test_outside_box_shot_share(season):
+    ss = shots(season)
+    share = sum(not in_box(s) for s in ss) / len(ss)
+    assert near(share, 0.317, 0.06), share
+
+
+def test_conversion_overall(season):
+    ss = shots(season)
+    conv = sum(s.outcome == "goal" for s in ss) / len(ss)
+    assert near(conv, 0.112, 0.015), conv
+
+
+def test_conversion_inside_and_outside_box(season):
+    ss = shots(season)
+    inside = [s for s in ss if in_box(s)]
+    outside = [s for s in ss if not in_box(s)]
+    c_in = sum(s.outcome == "goal" for s in inside) / len(inside)
+    c_out = sum(s.outcome == "goal" for s in outside) / len(outside)
+    assert near(c_in, 0.147, 0.03), c_in
+    assert near(c_out, 0.042, 0.02), c_out
+
+
+def test_fouls_per_team(season):
+    f = mean(per_team(season, lambda m, t: count(m, t, "foul")))
+    assert near(f, 11.1, 1.2), f
+
+
+def test_yellow_cards_per_team(season):
+    y = mean(per_team(season, lambda m, t: count(m, t, "card", card="yellow")))
+    assert near(y, 2.04, 0.3), y
+
+
+def test_red_cards_per_match(season):
+    reds = sum(e.type == "card" and e.card in ("red", "second_yellow") for m in season for e in m.events)
+    assert near(reds / len(season), 0.137, 0.07), reds / len(season)
+
+
+def test_result_distribution(season):
+    home = draw = away = 0
+    for m in season:
+        f = m.events[-1]
+        if f.score_home > f.score_away:
+            home += 1
+        elif f.score_home == f.score_away:
+            draw += 1
+        else:
+            away += 1
+    n = len(season)
+    assert near(home / n, 0.408, 0.06), home / n
+    assert near(draw / n, 0.245, 0.06), draw / n
+    assert near(away / n, 0.347, 0.06), away / n
+
+
+# ---------- club spread ----------
+
+def club_averages(season, fn):
+    by_club = defaultdict(list)
+    for m in season:
+        for t in (m.meta.home_id, m.meta.away_id):
+            by_club[t].append(fn(m, t))
+    return {c: mean(v) for c, v in by_club.items()}
+
+
+def test_club_passing_spread(season):
+    avg = club_averages(season, lambda m, t: len(passes(m, t)))
+    assert max(avg.values()) >= 540, avg
+    assert min(avg.values()) <= 380, avg
+
+
+def test_club_completion_spread(season):
     def completion(m, t):
         ps = passes(m, t)
         return sum(p.outcome == "complete" for p in ps) / len(ps)
 
-    assert 0.70 <= mean(per_team(many_matches, completion)) <= 0.90
+    avg = club_averages(season, completion)
+    assert max(avg.values()) >= 0.87, avg
+    assert min(avg.values()) <= 0.79, avg
 
 
-def test_shots_per_team(many_matches):
-    assert 8 <= mean(per_team(many_matches, lambda m, t: count(m, t, "shot"))) <= 18
-
-
-def test_shots_on_target_share(many_matches):
-    def share(m, t):
-        shots = [e for e in m.events if e.type == "shot" and e.team_id == t]
-        return sum(s.outcome in ("goal", "saved") for s in shots) / max(len(shots), 1)
-
-    assert 0.25 <= mean(per_team(many_matches, share)) <= 0.45
-
-
-def test_goals_per_match(many_matches):
-    assert 2.4 <= mean(sum(e.type == "goal" for e in m.events) for m in many_matches) <= 3.2
-
-
-def test_goal_distribution_not_degenerate(many_matches):
-    totals = [sum(e.type == "goal" for e in m.events) for m in many_matches]
-    assert sum(t == 0 for t in totals) >= 5, "some 0-0s should happen"
-    assert max(totals) >= 5, "occasional high-scoring games"
-    assert max(totals) <= 12
-
-
-def test_fouls_per_team(many_matches):
-    assert 8 <= mean(per_team(many_matches, lambda m, t: count(m, t, "foul"))) <= 15
-
-
-def test_yellow_cards_per_team(many_matches):
-    assert 1 <= mean(per_team(many_matches, lambda m, t: count(m, t, "card", card="yellow"))) <= 3
-
-
-def test_red_cards_rare(many_matches):
-    reds = sum(e.type == "card" and e.card in ("red", "second_yellow") for m in many_matches for e in m.events)
-    assert 0.03 <= reds / len(many_matches) <= 0.4
-
-
-def test_substitutions_happen(many_matches):
-    subs = per_team(many_matches, lambda m, t: count(m, t, "substitution"))
-    assert 2.5 <= mean(subs) <= 5
-
-
-def test_possession_varies_by_team_strength(many_matches):
-    """Not every match is 50/50: some teams dominate the ball."""
-    def pass_share(m):
-        h = len(passes(m, m.meta.home_id))
-        a = len(passes(m, m.meta.away_id))
-        return h / (h + a)
-
-    shares = [pass_share(m) for m in many_matches]
-    assert min(shares) < 0.40 and max(shares) > 0.60
-
-
-def test_better_attack_scores_more(many_matches, league):
-    """Club attack rating should matter: top-half attacks outscore bottom-half attacks."""
+def test_better_attack_scores_more(season, league):
     ranked = sorted(league.clubs, key=lambda c: c.attack)
     weak = {c.id for c in ranked[: len(ranked) // 2]}
     goals = {"weak": [], "strong": []}
-    for m in many_matches:
+    for m in season:
         for t in (m.meta.home_id, m.meta.away_id):
             goals["weak" if t in weak else "strong"].append(count(m, t, "goal"))
-    assert mean(goals["strong"]) > mean(goals["weak"])
+    assert mean(goals["strong"]) > mean(goals["weak"]) * 1.25
 
+
+# ---------- plausibility (no sourced target, see docs/REALISM.md) ----------
+
+def test_shots_on_target_share(season):
+    def share(m, t):
+        ss = [e for e in m.events if e.type == "shot" and e.team_id == t]
+        return sum(s.outcome in ("goal", "saved") for s in ss) / max(len(ss), 1)
+
+    assert 0.28 <= mean(per_team(season, share)) <= 0.42
+
+
+def test_goal_distribution_not_degenerate(season):
+    totals = [sum(e.type == "goal" for e in m.events) for m in season]
+    assert 0.04 <= totals.count(0) / len(totals) <= 0.12, "0-0s happen but aren't common"
+    assert max(totals) >= 6
+    assert max(totals) <= 12
+
+
+def test_substitutions_happen(season):
+    assert 3 <= mean(per_team(season, lambda m, t: count(m, t, "substitution"))) <= 5
+
+
+# ---------- engine agrees with generator ----------
 
 def _final_snapshots(matches):
-    from premier_analytics.engine import MatchEngine
-
     snaps = []
     for m in matches:
         eng = MatchEngine(m.meta.home_id, m.meta.away_id)
@@ -109,20 +187,17 @@ def _final_snapshots(matches):
     return snaps
 
 
-def test_engine_xg_calibrated_to_generated_goals(many_matches):
-    """The engine's xG model and the generator's finishing agree: total xG within 15 % of goals."""
-    snaps = _final_snapshots(many_matches)
+def test_engine_xg_calibrated_to_generated_goals(season):
+    """The engine's xG model and the generator's finishing agree: total xG within 10 % of goals."""
+    snaps = _final_snapshots(season)
     total_xg = sum(t.xg for s in snaps for t in s.teams.values())
     total_goals = sum(t.goals for s in snaps for t in s.teams.values())
-    assert abs(total_xg - total_goals) / total_goals <= 0.15, (total_xg, total_goals)
+    assert abs(total_xg - total_goals) / total_goals <= 0.10, (total_xg, total_goals)
 
 
-def test_typical_chaos_is_mid_range(many_matches):
-    """Over full matches the chaos index should sit mid-scale, leaving room for calm and frantic spells."""
-    from premier_analytics.engine import MatchEngine
-
+def test_typical_chaos_is_mid_range(season):
     readings = []
-    for m in many_matches[:40]:
+    for m in season[:40]:
         eng = MatchEngine(m.meta.home_id, m.meta.away_id)
         for i, e in enumerate(m.events):
             eng.apply(e)

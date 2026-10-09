@@ -3,7 +3,7 @@ import pytest
 from premier_analytics.generator import generate_match
 from premier_analytics.league import load_league
 
-REALISM_SEEDS = range(200)
+SEASON_SEEDS = range(380)
 
 
 @pytest.fixture(scope="session")
@@ -24,14 +24,14 @@ def match(fixture_pair):
 
 
 @pytest.fixture(scope="session")
-def many_matches(league):
-    """200 matches across rotating pairings, for statistical realism tests."""
+def season(league):
+    """A synthetic 380-match season: every ordered pairing of clubs in turn, so home and
+    away games are balanced. Used for realism tests against real league averages."""
     clubs = [c.id for c in league.clubs]
-    out = []
-    for seed in REALISM_SEEDS:
-        home = clubs[seed % len(clubs)]
-        away = clubs[(seed + 1 + seed // len(clubs)) % len(clubs)]
-        if away == home:
-            away = clubs[(seed + 2) % len(clubs)]
-        out.append(generate_match(home, away, seed=seed))
-    return out
+    pairings = [(h, a) for h in clubs for a in clubs if h != a]
+    return [generate_match(*pairings[seed % len(pairings)], seed=seed) for seed in SEASON_SEEDS]
+
+
+@pytest.fixture(scope="session")
+def many_matches(season):
+    return season[:200]
