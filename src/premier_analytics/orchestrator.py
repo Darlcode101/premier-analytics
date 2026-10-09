@@ -51,7 +51,7 @@ class Orchestrator:
     def __init__(self, home_id: str, away_id: str, match_id: str, names: Names, audiences: list[Audience],
                  llm: LLM | None, critic: CriticAgent, stale_ms: int = STALE_MS,
                  on_overlay: Callable[[Overlay], None] | None = None, max_on_screen: int = 2,
-                 recaps: bool = False, recap_tools: list | None = None,
+                 recaps: bool = False, recap_tools: list | None = None, recap_llm: LLM | None = None,
                  on_recap: Callable[[Recap], None] | None = None):
         self.names = names
         self.audiences = audiences
@@ -63,7 +63,13 @@ class Orchestrator:
         self.state = MatchState(names=names, scout=self.scout)
         self.on_recap = on_recap
         self.recaps: list[Recap] = []
-        self.recap_producer = RecapProducer(llm, critic, self.state, tools=recap_tools) if (recaps and llm) else None
+        self.recap_producer = None
+        if recaps and llm is not None:
+            # Recaps may use a slower, stronger model; translation stays on the fast live model.
+            self.recap_producer = RecapProducer(
+                recap_llm or llm, critic, self.state, tools=recap_tools,
+                translator=TranslatorAgent(llm, names=list(names.players.values()) + list(names.clubs.values())),
+            )
         self.schedulers = {a.key: Scheduler(max_on_screen=max_on_screen) for a in audiences}
         self.published: list[Overlay] = []
         self.trace: list[TraceEvent] = []

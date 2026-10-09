@@ -53,7 +53,7 @@ class RecapProducer:
         "get_team_stats, get_top_players, get_key_moments, get_player_stats) to gather what you need, then "
         "write the recap in British English. Explain why the match is going (or went) the way it did: chances "
         "created, xG, momentum swings, key players. Quote numbers exactly as the tools return them, never invent "
-        "statistics, never predict. Treat club names as plural. Headline at most 60 characters; summary two or "
+        "statistics, never predict, never copy internal field names (write 'xG', not 'shot_xg'). Treat club names as plural. Headline at most 60 characters; summary two or "
         f"three sentences, at most {MAX_SUMMARY} characters; up to three key points of at most {MAX_POINT} "
         "characters each."
     )

@@ -18,7 +18,7 @@ import uvicorn  # noqa: E402
 from agent_framework import MCPStreamableHTTPTool  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
-from premier_analytics.agents import AgentFrameworkLLM, CriticAgent, ResilientLLM  # noqa: E402
+from premier_analytics.agents import AgentFrameworkLLM, CriticAgent, ResilientLLM, TranslatorAgent  # noqa: E402
 from premier_analytics.generator import generate_match  # noqa: E402
 from premier_analytics.league import load_league  # noqa: E402
 from premier_analytics.mcp_server import MatchState, build_server  # noqa: E402
@@ -56,7 +56,9 @@ async def main():
     while not web.started:
         await asyncio.sleep(0.05)
     async with MCPStreamableHTTPTool(name="match", url=f"http://127.0.0.1:{PORT}/mcp") as mcp_tool:
-        producer = RecapProducer(llm, critic, state, tools=[mcp_tool])
+        fast = AgentFrameworkLLM(os.environ["LIVE_MODEL_DEPLOYMENT"], endpoint, key)
+        translator = TranslatorAgent(fast, list(names.players.values()) + list(names.clubs.values()))
+        producer = RecapProducer(llm, critic, state, tools=[mcp_tool], translator=translator)
         for language in ("en", "es", "ar"):
             recap = await producer.run("full_time", language)
             print(f"\n=== full-time recap [{language}] ===")
