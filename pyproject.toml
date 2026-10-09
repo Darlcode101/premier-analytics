@@ -17,6 +17,9 @@ dev = [
 llm = [
     "openai>=1.50",
     "python-dotenv>=1.0",
+    "agent-framework-core==1.21.0",
+    "agent-framework-openai",
+    "mcp>=2.3",
 ]
 
 [build-system]
