@@ -88,6 +88,8 @@ class WindowStats(BaseModel):
     field_tilt: float    # 0..1, share of recent final-third passes
     ppda: float | None   # opponent passes allowed per defensive action; None if no actions
     tempo: float         # passes per minute
+    shots: int           # shots in the window
+    xg: float            # xG in the window
 
 
 class TeamStats(BaseModel):
@@ -223,6 +225,7 @@ class MatchEngine:
             if value >= BIG_CHANCE_XG:
                 team.big_chances += 1
             self._remember(e.elapsed_ms, t, "xg", value)
+            self._remember(e.elapsed_ms, t, "shot")
 
         elif e.type == "goal":
             team.goals += 1
@@ -313,6 +316,8 @@ class MatchEngine:
                 field_tilt=ft / (ft + ft_opp) if ft + ft_opp else 0.5,
                 ppda=sums[opp].get("pass_own60", 0.0) / actions if actions else None,
                 tempo=sums[tid].get("pass", 0.0) / minutes,
+                shots=int(sums[tid].get("shot", 0)),
+                xg=sums[tid].get("xg", 0.0),
             )
             teams[tid] = stats
 
