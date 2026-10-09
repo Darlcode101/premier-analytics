@@ -44,7 +44,8 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 - Possession % on a fixture with known touch times.
 - Pass distance: (0,0)→(30,40) = 50.0 m.
 - Pass difficulty: monotonic — longer / under pressure / line-breaking ⇒ higher; bounded [0,1].
-- xG: penalty ≈ 0.76; 30 m shot < 0.05; xG decreases with distance and narrower angle (property test).
+- xG: 6 m central > 0.35; penalty spot (open play, no penalty kicks are generated) 0.15–0.45; 30 m shot < 0.06; decreases with distance and narrower angle (property test); headers and pressure lower it.
+- xG calibration: over 200 generated matches, total xG within 15 % of total goals.
 - Momentum: fixture with 10 min of one-way pressure ⇒ momentum shift moment emitted at the right minute.
 - Moment detection: goal ⇒ moment severity ≥ 0.9; routine back-pass ⇒ no moment.
 - Stats are incrementally correct: computing live event-by-event equals computing in batch at the end.

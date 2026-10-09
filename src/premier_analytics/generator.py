@@ -231,7 +231,7 @@ class _Sim:
             if x >= 76:
                 centrality = 1 - min(abs(y - W / 2) / (W / 2), 1)
                 depth = (x - 76) / (L - 76)
-                p_shot = (0.013 + 0.20 * depth ** 1.4) * (0.4 + 1.2 * centrality) * (0.2 + 1.4 * club.attack) * s ** 0.5
+                p_shot = (0.011 + 0.17 * depth ** 1.4) * (0.4 + 1.2 * centrality) * (0.2 + 1.4 * club.attack) * s ** 0.5
                 if rng.random() < p_shot:
                     return self.shoot(team, x, y, carrier, last_pass, pressed)
 
@@ -312,7 +312,7 @@ class _Sim:
             base *= 0.55
         s = self.strength(team) / self.strength(opp)
         p_goal = _clamp(
-            base * 0.62 * (0.90 + 0.75 * (p.shooting - 0.6)) * (1.15 - 0.6 * (self.clubs[opp].defence - 0.5))
+            base * 0.76 * (0.90 + 0.75 * (p.shooting - 0.6)) * (1.15 - 0.6 * (self.clubs[opp].defence - 0.5))
             * (0.45 + 1.0 * self.clubs[team].attack)
             * (0.85 if pressed else 1.0) * s ** 0.3,
             0.005, 0.85,

@@ -95,3 +95,38 @@ def test_better_attack_scores_more(many_matches, league):
         for t in (m.meta.home_id, m.meta.away_id):
             goals["weak" if t in weak else "strong"].append(count(m, t, "goal"))
     assert mean(goals["strong"]) > mean(goals["weak"])
+
+
+def _final_snapshots(matches):
+    from premier_analytics.engine import MatchEngine
+
+    snaps = []
+    for m in matches:
+        eng = MatchEngine(m.meta.home_id, m.meta.away_id)
+        for e in m.events:
+            eng.apply(e)
+        snaps.append(eng.snapshot())
+    return snaps
+
+
+def test_engine_xg_calibrated_to_generated_goals(many_matches):
+    """The engine's xG model and the generator's finishing agree: total xG within 15 % of goals."""
+    snaps = _final_snapshots(many_matches)
+    total_xg = sum(t.xg for s in snaps for t in s.teams.values())
+    total_goals = sum(t.goals for s in snaps for t in s.teams.values())
+    assert abs(total_xg - total_goals) / total_goals <= 0.15, (total_xg, total_goals)
+
+
+def test_typical_chaos_is_mid_range(many_matches):
+    """Over full matches the chaos index should sit mid-scale, leaving room for calm and frantic spells."""
+    from premier_analytics.engine import MatchEngine
+
+    readings = []
+    for m in many_matches[:40]:
+        eng = MatchEngine(m.meta.home_id, m.meta.away_id)
+        for i, e in enumerate(m.events):
+            eng.apply(e)
+            if i % 200 == 199:
+                readings.append(eng.snapshot().chaos)
+    assert 0.25 <= mean(readings) <= 0.75
+    assert min(readings) < mean(readings) < max(readings)
