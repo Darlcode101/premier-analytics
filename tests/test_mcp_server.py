@@ -3,7 +3,7 @@ import asyncio
 import json
 
 import pytest
-from mcp.client.client import Client
+from mcp.shared.memory import create_connected_server_and_client_session as connect
 
 from premier_analytics.mcp_server import MatchState, build_server
 from premier_analytics.overlay import Names
@@ -24,16 +24,16 @@ def state(match, league):
 
 def call(server, tool, args=None):
     async def go():
-        async with Client(server) as client:
+        async with connect(server) as client:
             res = await client.call_tool(tool, args or {})
-            assert not res.is_error, res
+            assert not res.isError, res
             return json.loads(res.content[0].text)
     return asyncio.run(go())
 
 
 def test_lists_all_tools(state):
     async def go():
-        async with Client(build_server(state)) as client:
+        async with connect(build_server(state)) as client:
             return {t.name for t in (await client.list_tools()).tools}
     assert TOOLS <= asyncio.run(go())
 
@@ -63,10 +63,10 @@ def test_player_stats_by_name(state, match):
 
 def test_unknown_player_is_a_clear_error(state):
     async def go():
-        async with Client(build_server(state)) as client:
+        async with connect(build_server(state)) as client:
             return await client.call_tool("get_player_stats", {"player": "Nobody Atall"})
     res = asyncio.run(go())
-    assert res.is_error and "Nobody Atall" in res.content[0].text
+    assert res.isError and "Nobody Atall" in res.content[0].text
 
 
 def test_top_players(state):
@@ -81,3 +81,9 @@ def test_key_moments_filtered_and_named(state):
     goal = next(m for m in out if m["kind"] == "goal")
     assert goal["player"] in state.names.players.values()
     assert all(isinstance(f["value"], (int, float, str)) for f in goal["facts"])
+
+
+def test_tool_calls_are_reported(state):
+    seen = []
+    call(build_server(state, on_call=lambda name, args: seen.append((name, args))), "get_team_stats", {"team": "away"})
+    assert seen == [("get_team_stats", {"team": "away"})]

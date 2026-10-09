@@ -20,7 +20,9 @@ from .agents import (
     AllModelsFailed, CriticAgent, ExplainerAgent, Explanation, LLM, Personalised, PersonaliserAgent,
     TranslatorAgent,
 )
+from .mcp_server import MatchState
 from .overlay import STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, fast_overlay, validate
+from .recap import Recap, RecapProducer
 from .schema import Event
 from .scout import Moment, MomentScout
 
@@ -48,7 +50,9 @@ class _Stop(Exception):
 class Orchestrator:
     def __init__(self, home_id: str, away_id: str, match_id: str, names: Names, audiences: list[Audience],
                  llm: LLM | None, critic: CriticAgent, stale_ms: int = STALE_MS,
-                 on_overlay: Callable[[Overlay], None] | None = None, max_on_screen: int = 2):
+                 on_overlay: Callable[[Overlay], None] | None = None, max_on_screen: int = 2,
+                 recaps: bool = False, recap_tools: list | None = None,
+                 on_recap: Callable[[Recap], None] | None = None):
         self.names = names
         self.audiences = audiences
         self.llm = llm
@@ -56,6 +60,10 @@ class Orchestrator:
         self.stale_ms = stale_ms
         self.on_overlay = on_overlay
         self.scout = MomentScout(home_id, away_id, match_id)
+        self.state = MatchState(names=names, scout=self.scout)
+        self.on_recap = on_recap
+        self.recaps: list[Recap] = []
+        self.recap_producer = RecapProducer(llm, critic, self.state, tools=recap_tools) if (recaps and llm) else None
         self.schedulers = {a.key: Scheduler(max_on_screen=max_on_screen) for a in audiences}
         self.published: list[Overlay] = []
         self.trace: list[TraceEvent] = []
@@ -75,7 +83,11 @@ class Orchestrator:
         """Process one event. Returns fast-path overlays at once; AI work continues in the background."""
         self.match_now = e.elapsed_ms
         fast: list[Overlay] = []
-        for m in self.scout.observe(e):
+        moments = self.scout.observe(e)
+        self.state.add_moments(moments)
+        for m in moments:
+            if self.recap_producer is not None and m.kind in ("half_time", "full_time"):
+                self._spawn(self._recap(m))
             for a in self.audiences:
                 if not a.wants(m):
                     continue
@@ -83,9 +95,7 @@ class Orchestrator:
                 self._publish(o)
                 fast.append(o)
                 if self.llm is not None and m.kind in AI_KINDS:
-                    task = asyncio.create_task(self._enrich(m, a, o, time.perf_counter()))
-                    self._tasks.add(task)
-                    task.add_done_callback(self._tasks.discard)
+                    self._spawn(self._enrich(m, a, o, time.perf_counter()))
         await asyncio.sleep(0)  # let background work start
         return fast
 
@@ -98,6 +108,28 @@ class Orchestrator:
         return self.schedulers[audience_key].on_screen(self.match_now)
 
     # ---------- internals ----------
+
+    def _spawn(self, coro) -> None:
+        task = asyncio.create_task(coro)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _recap(self, m: Moment) -> None:
+        for language in sorted({a.language for a in self.audiences}):
+            start = time.perf_counter()
+            try:
+                recap = await self.recap_producer.run(m.kind, language)
+            except Exception as err:  # recaps are best-effort; the template overlay already covers HT/FT
+                self._record(m, language, "recap", "error", detail=repr(err)[:200])
+                continue
+            ms = (time.perf_counter() - start) * 1000
+            if recap is None:
+                self._record(m, language, "recap", "rejected", ms=ms)
+                continue
+            self._record(m, language, "recap", "ok", recap.model, ms)
+            self.recaps.append(recap)
+            if self.on_recap:
+                self.on_recap(recap)
 
     def _publish(self, o: Overlay) -> None:
         self.published.append(o)

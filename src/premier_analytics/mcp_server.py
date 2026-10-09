@@ -6,10 +6,12 @@ the web app over Streamable HTTP; tests connect in-process.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import wraps
 
-from mcp.server.mcpserver import MCPServer
-from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 
 from .overlay import Names, display_minute
 from .scout import Moment, MomentScout
@@ -49,15 +51,26 @@ def _round(v):
     return round(v, 2) if isinstance(v, float) else v
 
 
-def build_server(state: MatchState) -> MCPServer:
-    server = MCPServer(
+def build_server(state: MatchState, on_call: Callable[[str, dict], None] | None = None) -> FastMCP:
+    """on_call(tool_name, arguments) is invoked for every tool call, e.g. to show agent activity."""
+    server = FastMCP(
         name="premier-analytics-match",
         instructions="Live, verified statistics for the match in progress. Every number comes from the "
                      "deterministic statistics engine; quote them exactly.",
     )
     engine = state.scout.engine
 
-    @server.tool(description="Current score, minute and teams.")
+    def tool(description: str):
+        def register(fn):
+            @wraps(fn)
+            def logged(*args, **kwargs):
+                if on_call:
+                    on_call(fn.__name__, kwargs)
+                return fn(*args, **kwargs)
+            return server.tool(description=description)(logged)
+        return register
+
+    @tool(description="Current score, minute and teams.")
     def get_score() -> dict:
         snap = engine.snapshot()
         return {
@@ -66,7 +79,7 @@ def build_server(state: MatchState) -> MCPServer:
             "period": snap.period, "minute": snap.clock_ms // 60_000 + 1,
         }
 
-    @server.tool(description="Match totals and last-10-minute indicators for one team ('home', 'away' or club name).")
+    @tool(description="Match totals and last-10-minute indicators for one team ('home', 'away' or club name).")
     def get_team_stats(team: str) -> dict:
         tid = state.team_id(team)
         stats = engine.snapshot().teams[tid].model_dump()
@@ -76,7 +89,7 @@ def build_server(state: MatchState) -> MCPServer:
         }
         return stats
 
-    @server.tool(description="Match statistics for one player, by name.")
+    @tool(description="Match statistics for one player, by name.")
     def get_player_stats(player: str) -> dict:
         pid = state.player_id(player)
         stats = engine.snapshot().players.get(pid)
@@ -86,7 +99,7 @@ def build_server(state: MatchState) -> MCPServer:
         )
         return {"name": state.names.player(pid), "team": state.names.club(team), **{m: data.get(m, 0) for m in PLAYER_METRICS}}
 
-    @server.tool(description=f"Top players by a metric: one of {', '.join(PLAYER_METRICS)}.")
+    @tool(description=f"Top players by a metric: one of {', '.join(PLAYER_METRICS)}.")
     def get_top_players(metric: str, limit: int = 3) -> dict:
         if metric not in PLAYER_METRICS:
             raise ToolError(f"metric must be one of {PLAYER_METRICS}")
@@ -97,7 +110,7 @@ def build_server(state: MatchState) -> MCPServer:
             for pid, p in ranked
         ]}
 
-    @server.tool(description="Key moments so far, most recent last, filtered by minimum severity (0-1).")
+    @tool(description="Key moments so far, most recent last, filtered by minimum severity (0-1).")
     def get_key_moments(min_severity: float = 0.5, limit: int = 20) -> dict:
         chosen = [m for m in state.moments if m.severity >= min_severity][-limit:]
         out = []

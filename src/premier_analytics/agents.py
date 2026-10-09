@@ -60,7 +60,8 @@ class LLMResult(Generic[T]):
 class LLM(Protocol):
     name: str
 
-    async def generate(self, role: str, instructions: str, prompt: str, schema: type[T]) -> LLMResult[T]: ...
+    async def generate(self, role: str, instructions: str, prompt: str, schema: type[T],
+                       tools: list | None = None) -> LLMResult[T]: ...
 
 
 class AllModelsFailed(RuntimeError):
@@ -74,6 +75,7 @@ class FakeCall:
     role: str
     instructions: str
     prompt: str
+    tools: list | None = None
 
 
 class FakeLLM:
@@ -86,8 +88,8 @@ class FakeLLM:
         self.name = name
         self.calls: list[FakeCall] = []
 
-    async def generate(self, role, instructions, prompt, schema):
-        self.calls.append(FakeCall(role, instructions, prompt))
+    async def generate(self, role, instructions, prompt, schema, tools=None):
+        self.calls.append(FakeCall(role, instructions, prompt, tools))
         delay = self.delay.get(role, 0.0) if isinstance(self.delay, dict) else self.delay
         start = time.perf_counter()
         if delay:
@@ -121,9 +123,11 @@ class AgentFrameworkLLM:
             self._agents[key] = Agent(client=self._client, name=role, instructions=instructions)
         return self._agents[key]
 
-    async def generate(self, role, instructions, prompt, schema):
+    async def generate(self, role, instructions, prompt, schema, tools=None):
         start = time.perf_counter()
-        response = await self._agent(role, instructions).run(prompt, options={"response_format": schema})
+        response = await self._agent(role, instructions).run(
+            prompt, options={"response_format": schema}, tools=tools,
+        )
         value = response.value
         if value is None:
             value = schema.model_validate_json(response.text)
@@ -138,13 +142,13 @@ class ResilientLLM:
         self.timeout_s, self.retries = timeout_s, retries
         self.name = f"{primary.name}|{fallback.name if fallback else '-'}"
 
-    async def generate(self, role, instructions, prompt, schema):
+    async def generate(self, role, instructions, prompt, schema, tools=None):
         attempts: list[Attempt] = []
         plan = [self.primary] * (1 + self.retries) + ([self.fallback] if self.fallback else [])
         for model in plan:
             start = time.perf_counter()
             try:
-                res = await asyncio.wait_for(model.generate(role, instructions, prompt, schema), self.timeout_s)
+                res = await asyncio.wait_for(model.generate(role, instructions, prompt, schema, tools), self.timeout_s)
             except TimeoutError:
                 attempts.append(Attempt(model.name, "timeout", (time.perf_counter() - start) * 1000))
                 continue
@@ -365,28 +369,36 @@ class CriticAgent:
 
     def review(self, headline: str, body: str, m: Moment, names: Names, evidence: list[str] | None = None,
                audience: Audience | None = None) -> Verdict:
+        """Check text written about one moment against that moment's facts."""
         problems: list[str] = []
-        text = f"{headline}\n{body}"
-        if not headline.strip() or len(headline) > MAX_HEADLINE:
-            problems.append(f"headline must be 1-{MAX_HEADLINE} characters")
-        if len(body) > MAX_BODY:
-            problems.append(f"body must be at most {MAX_BODY} characters")
         if evidence is not None:
             ids = {f.id for f in m.facts}
             if not evidence or not set(evidence) <= ids:
                 problems.append("evidence must list fact IDs from this moment")
+        involved = {names.player(m.player_id)} if m.player_id else set()
+        involved |= {names.player(f.value) for f in m.facts if isinstance(f.value, str) and f.value in names.players}
+        context = next((f.value for f in m.facts if f.label == "goal_context"), None)
+        problems += self.check_text(headline, body, self.allowed_numbers(m), involved, names, audience, context)
+        return Verdict(ok=not problems, problems=problems)
 
+    def check_text(self, headline: str, body: str, allowed: set[str], involved: set[str], names: Names,
+                   audience: Audience | None = None, context: str | None = None,
+                   max_headline: int = MAX_HEADLINE, max_body: int = MAX_BODY) -> list[str]:
+        """Shared checks: lengths, numbers, names, clubs, goal context and fan jargon."""
+        problems: list[str] = []
+        text = f"{headline}\n{body}"
+        if not headline.strip() or len(headline) > max_headline:
+            problems.append(f"headline must be 1-{max_headline} characters")
+        if len(body) > max_body:
+            problems.append(f"body must be at most {max_body} characters")
         if "⟦" in text or "⟧" in text:
             problems.append("unrestored name tokens in text")
 
-        allowed = self.allowed_numbers(m)
         for n in _NUMBER.findall(_normalise_numbers(text)):
             norm = n.rstrip("0").rstrip(".") if "." in n else n
             if norm not in allowed:
                 problems.append(f"number {n} is not in the facts")
 
-        involved = {names.player(m.player_id)} if m.player_id else set()
-        involved |= {names.player(f.value) for f in m.facts if isinstance(f.value, str) and f.value in names.players}
         involved_surnames = {n.split(" ", 1)[-1] for n in involved}
         for name in sorted(self.league_players - involved):
             surname = name.split(" ", 1)[-1]
@@ -398,7 +410,6 @@ class CriticAgent:
             if club in text:
                 problems.append(f"club {club} is not in this match")
 
-        context = next((f.value for f in m.facts if f.label == "goal_context"), None)
         for pattern in CONTRADICTIONS.get(context, ()):
             if re.search(pattern, text, re.IGNORECASE):
                 problems.append(f"contradicts the goal context ({context}): '{pattern}'")
@@ -408,4 +419,4 @@ class CriticAgent:
             for term in FAN_JARGON:
                 if re.search(rf"\b{re.escape(term)}\b", lowered):
                     problems.append(f"jargon '{term}' is not for casual fans")
-        return Verdict(ok=not problems, problems=problems)
+        return problems
