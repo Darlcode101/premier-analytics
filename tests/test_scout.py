@@ -239,3 +239,18 @@ def test_momentum_shifts_cite_real_shots(many_matches):
         for mo in run_match(m):
             if mo.kind == "momentum_shift":
                 assert {f.label: f.value for f in mo.facts}["window_shots"] >= 2
+
+
+@pytest.mark.parametrize(
+    "before, scorer, expected",
+    [((0, 0), HOME, "takes_lead"), ((0, 1), HOME, "equaliser"), ((1, 0), HOME, "extends_lead"),
+     ((0, 2), HOME, "pulls_one_back"), ((1, 1), AWAY, "takes_lead"), ((2, 1), AWAY, "equaliser")],
+)
+def test_goal_context_is_stated(before, scorer, expected):
+    fx = Fx()
+    fx.kickoff(0)
+    h, a = before
+    s = fx.shot(5, scorer, 95, 33, outcome="goal", player="h9" if scorer == HOME else "a9")
+    fx.goal(5, scorer, s, h + (scorer == HOME), a + (scorer == AWAY))
+    goal = next(m for m in scout_all(fx) if m.kind == "goal")
+    assert {f.label: f.value for f in goal.facts}["goal_context"] == expected

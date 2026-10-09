@@ -95,12 +95,18 @@ class MomentScout:
         scorer_goals = eng.players[e.player_id].goals
         diff = (e.score_home - e.score_away) * (1 if e.team_id == self.home_id else -1)
         late_decisive = e.clock_ms >= 80 * MIN and diff in (0, 1)
+        before = diff - 1  # the scoring side's margin just before this goal
+        context = (
+            "equaliser" if before == -1 else "takes_lead" if before == 0
+            else "extends_lead" if before >= 1 else "pulls_one_back"
+        )
         src = [e.id, e.related_event_id]
         facts = [
             ("score_home", e.score_home, None, [e.id]),
             ("score_away", e.score_away, None, [e.id]),
             ("scorer", e.player_id, e.team_id, [e.id]),
             ("minute", e.clock_ms // MIN + 1, None, [e.id]),
+            ("goal_context", context, e.team_id, [e.id]),
             ("team_shots", team.shots, e.team_id, src),
             ("team_xg", round(team.xg, 2), e.team_id, src),
         ]

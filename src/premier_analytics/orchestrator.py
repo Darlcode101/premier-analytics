@@ -67,7 +67,7 @@ class Orchestrator:
         if llm is not None:
             self.explainer = ExplainerAgent(llm)
             self.personaliser = PersonaliserAgent(llm)
-            self.translator = TranslatorAgent(llm)
+            self.translator = TranslatorAgent(llm, names=list(names.players.values()) + list(names.clubs.values()))
 
     # ---------- public ----------
 

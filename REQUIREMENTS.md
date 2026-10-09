@@ -137,7 +137,7 @@ Off the live path: Recap Producer at HT/FT
 
 | ID | P | Requirement |
 |---|---|---|
-| N-1 | M | Latency at 1× speed: **fast-path overlay ≤ 0.5 s p95** after the event; **AI upgrade ≤ 4 s p95**; AI results older than 8 s are discarded by the scheduler |
+| N-1 | M | Latency at 1× speed: **fast-path overlay ≤ 0.5 s p95** after the event; **AI upgrade ≤ 4 s p95 for English, ≤ 6 s p95 for translated audiences**; AI results older than 8 s are discarded |
 | N-2 | M | Cost: total Azure spend ≤ **$100** credit. Azure budget alerts at $25/$50/$75. Target ≤ $0.50 LLM cost per full match; measured and documented |
 | N-3 | M | Judge-proof: rate-limited, cached; demo works even if the LLM is down (pre-computed replay mode) |
 | N-4 | M | One-command local run (`make dev` or `docker compose up`) |
@@ -172,6 +172,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-09 | Azure region: subscription policy allows only italynorth, switzerlandnorth, denmarkeast, spaincentral, norwayeast. **All resources go in switzerlandnorth** (Foundry, Container Apps, etc.) |
 | 10-09 | Models: gpt-6-luna blocked (Azure for Students = quota Tier 0). Using gpt-4.1-mini (live) + gpt-5-mini (recaps/critic), each the other's fallback. Estimated ~$0.35 per full match. Quota request for gpt-6-luna submitted later if needed |
 | 10-09 | Architecture adopted (from Alex): stream → stats engine + MCP → Moment Scout → Orchestrator → fast path (templates) ‖ AI path (Explainer → Critic → Personaliser → Translator) → Overlay Validator + Scheduler → UI. Analyst agent removed (the engine + MCP does that job) |
+| 10-09 | N-1 split after live runs: English upgrades p95 3.5 s, translated ~5.0 s (third sequential call). Kept a separate Translator agent (multi-agent roles) and relaxed the translated target to 6 s; fast overlay covers the gap |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones

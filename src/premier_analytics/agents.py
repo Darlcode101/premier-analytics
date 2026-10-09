@@ -167,6 +167,36 @@ def _display(value: Any, names: Names) -> str:
     return str(value)
 
 
+FACT_TEXT = {
+    "score_home": "home score", "score_away": "away score", "minute": "minute",
+    "goal_context": "goal context", "team_shots": "team shots in the match so far",
+    "team_xg": "team xG in the match so far", "shot_xg": "xG of this shot", "shot_distance_m": "shot distance (m)",
+    "assist": "assisted by", "player_goals": "player's goals in this match", "outcome": "shot outcome",
+    "shot_speed_kmh": "shot speed (km/h)", "players_remaining": "players left on the pitch",
+    "pass_difficulty": "pass difficulty (0-1)", "pass_distance_m": "pass distance (m)",
+    "possession_home_pct": "home possession % in the match so far",
+    "shots_home": "home shots in the match so far", "shots_away": "away shots in the match so far",
+    "xg_home": "home xG in the match so far", "xg_away": "away xG in the match so far",
+    "momentum": "momentum (-1 to 1) in the last {w} minutes",
+    "field_tilt": "share of final-third passes (0-1) in the last {w} minutes",
+    "window_shots": "shots in the last {w} minutes", "window_xg": "xG in the last {w} minutes",
+    "window_minutes": "window length (minutes)", "tempo_passes_per_min": "passes per minute in the last {w} minutes",
+    "ppda": "opponent passes per defensive action in the last {w} minutes",
+}
+GOAL_CONTEXT_TEXT = {
+    "equaliser": "equaliser: makes the scores level", "takes_lead": "takes the lead",
+    "extends_lead": "extends an existing lead", "pulls_one_back": "pulls a goal back but still behind",
+}
+
+# Phrases that contradict a goal's context (checked on English text before translation).
+CONTRADICTIONS = {
+    "equaliser": (r"\blead\b", r"\bahead\b", r"\bin front\b", r"\bdeadlock\b", r"\bwinner\b"),
+    "takes_lead": (r"\bequali[sz]", r"\blevel", r"\bextends?\b"),
+    "extends_lead": (r"\bequali[sz]", r"\blevel", r"\bdeadlock\b", r"\btakes? the lead\b"),
+    "pulls_one_back": (r"\blead\b", r"\bahead\b", r"\bin front\b", r"\bequali[sz]", r"\blevel", r"\bdeadlock\b"),
+}
+
+
 def describe_facts(m: Moment, names: Names) -> str:
     team = names.club(m.team_id) if m.team_id else "-"
     player = names.player(m.player_id) if m.player_id else "-"
@@ -175,9 +205,12 @@ def describe_facts(m: Moment, names: Names) -> str:
         f"Moment: {m.kind.replace('_', ' ')} at {display_minute(m)}' (half {m.period}). Team: {team}. Player: {player}.",
         "Facts:",
     ]
+    window = next((f.value for f in m.facts if f.label == "window_minutes"), 10)
     for f in m.facts:
         subject = f" ({_display(f.subject, names)})" if f.subject and f.subject not in (m.player_id,) else ""
-        lines.append(f"[{f.id}] {f.label.replace('_', ' ')} = {_display(f.value, names)}{subject}")
+        label = FACT_TEXT.get(f.label, f.label.replace("_", " ")).format(w=window)
+        value = GOAL_CONTEXT_TEXT.get(f.value, f.value) if f.label == "goal_context" else _display(f.value, names)
+        lines.append(f"[{f.id}] {label} = {value}{subject}")
     return "\n".join(lines)
 
 
@@ -198,7 +231,8 @@ class ExplainerAgent:
         "You are the Explainer in a live football broadcast graphics system. You receive verified facts about "
         "one match moment. Explain in British English WHY it matters (consequence, context, pattern) instead of "
         "restating what happened. Use only numbers, players and teams that appear in the facts; never invent "
-        "statistics or describe quality the facts don't support. Headline at most 50 characters, why at most "
+        "statistics, describe quality the facts don't support, or predict what will happen next. Treat club "
+        "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
     )
 
@@ -222,8 +256,9 @@ class PersonaliserAgent:
         "British English. For a casual fan: warm, simple and vivid, no jargon (never say xG, PPDA, field tilt "
         "or tempo), at most one number. For a data analyst: precise and tactical, two or three numbers, xG "
         "allowed. If the viewer supports a club, frame it from their side. If they follow a player, mention "
-        "that player when the facts involve them. Use only facts given. Headline at most 55 characters, body "
-        "at most 170 characters."
+        "that player only when the facts involve them. Use only facts given: no predictions about the rest of "
+        "the match, no events that are not in the facts. Treat club names as plural (\"Northgate are\"). "
+        "Headline at most 55 characters, body at most 170 characters."
     )
 
     def __init__(self, llm: LLM):
@@ -243,22 +278,47 @@ class PersonaliserAgent:
 
 
 class TranslatorAgent:
+    """Translates on-screen text. Names are masked as ⟦A⟧, ⟦B⟧ ... before the model sees them and
+    restored afterwards, so they can never be transliterated or altered."""
+
     role = "translator"
     instructions = (
-        "You translate short on-screen football graphics. Keep player and club names exactly as written, in "
-        "Latin script. Keep every number as Western digits. Natural broadcast style for the target language. "
-        "Headline at most 55 characters, body at most 170 characters."
+        "You translate short on-screen football graphics. Tokens like ⟦A⟧ stand for names: copy every token "
+        "exactly, once each, and do not add new ones. Keep every number as Western digits. Natural broadcast "
+        "style for the target language. Headline at most 55 characters, body at most 170 characters."
     )
 
-    def __init__(self, llm: LLM):
+    def __init__(self, llm: LLM, names: list[str] | None = None):
         self.llm = llm
+        full = set(names or [])
+        parts = {part for n in full if " " in n for part in n.split(" ", 1) if len(part) >= 4}
+        self.names = sorted(full | parts, key=len, reverse=True)  # longest first: "Kai Greaves" before "Greaves"
+
+    def _mask(self, text: str, tokens: dict[str, str]) -> str:
+        for name in self.names:
+            if name in text:
+                token = tokens.setdefault(name, f"⟦{chr(ord('A') + len(tokens))}⟧")
+                text = text.replace(name, token)
+        return text
+
+    @staticmethod
+    def _unmask(text: str, tokens: dict[str, str]) -> str:
+        for name, token in tokens.items():
+            text = text.replace(token, name)
+        return text
 
     async def run(self, text: Personalised, language: str) -> Personalised:
         return (await self.run_full(text, language)).value
 
     async def run_full(self, text: Personalised, language: str):
-        prompt = f"Target language: {LANGUAGE_NAMES[language]}.\nHeadline: {text.headline}\nBody: {text.body}"
-        return await self.llm.generate(self.role, self.instructions, prompt, Personalised)
+        tokens: dict[str, str] = {}
+        headline, body = self._mask(text.headline, tokens), self._mask(text.body, tokens)
+        prompt = f"Target language: {LANGUAGE_NAMES[language]}.\nHeadline: {headline}\nBody: {body}"
+        res = await self.llm.generate(self.role, self.instructions, prompt, Personalised)
+        res.value = Personalised(
+            headline=self._unmask(res.value.headline, tokens), body=self._unmask(res.value.body, tokens),
+        )
+        return res
 
 
 # ---------- critic ----------
@@ -278,8 +338,6 @@ def _number_forms(value: Any) -> set[str]:
     forms = {str(value), str(round(value)), f"{value:.1f}", f"{value:.2f}"}
     if 0 < value < 1:
         forms |= {str(round(value * 100)), f"{value * 100:.1f}"}
-    if isinstance(value, float) and value >= 1:
-        forms.add(str(int(value)))
     return {f.rstrip("0").rstrip(".") if "." in f else f for f in forms}
 
 
@@ -318,6 +376,9 @@ class CriticAgent:
             if not evidence or not set(evidence) <= ids:
                 problems.append("evidence must list fact IDs from this moment")
 
+        if "⟦" in text or "⟧" in text:
+            problems.append("unrestored name tokens in text")
+
         allowed = self.allowed_numbers(m)
         for n in _NUMBER.findall(_normalise_numbers(text)):
             norm = n.rstrip("0").rstrip(".") if "." in n else n
@@ -326,8 +387,6 @@ class CriticAgent:
 
         involved = {names.player(m.player_id)} if m.player_id else set()
         involved |= {names.player(f.value) for f in m.facts if isinstance(f.value, str) and f.value in names.players}
-        if audience and audience.player_id:
-            involved.add(names.player(audience.player_id))
         involved_surnames = {n.split(" ", 1)[-1] for n in involved}
         for name in sorted(self.league_players - involved):
             surname = name.split(" ", 1)[-1]
@@ -338,6 +397,11 @@ class CriticAgent:
         for club in sorted(self.league_clubs - match_clubs):
             if club in text:
                 problems.append(f"club {club} is not in this match")
+
+        context = next((f.value for f in m.facts if f.label == "goal_context"), None)
+        for pattern in CONTRADICTIONS.get(context, ()):
+            if re.search(pattern, text, re.IGNORECASE):
+                problems.append(f"contradicts the goal context ({context}): '{pattern}'")
 
         if audience is not None and audience.mode == "fan":
             lowered = text.lower()
