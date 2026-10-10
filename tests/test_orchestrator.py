@@ -302,3 +302,20 @@ def test_ai_budget_caps_distinct_personas():
         assert {o.audience for o in goal_overlays(orch, "ai")} == {FAN_EN.key, ANALYST_EN.key}
 
     asyncio.run(go())
+
+
+def test_drain_does_not_spin_on_finished_tasks():
+    """Regression: drain() used to busy-loop forever when every task had finished but the
+    done-callbacks that remove them had not run yet, freezing the whole server at full time."""
+    async def go():
+        orch = make(None)
+
+        async def noop():
+            return None
+
+        done = asyncio.ensure_future(noop())
+        await done
+        orch._tasks.add(done)  # finished, but nothing will remove it
+        await asyncio.wait_for(orch.drain(), timeout=1)
+
+    asyncio.run(go())

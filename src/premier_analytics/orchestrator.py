@@ -129,8 +129,10 @@ class Orchestrator:
 
     async def drain(self) -> None:
         """Wait for all in-flight AI work (used at full time and in tests)."""
-        while self._tasks:
-            await asyncio.gather(*list(self._tasks), return_exceptions=True)
+        # Only wait on unfinished tasks: awaiting already-finished ones never yields to the event
+        # loop, so the callbacks that remove them would never run and this would spin forever.
+        while pending := [t for t in self._tasks if not t.done()]:
+            await asyncio.gather(*pending, return_exceptions=True)
 
     def on_screen(self, audience_key: str) -> list[Overlay]:
         scheduler = self.schedulers.get(audience_key)

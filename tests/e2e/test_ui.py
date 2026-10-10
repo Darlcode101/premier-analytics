@@ -31,10 +31,12 @@ def _free_port() -> int:
 def _serve(mode: str):
     port = _free_port()
     env = {**os.environ, "PA_AI": mode, "PA_MAX_SESSIONS": "50", "PYTHONPATH": str(ROOT / "src")}
+    log = os.environ.get("E2E_SERVER_LOG")  # set to a path to capture server output when debugging
+    out = open(f"{log}.{mode}.{port}", "w") if log else subprocess.DEVNULL
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "premier_analytics.server:app", "--port", str(port),
          "--timeout-graceful-shutdown", "2"],
-        env=env, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        env=env, cwd=ROOT, stdout=out, stderr=out,
     )
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
