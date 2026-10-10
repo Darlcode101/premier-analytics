@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { initialState, reducer, type State } from './state'
+import { initialState, reducer, type Action, type State } from './state'
 import type { Message, Profile } from './types'
 
 export interface ClubSummary {
@@ -38,7 +38,9 @@ function socketUrl(matchId: string, p: Profile): string {
 }
 
 /** Live match state for one viewer profile. Reconnects (keeping the pitch context) when the profile changes. */
-export function useMatch(matchId: string | null, profile: Profile): { state: State; connected: boolean } {
+export function useMatch(matchId: string | null, profile: Profile): {
+  state: State; connected: boolean; dispatch: (a: Action) => void
+} {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [connected, setConnected] = useState(false)
   const finished = useRef(false)
@@ -67,5 +69,5 @@ export function useMatch(matchId: string | null, profile: Profile): { state: Sta
     }
   }, [matchId, profile.mode, profile.language, profile.club_id, profile.player_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { state, connected }
+  return { state, connected, dispatch }
 }

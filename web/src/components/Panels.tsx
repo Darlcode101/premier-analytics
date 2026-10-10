@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { KIND_LABELS, t, type StringKey } from '../i18n'
 import type { State } from '../state'
 import type { Hello, Language, Overlay, TeamStats } from '../types'
-import { Evidence } from './Pitch'
+import { Evidence } from './Shared'
 
 function FeedItem({ o, color, names, lang }: { o: Overlay; color: string; names: Record<string, string>; lang: Language }) {
   const [open, setOpen] = useState(false)

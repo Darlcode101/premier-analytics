@@ -207,3 +207,16 @@ def test_no_endpoint_means_no_models(monkeypatch):
 
     monkeypatch.delenv("AZURE_OPENAI_ENDPOINT", raising=False)
     assert build_llm_from_env() is None
+
+
+def test_late_joiner_gets_momentum_history(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as first:
+        collect(first)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as late:
+        hello = late.receive_json()
+    history = hello["momentum"]
+    assert len(history) >= 90, "about one point per match minute"
+    minutes = [p["minute"] for p in history]
+    assert minutes == sorted(minutes) and len(set(minutes)) == len(minutes)
+    assert all(-1 <= p["value"] <= 1 for p in history)

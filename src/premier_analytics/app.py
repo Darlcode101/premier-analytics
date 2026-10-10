@@ -90,6 +90,7 @@ class MatchSession:
         self.task: asyncio.Task | None = None
         self.score = (0, 0)
         self.period, self.clock_ms = 1, 0
+        self.momentum: list[dict] = []  # one point per elapsed minute, for late joiners
         self.orch = Orchestrator(
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
@@ -115,7 +116,7 @@ class MatchSession:
             "type": "hello", "match_id": self.id, "status": self.status, "speed": self.req.speed,
             "audience": a.key, "home": club(meta.home_id), "away": club(meta.away_id), "venue": meta.venue,
             "referee": meta.referee, "kickoff": meta.kickoff_local, "weather": meta.weather.model_dump(),
-            "score_home": self.score[0], "score_away": self.score[1],
+            "score_home": self.score[0], "score_away": self.score[1], "momentum": list(self.momentum),
         }
 
     def join(self, a: Audience) -> Viewer:
@@ -188,7 +189,8 @@ class MatchSession:
             return data
 
         return {"type": "stats", "home": team(self.names.home_id), "away": team(self.names.away_id),
-                "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period}
+                "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period,
+                "elapsed_ms": snap.elapsed_ms}
 
     def _end(self) -> dict:
         return {"type": "end", "score_home": self.score[0], "score_away": self.score[1]}
@@ -221,10 +223,12 @@ class MatchSession:
                 "outcome": e.outcome, "score_home": self.score[0], "score_away": self.score[1],
                 **_abs_coords(e, self.names.home_id),
             })
-            minute = e.clock_ms // MIN
+            minute = e.elapsed_ms // MIN  # elapsed, so first-half stoppage never collides with the second half
             if minute != last_minute:
                 last_minute = minute
-                self._send(self._stats())
+                stats = self._stats()
+                self.momentum.append({"minute": minute, "value": stats["home"]["window"]["momentum"]})
+                self._send(stats)
             self._push_screens()
         await self.orch.drain()
         self.status = "finished"

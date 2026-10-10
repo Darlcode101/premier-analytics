@@ -84,6 +84,14 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 - Kill LLM (env flag) → overlays continue via templates (N-3).
 - Full-time → recap appears (R-3).
 
+### Redesign (R-2, R-7..R-10)
+- Zone mapping (unit): every coordinate maps to exactly one of 9 zones; described relative to the possessing team (home attacks right in half 1, left in half 2).
+- Possession (unit): kickoff, possession change, pass and shot events set the team in possession; other events don't.
+- Animations (unit): goal / red card / big chance / woodwork / momentum / HT / FT overlays queue one animation each per moment; AI upgrades of the same moment never re-trigger.
+- Fan app (e2e): background colour equals the possessing club's colour and changes after a turnover; zone card names a zone; goal animation appears with the scorer's club colour; Me tab switches language (Arabic → RTL); "Fictional league" label visible; no horizontal scroll at 375 px.
+- Commentator desk (e2e): talking points appear with evidence; on-air preview shows graphics; agent trace and stats visible; language switch works.
+- Landing (e2e): starting a match shows fan and desk links and a QR code for the fan link.
+
 ## 8. Non-functional
 - Latency at 1× over a full match: fast path p95 ≤ 0.5 s, AI upgrade p95 ≤ 4 s (N-1).
 - Cost per full match logged; projected judging cost < budget (N-2).

@@ -1,0 +1,141 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useMatch } from '../api'
+import { Celebration, Crest, Evidence, KindIcon, ZoneMap } from '../components/Shared'
+import { Recaps, Stats } from '../components/Panels'
+import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
+import { kitColors } from '../colors'
+import type { Language, Overlay, Profile } from '../types'
+
+type Tab = 'live' | 'stats' | 'recap' | 'me'
+
+function MomentCard({ o, color, names, lang }: { o: Overlay; color: string; names: Record<string, string>; lang: Language }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <article className={`moment-card k-${o.kind}`} dir={o.direction} data-testid="feed-item" style={{ '--team': color } as React.CSSProperties}>
+      <div className="moment-minute">{o.minute}'</div>
+      <div className="moment-body">
+        <div className="moment-kind"><KindIcon kind={o.kind} /> {KIND_LABELS[lang][o.kind] ?? o.kind}
+          {o.source === 'ai' && <span className="ai-tag">✦ AI</span>}
+        </div>
+        <h3>{o.headline}</h3>
+        <p>{o.body}</p>
+        <button className="why" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(lang, 'why')}</button>
+        {open && <Evidence overlay={o} names={names} lang={lang} />}
+      </div>
+    </article>
+  )
+}
+
+export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Language; setLang: (l: Language) => void }) {
+  const [clubId, setClubId] = useState<string | null>(null)
+  const [playerId, setPlayerId] = useState<string | null>(null)
+  const profile: Profile = { mode: 'fan', language: lang, club_id: clubId, player_id: playerId }
+  const { state, dispatch } = useMatch(matchId, profile)
+  const [tab, setTab] = useState<Tab>('live')
+  const h = state.hello
+  const colors = useMemo(() => (h ? kitColors(h.home, h.away) : {}), [h])
+  const names = useMemo(() => {
+    const out: Record<string, string> = {}
+    if (h) for (const c of [h.home, h.away]) {
+      out[c.id] = c.short_name
+      for (const p of [...c.lineup, ...c.bench]) out[p.id] = p.name
+    }
+    return out
+  }, [h])
+
+  // Bring the recap forward once it arrives at full time.
+  useEffect(() => { if (state.recaps.full_time) setTab(tb => (tb === 'live' ? 'recap' : tb)) }, [state.recaps.full_time])
+
+  const possessionClub = h && state.possession ? (state.possession === h.home.id ? h.home : h.away) : null
+  // The wash uses the club's kit colour, the colour fans associate with them.
+  const wash = possessionClub && state.possession ? colors[state.possession] : '#37003c'
+
+  const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${state.minute}'` : t(lang, 'kickOffSoon')
+
+  return (
+    <div className="phone-stage">
+      <div className="phone" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="fan-app">
+        <section className="hero" style={{ '--wash': wash } as React.CSSProperties}
+          data-testid="hero" data-possession={state.possession ?? ''}>
+          <div className="hero-top">
+            <span className="wordmark small"><span className="mark" aria-hidden /> {t(lang, 'appTitle')}</span>
+            <span className={`clock-pill${state.status === 'live' ? ' live' : ''}`} data-testid="clock">{clock}</span>
+          </div>
+          {h && (
+            <div className="hero-score">
+              <div className="side"><Crest club={h.home} size={46} /><span>{h.home.short_name}</span></div>
+              <div className="big-score" data-testid="score" dir="ltr">{state.score[0]}<i>–</i>{state.score[1]}</div>
+              <div className="side"><Crest club={h.away} size={46} /><span>{h.away.short_name}</span></div>
+            </div>
+          )}
+          {possessionClub && (
+            <p className="possession-line"><span className="dot" />{possessionClub.short_name} {t(lang, 'inPossession')}</p>
+          )}
+        </section>
+
+        <section className="sheet">
+          {tab === 'live' && (
+            <>
+              <ZoneMap state={state} colors={colors} lang={lang} />
+              <div className="timeline">
+                {!state.feed.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
+                {state.feed.map(o => (
+                  <MomentCard key={o.id} o={o} color={(o.team_id && colors[o.team_id]) || '#37003c'} names={names} lang={lang} />
+                ))}
+              </div>
+            </>
+          )}
+          {tab === 'stats' && <div className="sheet-pad"><Stats state={state} colors={colors} lang={lang} /></div>}
+          {tab === 'recap' && <div className="sheet-pad"><Recaps state={state} lang={lang} /></div>}
+          {tab === 'me' && h && (
+            <div className="sheet-pad settings" data-testid="me">
+              <h2>{t(lang, 'settings')}</h2>
+              <div className="setting">
+                <span>{t(lang, 'language')}</span>
+                <div className="segmented light" role="group" aria-label={t(lang, 'language')}>
+                  {(['en', 'es', 'ar'] as const).map(l => (
+                    <button key={l} aria-pressed={lang === l} onClick={() => setLang(l)}>{LANGUAGE_NAMES[l]}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="setting">
+                <span>{t(lang, 'favouriteClub')}</span>
+                <div className="club-pick">
+                  {[h.home, h.away].map(c => (
+                    <button key={c.id} aria-pressed={clubId === c.id} onClick={() => setClubId(clubId === c.id ? null : c.id)}>
+                      <Crest club={c} size={28} /> {c.short_name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="setting">
+                <span>{t(lang, 'followPlayer')}</span>
+                <select value={playerId ?? ''} onChange={e => setPlayerId(e.target.value || null)}>
+                  <option value="">{t(lang, 'none')}</option>
+                  {[h.home, h.away].map(c => (
+                    <optgroup key={c.id} label={c.name}>
+                      {[...c.lineup, ...c.bench].map(p => <option key={p.id} value={p.id}>{p.number}. {p.name}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+              <p className="fictional dark">{t(lang, 'fictional')}</p>
+            </div>
+          )}
+        </section>
+
+        <nav className="tabbar" aria-label="Sections">
+          {([['live', 'live2'], ['stats', 'stats'], ['recap', 'recap'], ['me', 'me']] as const).map(([id, key]) => (
+            <button key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
+              <span className={`tab-icon ${id}`} aria-hidden />
+              {t(lang, key)}
+              {id === 'recap' && (state.recaps.half_time || state.recaps.full_time) && <i className="badge-dot" />}
+            </button>
+          ))}
+        </nav>
+
+        <Celebration state={state} colors={colors} names={names} lang={lang} onDone={() => dispatch({ type: 'animation_done' })} />
+      </div>
+    </div>
+  )
+}

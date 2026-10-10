@@ -23,3 +23,10 @@ export function teamColors(home: ClubInfo, away: ClubInfo): Record<string, strin
   if (distance(h, a) < 120) a = a === away.colors[0] ? away.colors[1] : away.colors[0]
   return { [home.id]: h, [away.id]: a }
 }
+
+/** Primary kit colours for light surfaces (the fan app); away switches to its second kit on a clash. */
+export function kitColors(home: ClubInfo, away: ClubInfo): Record<string, string> {
+  const h = home.colors[0]
+  const a = distance(h, away.colors[0]) < 120 ? away.colors[1] : away.colors[0]
+  return { [home.id]: h, [away.id]: a }
+}

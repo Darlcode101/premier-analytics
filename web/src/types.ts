@@ -111,6 +111,7 @@ export type Message =
       weather: { condition: string; temp_c: number }
       score_home: number
       score_away: number
+      momentum?: { minute: number; value: number }[]
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -131,7 +132,7 @@ export type Message =
       end_x: number | null
       end_y: number | null
     }
-  | { type: 'stats'; home: TeamStats; away: TeamStats; chaos: number; clock_ms: number; period: number }
+  | { type: 'stats'; home: TeamStats; away: TeamStats; chaos: number; clock_ms: number; period: number; elapsed_ms?: number }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
   | { type: 'trace'; trace: TraceEvent }

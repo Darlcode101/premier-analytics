@@ -1,6 +1,6 @@
 # Requirements — Microsoft × Premier League "Inside the Game" Hackathon
 
-Status: **v0.3** (2026-10-09) · Owner: Alex (solo) · Target: **Best Multi-Agent System** + Grand Prize
+Status: **v0.4** (2026-10-09) · Owner: Alex (solo) · Target: **Best Multi-Agent System** + Grand Prize
 
 Every requirement has an ID. Every ID must map to at least one test in [TEST_PLAN.md](TEST_PLAN.md).
 Priority: **M** = must (disqualified / pipeline incomplete without it), **S** = should (scores points), **C** = could (only if ahead of schedule).
@@ -81,7 +81,11 @@ Product name: **Premier Analytics**. Fictional league/clubs/players only. No PL 
 | ID | P | Requirement |
 |---|---|---|
 | R-1 | M | Overlay output is **machine-readable JSON** with a published schema: type, match-clock in/out timestamps, priority, text, data payload |
-| R-2 | M | Web UI: live pitch/event view + overlay cards + running narrative feed + stats panel, synced to the match clock |
+| R-2 | M | **Two surfaces for one live match** (replaces the single pitch view): **Fan app** (phone-first, fan audience) and **Commentator desk** (laptop, analyst audience). No pitch drawing: ball location is shown as one of **9 zones** (defensive/middle/final third × left/centre/right), described from the possessing team's point of view |
+| R-7 | M | **Fan app**: Premier League app-family look (deep purple, neon accents, match-centre header, card timeline, bottom tab bar). Screen colour **washes to the team in possession** and changes on every turnover. Tabs: Live (zones + moments), Stats, Recap, Me (language, club, followed player). "Fictional league · synthetic data" shown. No PL logo, wordmark or proprietary font |
+| R-8 | M | **Moment animations** in the fan app: goal takeover in the scorer's club colour (score flip, scorer), red-card flash, big-chance/woodwork near-miss, momentum-swing colour sweep, half-time/full-time whistle with the recap card. Each fires once per moment; respects reduced-motion |
+| R-9 | M | **Commentator desk**: analyst talking points (AI explanations with evidence), "on air" broadcast overlay preview, zone map, momentum chart, full stats, agent trace, recaps; language selectable |
+| R-10 | S | Landing page starts a match and links both surfaces, with a QR code to open the fan app on a phone |
 | R-3 | M | Automated recaps: half-time and full-time, as text |
 | R-4 | M | **Overlay Validator + Scheduler**: every overlay (fast or AI) passes through it. Rejects overlays that fail schema, have no evidence IDs, or are stale; assigns match-clock in/out times and duration; enforces max N on screen, priority pre-emption, and no collisions |
 | R-5 | C | Recap as audio (Azure AI Speech) |
@@ -174,6 +178,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-09 | Architecture adopted (from Alex): stream → stats engine + MCP → Moment Scout → Orchestrator → fast path (templates) ‖ AI path (Explainer → Critic → Personaliser → Translator) → Overlay Validator + Scheduler → UI. Analyst agent removed (the engine + MCP does that job) |
 | 10-09 | N-1 split after live runs: English upgrades p95 3.5 s, translated ~5.0 s (third sequential call). Kept a separate Translator agent (multi-agent roles) and relaxed the translated target to 6 s; fast overlay covers the gap |
 | 10-10 | Hosting: Container Apps provider registration stuck in 'Registering' for 2h+ (reset didn't help). Deployed to **App Service B1 Linux** (switzerlandnorth, ~$13/mo from credit, WebSockets + Always On, 1 instance) at https://premier-analytics-0931.azurewebsites.net. Same image; move to Container Apps when the provider registers |
+| 10-10 | UI redesign (Alex): phone fan app + laptop commentator desk, PL-app look "as close as possible" without logo/wordmark/font, 9-zone ball location instead of a pitch, possession colour wash, animations for goals, red cards, big chances, momentum, HT/FT |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones
