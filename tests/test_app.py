@@ -274,3 +274,14 @@ def test_rejoining_viewer_gets_ai_versions_not_templates(client):
     by_id = {o["id"]: o for o in backfill}
     assert all(by_id[i]["source"] == "ai" for i in ai_ids if i in by_id)
     assert any(i in by_id for i in ai_ids)
+
+
+def test_index_is_never_stale_but_hashed_assets_cache_forever(tmp_path):
+    """Regression: browsers kept a stale index.html after a deploy and ran the previous app."""
+    (tmp_path / "index.html").write_text("<!doctype html>")
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "index-abc123.js").write_text("1")
+    with TestClient(create_app(llm=None, live_session=False, static_dir=tmp_path)) as c:
+        for path in ("/", "/fan?match=x"):
+            assert c.get(path).headers["cache-control"] == "no-cache"
+        assert "immutable" in c.get("/assets/index-abc123.js").headers["cache-control"]

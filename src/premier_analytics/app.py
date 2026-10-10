@@ -351,7 +351,12 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
             """Serve the built React app; unknown paths fall back to index.html (client-side routes)."""
             target = (root / path).resolve()
             if path and target.is_file() and target.is_relative_to(root):
-                return FileResponse(target)
-            return FileResponse(root / "index.html")
+                # Vite puts a content hash in asset names, so they can be cached for good.
+                immutable = path.startswith("assets/")
+                return FileResponse(target, headers={
+                    "Cache-Control": "public, max-age=31536000, immutable" if immutable else "no-cache",
+                })
+            # Always revalidate the page itself, or browsers keep running the previous deploy.
+            return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
