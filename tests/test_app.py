@@ -184,3 +184,26 @@ def test_finished_unwatched_sessions_free_their_slot():
             collect(ws)
         r = c.post("/api/matches", json={"home": "har", "away": "ngc", "seed": 2, "speed": 0})
         assert r.status_code == 201
+
+
+def test_keyless_auth_when_no_api_key(monkeypatch):
+    """With no API key configured the app signs in to Foundry with Entra ID (managed identity in Azure)."""
+    from premier_analytics.app import build_llm_from_env
+
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.services.ai.azure.com/api/projects/p")
+    monkeypatch.setenv("LIVE_MODEL_DEPLOYMENT", "gpt-4.1-mini")
+    monkeypatch.setenv("RECAP_MODEL_DEPLOYMENT", "gpt-5-mini")
+    monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
+    llm = build_llm_from_env()
+    assert llm is not None
+    assert llm.primary.auth == "entra" and llm.fallback.auth == "entra"
+
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "local-dev-key")
+    assert build_llm_from_env().primary.auth == "key"
+
+
+def test_no_endpoint_means_no_models(monkeypatch):
+    from premier_analytics.app import build_llm_from_env
+
+    monkeypatch.delenv("AZURE_OPENAI_ENDPOINT", raising=False)
+    assert build_llm_from_env() is None

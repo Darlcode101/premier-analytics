@@ -23,6 +23,7 @@ from .scout import Moment
 T = TypeVar("T", bound=BaseModel)
 
 LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "ar": "Arabic"}
+FOUNDRY_SCOPE = "https://ai.azure.com/.default"  # project endpoints reject the cognitiveservices audience
 FAN_JARGON = ("xg", "ppda", "field tilt", "progressive", "expected goals", "tempo")
 
 
@@ -104,14 +105,27 @@ class FakeLLM:
 
 
 class AgentFrameworkLLM:
-    """Runs each role as a Microsoft Agent Framework agent on a Foundry model deployment."""
+    """Runs each role as a Microsoft Agent Framework agent on a Foundry model deployment.
 
-    def __init__(self, deployment: str, endpoint: str, api_key: str):
+    Without an API key it authenticates with Microsoft Entra ID (DefaultAzureCredential): the
+    managed identity in Azure, `az login` on a developer machine. No secret to leak or rotate.
+    """
+
+    def __init__(self, deployment: str, endpoint: str, api_key: str | None = None, credential: Any = None):
         from agent_framework.openai import OpenAIChatCompletionClient
 
         self.name = deployment
+        if api_key:
+            self.auth = "key"
+            token: Any = api_key
+        else:
+            from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+
+            self.auth = "entra"
+            # A token provider in place of the key: same OpenAI-compatible v1 endpoint, short-lived tokens.
+            token = get_bearer_token_provider(credential or DefaultAzureCredential(), FOUNDRY_SCOPE)
         self._client = OpenAIChatCompletionClient(
-            model=deployment, api_key=api_key, base_url=endpoint.rstrip("/") + "/openai/v1/",
+            model=deployment, api_key=token, base_url=endpoint.rstrip("/") + "/openai/v1/",
         )
         self._agents: dict[tuple[str, str], Any] = {}
 

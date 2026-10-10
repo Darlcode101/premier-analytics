@@ -37,9 +37,11 @@ STATS_FIELDS = (
 
 
 def build_llm_from_env() -> LLM | None:
-    endpoint, key = os.environ.get("AZURE_OPENAI_ENDPOINT"), os.environ.get("AZURE_OPENAI_API_KEY")
+    """Foundry models from the environment. AZURE_OPENAI_API_KEY is optional: without it the app
+    uses Entra ID (managed identity in Azure, `az login` locally)."""
+    endpoint, key = os.environ.get("AZURE_OPENAI_ENDPOINT"), os.environ.get("AZURE_OPENAI_API_KEY") or None
     live, recap = os.environ.get("LIVE_MODEL_DEPLOYMENT"), os.environ.get("RECAP_MODEL_DEPLOYMENT")
-    if not (endpoint and key and live):
+    if not (endpoint and live):
         return None
     fallback = AgentFrameworkLLM(recap, endpoint, key) if recap else None
     return ResilientLLM(AgentFrameworkLLM(live, endpoint, key), fallback, timeout_s=4.0, retries=1)

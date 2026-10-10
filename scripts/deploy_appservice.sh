@@ -5,13 +5,18 @@
 #
 # Current production host while Container Apps registration is pending on the subscription
 # (scripts/deploy.sh is the Container Apps equivalent). Needs: az login on Azure for Students,
-# Docker running, and .env with the Foundry endpoint, key and deployment names.
+# Docker running, and .env with the Foundry endpoint and deployment names.
+#
+# Keyless: the web app signs in to Foundry with its managed identity (Entra ID). No API key is
+# stored in Azure; any old key setting is removed.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUBSCRIPTION="Azure for Students"
 LOCATION="switzerlandnorth"
 RG="rg-premier-analytics"
+FOUNDRY_RG="rg-darling6-3123"
+FOUNDRY_ACCOUNT="premieranalytics-resource"
 ACR="premieranalytics0931ac23"
 PLAN="pa-plan"
 APP="premier-analytics-0931"
@@ -36,6 +41,14 @@ if ! az webapp show -n "$APP" -g "$RG" -o none 2>/dev/null; then
   az webapp update -n "$APP" -g "$RG" --https-only true -o none
 fi
 
+echo "==> managed identity -> Foundry (Cognitive Services OpenAI User, scoped to the Foundry resource)"
+PRINCIPAL="$(az webapp identity assign -n "$APP" -g "$RG" --query principalId -o tsv)"
+FOUNDRY_ID="$(az cognitiveservices account show -n "$FOUNDRY_ACCOUNT" -g "$FOUNDRY_RG" --query id -o tsv)"
+if [ -z "$(az role assignment list --assignee "$PRINCIPAL" --scope "$FOUNDRY_ID" --role "Cognitive Services OpenAI User" --query '[].id' -o tsv)" ]; then
+  az role assignment create --assignee-object-id "$PRINCIPAL" --assignee-principal-type ServicePrincipal \
+    --role "Cognitive Services OpenAI User" --scope "$FOUNDRY_ID" -o none
+fi
+
 echo "==> configure"
 ACR_PASSWORD="$(az acr credential show -n "$ACR" --query 'passwords[0].value' -o tsv)"
 # Set the full image reference directly: passing a registry URL as well makes the CLI
@@ -45,8 +58,9 @@ az webapp config appsettings set -n "$APP" -g "$RG" -o none --settings \
   DOCKER_REGISTRY_SERVER_URL="https://$ACR.azurecr.io" \
   DOCKER_REGISTRY_SERVER_USERNAME="$ACR" DOCKER_REGISTRY_SERVER_PASSWORD="$ACR_PASSWORD" \
   WEBSITES_PORT=8000 PORT=8000 PA_MAX_SESSIONS="${PA_MAX_SESSIONS:-6}" \
-  AZURE_OPENAI_ENDPOINT="$AZURE_OPENAI_ENDPOINT" AZURE_OPENAI_API_KEY="$AZURE_OPENAI_API_KEY" \
+  AZURE_OPENAI_ENDPOINT="$AZURE_OPENAI_ENDPOINT" \
   LIVE_MODEL_DEPLOYMENT="$LIVE_MODEL_DEPLOYMENT" RECAP_MODEL_DEPLOYMENT="$RECAP_MODEL_DEPLOYMENT"
+az webapp config appsettings delete -n "$APP" -g "$RG" --setting-names AZURE_OPENAI_API_KEY -o none
 az webapp restart -n "$APP" -g "$RG"
 
 URL="https://$APP.azurewebsites.net"
