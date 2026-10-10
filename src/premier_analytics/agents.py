@@ -133,12 +133,12 @@ class AgentFrameworkLLM:
         self._client = OpenAIChatCompletionClient(
             model=deployment, api_key=token, base_url=endpoint.rstrip("/") + "/openai/v1/",
         )
+        self._agents: dict[tuple[str, str], Any] = {}
 
     async def warm(self) -> None:
         """Fetch (and cache) the first token outside any per-call timeout."""
         if self.auth == "entra":
             await self._token()
-        self._agents: dict[tuple[str, str], Any] = {}
 
     def _agent(self, role: str, instructions: str):
         from agent_framework import Agent

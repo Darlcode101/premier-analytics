@@ -280,3 +280,13 @@ def test_translator_masks_first_names_too():
     fake = FakeLLM({"translator": tr})
     asyncio.run(TranslatorAgent(fake, names=["Felix Achterberg"]).run(Personalised(headline="Felix!", body=""), "ar"))
     assert "Felix" not in seen["prompt"]
+
+
+def test_agent_framework_llm_builds_agents_without_network():
+    """Regression: a refactor once moved the agent cache out of __init__, breaking every live call.
+    Builds the real class and its agents (no request is sent)."""
+    from premier_analytics.agents import AgentFrameworkLLM
+
+    llm = AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p", api_key="k")
+    first = llm._agent("explainer", "instructions")
+    assert llm._agent("explainer", "instructions") is first
