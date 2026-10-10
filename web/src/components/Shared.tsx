@@ -71,28 +71,73 @@ export function zoneSentence(state: State, lang: Language): string | null {
   return `${club} · ${t(lang, `third_${z.third}` as never)} · ${t(lang, `channel_${z.channel}` as never)}`
 }
 
-/** 3 x 3 grid with the ball's cell lit in the possessing team's colour. Oriented like a TV view. */
+const PITCH_L = 105
+const PITCH_W = 68
+
+function PitchMarkings() {
+  const line = { stroke: 'rgba(255,255,255,.85)', strokeWidth: 0.5, fill: 'none' }
+  return (
+    <g {...line}>
+      <rect x={0.5} y={0.5} width={PITCH_L - 1} height={PITCH_W - 1} rx={0.5} />
+      <line x1={PITCH_L / 2} y1={0.5} x2={PITCH_L / 2} y2={PITCH_W - 0.5} />
+      <circle cx={PITCH_L / 2} cy={PITCH_W / 2} r={9.15} />
+      <circle cx={PITCH_L / 2} cy={PITCH_W / 2} r={0.6} fill="rgba(255,255,255,.85)" />
+      {[0, 1].map(side => {
+        const x = (v: number) => (side === 0 ? v : PITCH_L - v)
+        return (
+          <g key={side}>
+            <rect x={side === 0 ? 0.5 : PITCH_L - 17} y={PITCH_W / 2 - 20.16} width={16.5} height={40.32} />
+            <rect x={side === 0 ? 0.5 : PITCH_L - 6} y={PITCH_W / 2 - 9.16} width={5.5} height={18.32} />
+            <circle cx={x(11)} cy={PITCH_W / 2} r={0.6} fill="rgba(255,255,255,.85)" />
+            <path d={`M ${x(17)} ${PITCH_W / 2 - 7.3} A 9.15 9.15 0 0 ${side === 0 ? 1 : 0} ${x(17)} ${PITCH_W / 2 + 7.3}`} />
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
+/** A pitch with a glowing hue in the possessing team's colour over the ball's area (one of 9 zones). */
 export function ZoneMap({ state, colors, lang, compact = false }: {
   state: State; colors: Record<string, string>; lang: Language; compact?: boolean
 }) {
   const h = state.hello
   const cell = state.ball ? cellOf(state.ball.x, state.ball.y) : null
-  const color = (state.possession && colors[state.possession]) || 'var(--accent)'
+  const color = (state.possession && colors[state.possession]) || '#00ff85'
   const sentence = zoneSentence(state, lang)
   const attackRight = h && state.possession ? attacksRight(state.possession, state.period, h.home.id) : null
+  const cx = cell ? (cell.col + 0.5) * (PITCH_L / 3) : PITCH_L / 2
+  const cy = cell ? (cell.row + 0.5) * (PITCH_W / 3) : PITCH_W / 2
   return (
     <div className={`zone-card${compact ? ' compact' : ''}`} data-testid="zone-map">
       <div className="zone-head"><span>{t(lang, 'whereBall')}</span></div>
-      <div className="zone-grid" dir="ltr" style={{ '--zone': color } as React.CSSProperties}>
-        {Array.from({ length: 9 }, (_, i) => {
-          const col = i % 3
-          const row = Math.floor(i / 3)
-          const on = cell && cell.col === col && cell.row === row
-          return <span key={i} className={on ? 'on' : ''} />
-        })}
-        <b className="halfway" />
-        {attackRight !== null && <b className={`attack-arrow ${attackRight ? 'right' : 'left'}`} aria-hidden />}
-      </div>
+      <svg className="mini-pitch" viewBox={`0 0 ${PITCH_L} ${PITCH_W}`} role="img" aria-label={sentence ?? t(lang, 'offBall')}>
+        <defs>
+          <radialGradient id="hue" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={color} stopOpacity={1} />
+            <stop offset="35%" stopColor={color} stopOpacity={0.85} />
+            <stop offset="70%" stopColor={color} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </radialGradient>
+          <clipPath id="pitch-clip"><rect x={0} y={0} width={PITCH_L} height={PITCH_W} rx={2} /></clipPath>
+        </defs>
+        <g clipPath="url(#pitch-clip)">
+          {Array.from({ length: 12 }, (_, i) => (
+            <rect key={i} x={(i * PITCH_L) / 12} y={0} width={PITCH_L / 12} height={PITCH_W} className={i % 2 ? 'stripe-b' : 'stripe-a'} />
+          ))}
+          {cell && (
+            <g className="hue" style={{ transform: `translate(${cx}px, ${cy}px)` }} data-testid="pitch-hue" data-color={color}>
+              <ellipse rx={26} ry={19} fill="url(#hue)" className="hue-glow" />
+              <circle r={1.6} fill="#fff" stroke={color} strokeWidth={0.8} />
+            </g>
+          )}
+          <PitchMarkings />
+          {attackRight !== null && (
+            <path className="attack-chevron" d={attackRight ? 'M 96 28 L 101 34 L 96 40' : 'M 9 28 L 4 34 L 9 40'}
+              stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+        </g>
+      </svg>
       <p className="zone-text" data-testid="zone-text">{sentence ?? t(lang, 'offBall')}</p>
     </div>
   )
