@@ -52,9 +52,12 @@ class Orchestrator:
                  llm: LLM | None, critic: CriticAgent, stale_ms: int = STALE_MS,
                  on_overlay: Callable[[Overlay], None] | None = None, max_on_screen: int = 2,
                  recaps: bool = False, recap_tools: list | None = None, recap_llm: LLM | None = None,
-                 on_recap: Callable[[Recap], None] | None = None):
+                 on_recap: Callable[[Recap], None] | None = None, max_ai_audiences: int | None = None,
+                 on_trace: Callable[[TraceEvent], None] | None = None):
         self.names = names
-        self.audiences = audiences
+        self.audiences: list[Audience] = []
+        self.max_ai_audiences = max_ai_audiences
+        self.max_on_screen = max_on_screen
         self.llm = llm
         self.critic = critic
         self.stale_ms = stale_ms
@@ -62,6 +65,7 @@ class Orchestrator:
         self.scout = MomentScout(home_id, away_id, match_id)
         self.state = MatchState(names=names, scout=self.scout)
         self.on_recap = on_recap
+        self.on_trace = on_trace
         self.recaps: list[Recap] = []
         self.recap_producer = None
         if recaps and llm is not None:
@@ -70,7 +74,9 @@ class Orchestrator:
                 recap_llm or llm, critic, self.state, tools=recap_tools,
                 translator=TranslatorAgent(llm, names=list(names.players.values()) + list(names.clubs.values())),
             )
-        self.schedulers = {a.key: Scheduler(max_on_screen=max_on_screen) for a in audiences}
+        self.schedulers: dict[str, Scheduler] = {}
+        for a in audiences:
+            self.add_audience(a)
         self.published: list[Overlay] = []
         self.trace: list[TraceEvent] = []
         self.match_now = 0
@@ -100,10 +106,26 @@ class Orchestrator:
                 o = validate(fast_overlay(m, a, self.names), m, now_elapsed_ms=e.elapsed_ms)
                 self._publish(o)
                 fast.append(o)
-                if self.llm is not None and m.kind in AI_KINDS:
+                if m.kind in AI_KINDS and self.ai_enabled_for(a):
                     self._spawn(self._enrich(m, a, o, time.perf_counter()))
         await asyncio.sleep(0)  # let background work start
         return fast
+
+    def add_audience(self, a: Audience) -> None:
+        if a.key not in self.schedulers:
+            self.audiences.append(a)
+            self.schedulers[a.key] = Scheduler(max_on_screen=self.max_on_screen)
+
+    def remove_audience(self, key: str) -> None:
+        self.audiences = [a for a in self.audiences if a.key != key]
+        self.schedulers.pop(key, None)
+
+    def ai_enabled_for(self, a: Audience) -> bool:
+        if self.llm is None:
+            return False
+        if self.max_ai_audiences is None:
+            return True
+        return [x.key for x in self.audiences].index(a.key) < self.max_ai_audiences
 
     async def drain(self) -> None:
         """Wait for all in-flight AI work (used at full time and in tests)."""
@@ -111,7 +133,8 @@ class Orchestrator:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
 
     def on_screen(self, audience_key: str) -> list[Overlay]:
-        return self.schedulers[audience_key].on_screen(self.match_now)
+        scheduler = self.schedulers.get(audience_key)
+        return scheduler.on_screen(self.match_now) if scheduler else []
 
     # ---------- internals ----------
 
@@ -139,12 +162,18 @@ class Orchestrator:
 
     def _publish(self, o: Overlay) -> None:
         self.published.append(o)
-        self.schedulers[o.audience].offer(o, now=self.match_now)
+        scheduler = self.schedulers.get(o.audience)
+        if scheduler is None:  # every viewer of this audience has left
+            return
+        scheduler.offer(o, now=self.match_now)
         if self.on_overlay:
             self.on_overlay(o)
 
     def _record(self, m: Moment, audience: str, agent: str, outcome: str, model=None, ms=0.0, detail=""):
-        self.trace.append(TraceEvent(m.id, audience, agent, outcome, model, ms, detail))
+        event = TraceEvent(m.id, audience, agent, outcome, model, ms, detail)
+        self.trace.append(event)
+        if self.on_trace:
+            self.on_trace(event)
 
     async def _call(self, m: Moment, audience: str, agent: str, coro):
         try:

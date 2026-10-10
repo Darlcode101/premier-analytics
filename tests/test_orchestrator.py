@@ -271,3 +271,34 @@ def test_match_state_tracks_moments_for_mcp():
         assert any(m.kind == "goal" for m in orch.state.moments)
 
     asyncio.run(go())
+
+
+def test_audiences_can_join_and_leave():
+    async def go():
+        llm = fake()
+        orch = make(llm, audiences=[])
+        orch.add_audience(FAN_EN)
+        orch.add_audience(FAN_EN)  # idempotent
+        assert [a.key for a in orch.audiences] == [FAN_EN.key]
+        await play(orch, goal_events())
+        await orch.drain()
+        assert goal_overlays(orch, "ai")
+        orch.remove_audience(FAN_EN.key)
+        assert orch.audiences == []
+        assert FAN_EN.key not in orch.schedulers
+
+    asyncio.run(go())
+
+
+def test_ai_budget_caps_distinct_personas():
+    """Beyond max_ai_audiences, new audiences still get fast overlays but no AI work (N-2)."""
+    async def go():
+        llm = fake()
+        extra = Audience(mode="fan", language="en", club_id=AWAY)
+        orch = make(llm, audiences=[FAN_EN, ANALYST_EN, extra], max_ai_audiences=2)
+        fast = await play(orch, goal_events())
+        await orch.drain()
+        assert {o.audience for o in fast if o.kind == "goal"} == {FAN_EN.key, ANALYST_EN.key, extra.key}
+        assert {o.audience for o in goal_overlays(orch, "ai")} == {FAN_EN.key, ANALYST_EN.key}
+
+    asyncio.run(go())

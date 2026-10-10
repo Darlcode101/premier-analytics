@@ -1,0 +1,150 @@
+"""Web backend: R-2 live delivery, P-1..P-6 per-viewer experiences, N-2 budget guards."""
+import re
+
+import pytest
+from fastapi.testclient import TestClient
+
+from premier_analytics.agents import Explanation, FakeLLM, Personalised
+from premier_analytics.app import create_app
+from premier_analytics.generator import generate_match
+
+
+def fake_llm():
+    def explainer(p):
+        fid = re.search(r"\[([^\]]+-f\d+)\]", p).group(1)
+        return Explanation(headline="Why it matters", why="A moment that changes the game", evidence=[fid])
+
+    return FakeLLM({
+        "explainer": explainer,
+        "personaliser": lambda p: Personalised(headline="AI headline", body="AI body"),
+        "translator": lambda p: Personalised(headline="Titular IA", body="Cuerpo IA"),
+        "recap": lambda p: __import__("premier_analytics.recap", fromlist=["Recap"]).RecapDraft(
+            headline="Recap", summary="A match.", key_points=[]),
+    })
+
+
+@pytest.fixture
+def client():
+    app = create_app(llm=fake_llm(), live_session=False, max_sessions=3)
+    with TestClient(app) as c:
+        yield c
+
+
+def start(client, home="har", away="ngc", seed=42, autostart=True):
+    r = client.post("/api/matches", json={"home": home, "away": away, "seed": seed, "speed": 0,
+                                          "autostart": autostart})
+    assert r.status_code == 201, r.text
+    return r.json()["match_id"]
+
+
+def collect(ws, until="end", limit=20_000):
+    msgs = []
+    for _ in range(limit):
+        m = ws.receive_json()
+        msgs.append(m)
+        if m["type"] == until:
+            break
+    return msgs
+
+
+def test_health_and_clubs(client):
+    assert client.get("/api/health").json()["status"] == "ok"
+    clubs = client.get("/api/clubs").json()
+    assert len(clubs) == 8
+    assert {"id", "name", "short_name", "colors", "players"} <= set(clubs[0])
+    assert {"id", "name", "number", "position"} <= set(clubs[0]["players"][0])
+
+
+def test_unknown_club_rejected(client):
+    r = client.post("/api/matches", json={"home": "har", "away": "nope", "seed": 1, "speed": 0})
+    assert r.status_code == 422
+
+
+def test_full_match_stream(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as ws:
+        msgs = collect(ws)
+    types = [m["type"] for m in msgs]
+    assert types[0] == "hello"
+    hello = msgs[0]
+    assert hello["home"]["name"] and hello["away"]["colors"] and len(hello["home"]["lineup"]) == 11
+    assert "event" in types and "stats" in types and "overlay" in types and "screen" in types
+    end = msgs[-1]
+    final = generate_match("har", "ngc", 42).events[-1]
+    assert (end["score_home"], end["score_away"]) == (final.score_home, final.score_away)
+    # events carry the clock for synchronised rendering
+    ev = next(m for m in msgs if m["type"] == "event")
+    assert {"clock_ms", "period", "display_minute", "kind", "x", "y"} <= set(ev)
+
+
+def test_ai_upgrades_reach_the_viewer(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as ws:
+        msgs = collect(ws)
+    overlays = [m["overlay"] for m in msgs if m["type"] == "overlay"]
+    ai = [o for o in overlays if o["source"] == "ai"]
+    assert ai and all(o["headline"] == "AI headline" for o in ai)
+    fast_ids = {o["id"] for o in overlays if o["source"] == "template"}
+    assert {o["id"] for o in ai} <= fast_ids
+
+
+def test_two_viewers_get_different_experiences(client):
+    mid = start(client, autostart=False)  # wait for both viewers, then kick off
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as fan, \
+            client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=es") as analyst:
+        client.post(f"/api/matches/{mid}/start")
+        fan_msgs, analyst_msgs = collect(fan), collect(analyst)
+    fan_o = [m["overlay"] for m in fan_msgs if m["type"] == "overlay"]
+    an_o = [m["overlay"] for m in analyst_msgs if m["type"] == "overlay"]
+    assert len(an_o) > len(fan_o), "analysts see more moments"
+    assert all(o["language"] == "es" for o in an_o) and all(o["language"] == "en" for o in fan_o)
+    assert {o["audience"] for o in fan_o} == {"fan.en.-.-"}
+
+
+def test_arabic_viewer_gets_rtl_overlays(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=ar") as ws:
+        msgs = collect(ws)
+    overlays = [m["overlay"] for m in msgs if m["type"] == "overlay"]
+    assert overlays and all(o["direction"] == "rtl" for o in overlays)
+
+
+def test_trace_and_recap_messages(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as ws:
+        msgs = collect(ws)
+    trace = [m["trace"] for m in msgs if m["type"] == "trace"]
+    assert {t["agent"] for t in trace} >= {"explainer", "critic", "personaliser"}
+    recaps = [m["recap"] for m in msgs if m["type"] == "recap"]
+    assert {r["kind"] for r in recaps} == {"half_time", "full_time"}
+
+
+def test_invalid_profile_closes_socket(client):
+    mid = start(client)
+    with pytest.raises(Exception):
+        with client.websocket_connect(f"/ws/matches/{mid}?mode=wizard&language=en") as ws:
+            ws.receive_json()
+
+
+def test_unknown_match_is_404(client):
+    assert client.post("/api/matches/nope/start").status_code == 404
+
+
+def test_session_cap(client):
+    for seed in range(3):
+        start(client, seed=seed)
+    r = client.post("/api/matches", json={"home": "har", "away": "ngc", "seed": 9, "speed": 0})
+    assert r.status_code == 429
+
+
+def test_late_joiner_gets_backfill(client):
+    """Someone joining mid-match sees the key moments so far, not an empty feed."""
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as first:
+        collect(first)  # match is now over
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as late:
+        hello = late.receive_json()
+        assert hello["type"] == "hello"
+        backfill = late.receive_json()
+    assert backfill["type"] == "backfill"
+    assert any(o["kind"] == "goal" for o in backfill["overlays"])
