@@ -238,10 +238,23 @@ class MatchSession:
 
 def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_sessions: int = 4,
                max_ai_audiences: int = 8, static_dir: Path | str | None = None) -> FastAPI:
-    app = FastAPI(title="Premier Analytics")
-    league = load_league()
     if llm == "env":
         llm = build_llm_from_env()
+
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        if llm is not None and hasattr(llm, "warm"):
+            # Get the first Entra ID token now, so the first live call isn't the one that pays for it.
+            async def warm() -> None:
+                try:
+                    await llm.warm()
+                except Exception as err:  # the fast path works regardless; just report it
+                    print(f"model warm-up failed: {err!r}")
+            asyncio.get_running_loop().create_task(warm())
+        yield
+
+    app = FastAPI(title="Premier Analytics", lifespan=lifespan)
+    league = load_league()
     critic = CriticAgent({p.name for c in league.clubs for p in league.squad(c.id)},
                          {c.short_name for c in league.clubs})
     sessions: dict[str, MatchSession] = {}

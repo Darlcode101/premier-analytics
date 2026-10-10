@@ -220,3 +220,41 @@ def test_late_joiner_gets_momentum_history(client):
     minutes = [p["minute"] for p in history]
     assert minutes == sorted(minutes) and len(set(minutes)) == len(minutes)
     assert all(-1 <= p["value"] <= 1 for p in history)
+
+
+def test_models_are_warmed_at_startup():
+    warmed = []
+
+    class Warmable:
+        name = "warmable"
+
+        async def warm(self):
+            warmed.append(True)
+
+        async def generate(self, *a, **k):
+            raise RuntimeError("unused")
+
+    with TestClient(create_app(llm=Warmable(), live_session=False)) as c:
+        assert c.get("/api/health").status_code == 200
+    assert warmed == [True]
+
+
+def test_azure_app_service_uses_managed_identity_directly(monkeypatch):
+    from azure.identity.aio import ManagedIdentityCredential
+
+    from premier_analytics.agents import AgentFrameworkLLM
+
+    monkeypatch.setenv("IDENTITY_ENDPOINT", "http://localhost:42356/msi/token")
+    monkeypatch.setenv("IDENTITY_HEADER", "x")
+    seen = {}
+    import premier_analytics.agents as agents_mod
+    real = __import__("azure.identity.aio", fromlist=["get_bearer_token_provider"]).get_bearer_token_provider
+
+    def spy(cred, scope):
+        seen["cred"], seen["scope"] = cred, scope
+        return real(cred, scope)
+
+    monkeypatch.setattr("azure.identity.aio.get_bearer_token_provider", spy)
+    AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p")
+    assert isinstance(seen["cred"], ManagedIdentityCredential)
+    assert seen["scope"] == agents_mod.FOUNDRY_SCOPE

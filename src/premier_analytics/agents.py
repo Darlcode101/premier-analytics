@@ -9,6 +9,7 @@ against the moment's facts before anything can reach the screen (E-2, A-6).
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import time
 from collections.abc import Callable
@@ -119,14 +120,24 @@ class AgentFrameworkLLM:
             self.auth = "key"
             token: Any = api_key
         else:
-            from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+            from azure.identity.aio import DefaultAzureCredential, ManagedIdentityCredential, get_bearer_token_provider
 
             self.auth = "entra"
+            if credential is None:
+                # In App Service go straight to the managed identity: DefaultAzureCredential probes
+                # several sources first, and that first fetch can outlast a per-call timeout.
+                credential = ManagedIdentityCredential() if os.environ.get("IDENTITY_ENDPOINT") else DefaultAzureCredential()
             # A token provider in place of the key: same OpenAI-compatible v1 endpoint, short-lived tokens.
-            token = get_bearer_token_provider(credential or DefaultAzureCredential(), FOUNDRY_SCOPE)
+            token = get_bearer_token_provider(credential, FOUNDRY_SCOPE)
+        self._token = token
         self._client = OpenAIChatCompletionClient(
             model=deployment, api_key=token, base_url=endpoint.rstrip("/") + "/openai/v1/",
         )
+
+    async def warm(self) -> None:
+        """Fetch (and cache) the first token outside any per-call timeout."""
+        if self.auth == "entra":
+            await self._token()
         self._agents: dict[tuple[str, str], Any] = {}
 
     def _agent(self, role: str, instructions: str):
@@ -150,6 +161,11 @@ class AgentFrameworkLLM:
 
 class ResilientLLM:
     """Primary model with a per-call timeout and retries, then a fallback model."""
+
+    async def warm(self) -> None:
+        for model in (self.primary, self.fallback):
+            if model is not None and hasattr(model, "warm"):
+                await model.warm()
 
     def __init__(self, primary: LLM, fallback: LLM | None, timeout_s: float = 3.0, retries: int = 1):
         self.primary, self.fallback = primary, fallback
