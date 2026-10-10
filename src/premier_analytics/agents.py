@@ -68,7 +68,7 @@ class LLM(Protocol):
 
 class AllModelsFailed(RuntimeError):
     def __init__(self, attempts: list[Attempt]):
-        super().__init__("; ".join(f"{a.model}:{a.outcome}" for a in attempts))
+        super().__init__("; ".join(f"{a.model}:{a.outcome}" + (f" ({a.detail[:120]})" if a.detail else "") for a in attempts))
         self.attempts = attempts
 
 

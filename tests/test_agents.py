@@ -290,3 +290,13 @@ def test_agent_framework_llm_builds_agents_without_network():
     llm = AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p", api_key="k")
     first = llm._agent("explainer", "instructions")
     assert llm._agent("explainer", "instructions") is first
+
+
+def test_all_models_failed_message_says_why():
+    def down(p):
+        raise Boom("429 Too Many Requests")
+
+    llm = ResilientLLM(FakeLLM({"explainer": down}, name="a"), None, timeout_s=1, retries=0)
+    with pytest.raises(AllModelsFailed) as failed:
+        asyncio.run(llm.generate("explainer", "i", "p", Personalised))
+    assert "429 Too Many Requests" in str(failed.value)
