@@ -7,6 +7,7 @@ dependencies = [
     "pydantic>=2.8",
     "fastapi>=0.115",
     "uvicorn>=0.30",
+    "websockets>=13",  # uvicorn needs a WebSocket implementation; TestClient does not, so tests won't catch its absence
 ]
 
 [project.optional-dependencies]

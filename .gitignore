@@ -9,3 +9,5 @@ dist/
 .coverage
 .env.example
 *.egg-info/
+web/node_modules/
+web/dist/

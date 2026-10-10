@@ -50,7 +50,7 @@ def test_goal_fast_overlay_content():
     assert o.source == "template" and o.version == 1
     assert "Kai Greaves" in o.headline + o.body
     assert "1" in o.headline and "0" in o.headline
-    assert o.kind == "goal" and o.priority == m.severity
+    assert o.kind == "goal" and o.priority == m.severity and o.team_id == HOME
     assert o.evidence and set(o.evidence) <= {f.id for f in m.facts}
     assert o.language == "en" and o.direction == "ltr"
 
@@ -238,3 +238,12 @@ def test_slots_do_not_collide():
     s.offer(ov("c", 0.5, slot="corner"), now=0)
     shown = s.on_screen(now=0)
     assert len({o.slot for o in shown}) == len(shown)
+
+
+def test_overlay_minute_is_broadcast_style():
+    fx = Fx()
+    fx.add("period_start", 0)
+    fx.kickoff(0)
+    fx.add("period_end", 48 * 60 + 5, score_home=0, score_away=0)
+    ht = next(m for m in moments_of(fx) if m.kind == "half_time")
+    assert fast_overlay(ht, FAN, NAMES).minute == "45+4"

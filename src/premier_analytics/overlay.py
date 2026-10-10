@@ -103,10 +103,12 @@ class Overlay(BaseModel):
     moment_id: str
     audience: str
     kind: str
+    team_id: str | None = None
     priority: float
     slot: Slot
     clock_in_ms: int
     clock_out_ms: int
+    minute: str = ""  # broadcast style, e.g. "45+3"
     elapsed_in_ms: int
     headline: str
     body: str
@@ -279,8 +281,9 @@ def fast_overlay(m: Moment, a: Audience, names: Names) -> Overlay:
     duration = DURATION_MS.get(m.kind, DEFAULT_DURATION_MS)
     return Overlay(
         id=overlay_id(m, a), match_id=m.id.rsplit("-mo", 1)[0], moment_id=m.id, audience=a.key,
-        kind=m.kind, priority=m.severity, slot=SLOTS[m.kind],
-        clock_in_ms=m.clock_ms, clock_out_ms=m.clock_ms + duration, elapsed_in_ms=m.elapsed_ms,
+        kind=m.kind, team_id=m.team_id, priority=m.severity, slot=SLOTS[m.kind],
+        clock_in_ms=m.clock_ms, clock_out_ms=m.clock_ms + duration, minute=display_minute(m),
+        elapsed_in_ms=m.elapsed_ms,
         headline=headline_t.format(**ctx).strip(), body=(analyst_t if a.mode == "analyst" else fan_t).format(**ctx).strip(),
         language=a.language, direction="rtl" if a.language == "ar" else "ltr",
         source="template", version=1, evidence=[fact.id for fact in m.facts],
