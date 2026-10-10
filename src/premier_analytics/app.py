@@ -24,7 +24,7 @@ from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
 from .generator import generate_match
 from .league import League, load_league
 from .orchestrator import Orchestrator, TraceEvent
-from .overlay import Audience, Names, Overlay, display_minute, fast_overlay
+from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, overlay_id
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
 
@@ -125,9 +125,16 @@ class MatchSession:
         self.orch.add_audience(a)
         v.queue.put_nowait(self.hello(a))
         wanted = [m for m in self.orch.state.moments if a.wants(m)][-BACKFILL:]
+        # Latest version of each overlay already produced for this audience (AI upgrades included).
+        latest: dict[str, Overlay] = {}
+        for o in self.orch.published:
+            if o.audience == a.key and (o.id not in latest or o.version > latest[o.id].version):
+                latest[o.id] = o
         v.queue.put_nowait({
             "type": "backfill",
-            "overlays": [fast_overlay(m, a, self.names).model_dump(mode="json") for m in wanted],
+            "overlays": [
+                (latest.get(overlay_id(m, a)) or fast_overlay(m, a, self.names)).model_dump(mode="json") for m in wanted
+            ],
         })
         if self.status != "waiting":
             v.queue.put_nowait(self._stats())

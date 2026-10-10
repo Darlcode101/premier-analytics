@@ -258,3 +258,19 @@ def test_azure_app_service_uses_managed_identity_directly(monkeypatch):
     AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p")
     assert isinstance(seen["cred"], ManagedIdentityCredential)
     assert seen["scope"] == agents_mod.FOUNDRY_SCOPE
+
+
+def test_rejoining_viewer_gets_ai_versions_not_templates(client):
+    """Regression: backfill rebuilt template overlays even when AI upgrades already existed,
+    so refreshing the page lost every earlier explanation."""
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as first:
+        msgs = collect(first)
+    ai_ids = {m["overlay"]["id"] for m in msgs if m["type"] == "overlay" and m["overlay"]["source"] == "ai"}
+    assert ai_ids
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as again:
+        again.receive_json()  # hello
+        backfill = again.receive_json()["overlays"]
+    by_id = {o["id"]: o for o in backfill}
+    assert all(by_id[i]["source"] == "ai" for i in ai_ids if i in by_id)
+    assert any(i in by_id for i in ai_ids)
