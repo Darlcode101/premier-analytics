@@ -148,3 +148,39 @@ def test_late_joiner_gets_backfill(client):
         backfill = late.receive_json()
     assert backfill["type"] == "backfill"
     assert any(o["kind"] == "goal" for o in backfill["overlays"])
+
+
+def test_serves_built_frontend_with_spa_fallback(tmp_path):
+    (tmp_path / "index.html").write_text("<!doctype html><title>PA</title>")
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
+    app = create_app(llm=None, live_session=False, static_dir=tmp_path)
+    with TestClient(app) as c:
+        assert "<title>PA</title>" in c.get("/").text
+        assert c.get("/assets/app.js").text == "console.log(1)"
+        assert "<title>PA</title>" in c.get("/some/client/route").text  # SPA fallback
+        assert c.get("/api/health").json()["status"] == "ok"           # API still wins
+
+
+def test_offline_modes():
+    from premier_analytics.demo_llm import down_llm, scripted_llm
+
+    for llm, expect_ai in ((scripted_llm(), True), (down_llm(), False)):
+        app = create_app(llm=llm, live_session=False)
+        with TestClient(app) as c:
+            mid = c.post("/api/matches", json={"home": "har", "away": "ngc", "seed": 7, "speed": 0}).json()["match_id"]
+            with c.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=es") as ws:
+                msgs = collect(ws)
+        overlays = [m["overlay"] for m in msgs if m["type"] == "overlay"]
+        assert overlays, "template overlays always flow"
+        assert any(o["source"] == "ai" for o in overlays) == expect_ai
+
+
+def test_finished_unwatched_sessions_free_their_slot():
+    app = create_app(llm=None, live_session=False, max_sessions=1)
+    with TestClient(app) as c:
+        mid = c.post("/api/matches", json={"home": "har", "away": "ngc", "seed": 1, "speed": 0}).json()["match_id"]
+        with c.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as ws:
+            collect(ws)
+        r = c.post("/api/matches", json={"home": "har", "away": "ngc", "seed": 2, "speed": 0})
+        assert r.status_code == 201

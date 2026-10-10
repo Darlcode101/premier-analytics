@@ -13,9 +13,11 @@ import contextlib
 import os
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
@@ -229,7 +231,7 @@ class MatchSession:
 
 
 def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_sessions: int = 4,
-               max_ai_audiences: int = 8) -> FastAPI:
+               max_ai_audiences: int = 8, static_dir: Path | str | None = None) -> FastAPI:
     app = FastAPI(title="Premier Analytics")
     league = load_league()
     if llm == "env":
@@ -247,6 +249,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
             raise HTTPException(422, str(err)) from err
         if req.home == req.away:
             raise HTTPException(422, "a club cannot play itself")
+        for sid in [k for k, v in sessions.items() if v.status == "finished" and not v.viewers]:
+            del sessions[sid]
         if len(sessions) >= max_sessions:
             raise HTTPException(429, "too many matches running; try again shortly")
         sid = uuid.uuid4().hex[:8]
@@ -312,5 +316,16 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
             s.leave(viewer)
             with contextlib.suppress(Exception):
                 await ws.close()
+
+    if static_dir is not None:
+        root = Path(static_dir).resolve()
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def frontend(path: str):
+            """Serve the built React app; unknown paths fall back to index.html (client-side routes)."""
+            target = (root / path).resolve()
+            if path and target.is_file() and target.is_relative_to(root):
+                return FileResponse(target)
+            return FileResponse(root / "index.html")
 
     return app
