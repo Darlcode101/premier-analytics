@@ -25,6 +25,7 @@ llm = [
     "agent-framework-core==1.21.0",
     "agent-framework-openai",
     "azure-identity>=1.17",
+    "aiohttp>=3.9",  # azure.identity.aio needs it; only installed by accident elsewhere, so declare it
     "mcp>=1.24,<2",  # agent-framework-core requires mcp<2
 ]
 

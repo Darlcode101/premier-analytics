@@ -47,6 +47,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t premier-analytics:ci .
+      - name: Container starts and serves (keyless config, as in production)
+        run: |
+          docker run -d --name pa -p 8000:8000 \
+            -e AZURE_OPENAI_ENDPOINT=https://example.services.ai.azure.com/api/projects/p \
+            -e LIVE_MODEL_DEPLOYMENT=gpt-4.1-mini -e RECAP_MODEL_DEPLOYMENT=gpt-5-mini \
+            premier-analytics:ci
+          for i in $(seq 1 30); do curl -sf localhost:8000/api/health && exit 0; sleep 1; done
+          docker logs pa; exit 1
 
   secrets:
     runs-on: ubuntu-latest
