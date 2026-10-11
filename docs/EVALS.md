@@ -11,43 +11,43 @@ fan), keep every published AI overlay with the facts it was given, and score it 
 
 Reproduce: `python scripts/run_evals.py` (≈ 15 min, under $1). Raw rows: `evals/results.json`.
 
-## Results (final configuration, round 4, 151 AI overlays)
+## Results (final configuration, round 5, 147 AI overlays)
 
 | Metric | Result | Pass bar (TEST_PLAN §6) | |
 |---|---|---|---|
 | Critic re-check of published text (numbers, names, goal context, comparisons) | **100 %** | 100 % | ✅ |
-| Output in the requested language (en / es / ar) | **100 %** | 100 % | ✅ |
+| Output in the requested language (en / es / ar) | **100 %** (see note) | 100 % | ✅ |
 | Within on-screen length limits | **100 %** | 100 % | ✅ |
-| Analyst version carries more numbers than the fan version (same moment) | **97 %** of 34 pairs | ≥ 90 % | ✅ |
-| Fan text is plain (no jargon, ≤ 1 statistic; scores and minutes don't count) | **97 %** | — | ✅ |
-| Groundedness (Azure AI Evaluation, 1–5) | **4.83** (98 % pass) | ≥ 4 | ✅ |
-| Relevance (1–5) | **4.23** | — | ✅ |
-| Coherence (1–5) | **3.99** | — | — |
-| Fluency (1–5) | **3.28** | — | see notes |
-| **Explains *why*, not just *what*** (custom rubric, 1–5) | **3.92** | ≥ 4 | ≈ (momentum and pressure now ≥ 4) |
+| Analyst version carries more numbers than the fan version (same moment) | **91 %** of 34 pairs | ≥ 90 % | ✅ |
+| Fan text is plain (no jargon, ≤ 1 statistic; scores and minutes don't count) | **94 %** | — | ✅ |
+| Groundedness (Azure AI Evaluation, 1–5) | **4.84** | ≥ 4 | ✅ |
+| Relevance (1–5) | **4.29** | — | ✅ |
+| **Explains *why*, not just *what*** (custom rubric, 1–5) | **4.21** | ≥ 4 | ✅ |
 
-Fewer overlays than round 2 (151 vs 175) because fans now get at most one trend card per team every 15 minutes
-(F-1). Numbers per 100 characters: fans 1.8, analysts 3.1. Foundry run:
-[Evaluations tab](https://ai.azure.com/resource/build/evaluation/81858da4-9b4b-4ac9-a650-203b2a6a1be8?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a).
+Language note: the first computation said 99.3 %. The one "wrong" caption was correct Spanish without accents
+("Gol de Zielinski da a Kingsmere ventaja 3-1…"); our detector counted "a" as English and didn't know "de" or
+"tras". The detector was fixed (with that sentence as a test) and all rounds re-checked: 100 % each.
+
+Foundry run: [Evaluations tab](https://ai.azure.com/resource/build/evaluation/0ca943a6-9f76-479e-8a8d-1d25b05fc92f?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a).
 
 ### "Explains why" by moment type
 
-| Moment | Round 2 | Round 4 | n (round 4) |
-|---|---|---|---|
-| Momentum shift | 3.42 | **4.14** | 50 |
-| Pressure spell | 3.36 | **3.94** | 17 |
-| Goal | 4.21 | 3.79 | 24 |
-| Big chance | 4.00 | 4.00 | 20 |
-| Half-time | 4.83 | 3.83 | 12 |
-| Full-time | 4.60 | 4.50 | 12 |
-| Woodwork | 3.14 | 2.88 | 8 |
+| Moment | Round 2 | Round 4 | Round 5 | n (round 5) |
+|---|---|---|---|---|
+| Momentum shift | 3.42 | 4.14 | **4.12** | 50 |
+| Pressure spell | 3.36 | 3.94 | **4.06** | 17 |
+| Goal | 4.21 | 3.79 | 3.92 | 24 |
+| Big chance | 4.00 | 4.00 | **4.30** | 20 |
+| Half-time | 4.83 | 3.83 | 4.50 | 12 |
+| Full-time | 4.60 | 4.50 | 4.67 | 12 |
+| Woodwork | 3.14 | 2.88 | **5.00** | 4 |
+| Long-range strike | 4.00 | 3.50 | **4.75** | 4 |
 
-**Re-scored together** (the same judge run over both rounds' captions, to separate real change from judge noise):
-momentum and pressure moments **3.27 → 4.04**, all other moments 3.89 → 3.77, overall 3.55 → 3.89. The gain on
-trend moments is the same under both scorings; the other moments move within noise (goals 3.83 → 4.00 when
-re-scored, the opposite direction to the first scoring). Half-time explanations are shared by all four audiences,
-so its 12 rows are only 3 distinct texts; one weak one ("the goalkeeper is keeping them out", not in the facts)
-pulls it down.
+**Re-scored together** (one judge run over both rounds' captions, to separate real change from judge noise):
+round 2 → round 4: trend moments 3.27 → 4.04, others 3.89 → 3.77; round 4 → round 5: all 3.92 → **4.27**, missed
+chances (big chance 3.9 → 4.6, woodwork 3.4 → 4.5, long-range 3.0 → 4.75). Goals stay just under 4 in every
+scoring (3.8–4.0): the goal facts already carry their context, and the judge most often marks them down for
+"mostly restating" the goal.
 
 ## What the evaluations changed
 
@@ -56,7 +56,8 @@ pulls it down.
 | Baseline (1 match) | — | 3.09 | 4.74 |
 | **Round 2 (kept)** | Every moment carries score and minute (trend moments both teams' shots); explainer told to lead with the consequence; fans get ≤ 1 statistic | **3.76** (same match: 3.09 → 3.64) | 4.85 |
 | Round 3 (rejected) | Added "shots before the spell" facts and asked for before/after comparisons | 3.45 | 4.84 |
-| **Round 4 (kept)** | The Moment Scout computes each spell's meaning as facts (what it means for the score, how it ranks, shots up or down on the previous 10 minutes, opponent shut out, no goal yet); the Critic rejects "double"/"three times" unless two facts have that ratio, and "strongest"/"first time" unless the spell fact says so | **3.92** (trend moments 3.39 → 4.09) | 4.83 |
+| Round 4 (superseded) | The Moment Scout computes each spell's meaning as facts (what it means for the score, how it ranks, shots up or down on the previous 10 minutes, opponent shut out, no goal yet); the Critic rejects "double"/"three times" unless two facts have that ratio, and "strongest"/"first time" unless the spell fact says so | **3.92** (trend moments 3.39 → 4.09) | 4.83 |
+| **Round 5 (kept)** | Missed chances carry what they would have meant ("would have opened the scoring / equalised / put them ahead …"), with captions that contradict it rejected; score wording checked against the spell's stakes ("trail 0-0") | **4.21** (missed chances 3.66 → 4.46) | 4.84 |
 
 Round 3 was reverted: the model mostly listed the extra numbers instead of drawing a conclusion, and the one
 place it did compare it wrote "double what they managed earlier" for 3 vs 3, a false comparison that neither
@@ -79,6 +80,6 @@ fan-plainness metric counted minutes and scorelines as statistics.
 
 ## Next step if time allows
 
-Woodwork (2.9) is now the weakest moment type: like trend moments before round 4, its facts say what happened
-but not what it means. The same approach (a computed "what it means" fact, e.g. still level / would have
-equalised) should carry over.
+Goals (3.8–4.0) are the one large group below 4: the judge marks them down for restating the goal. A computed
+consequence fact like the other moment types have ("first goal of the match after 60 goalless minutes", "ends a
+run of N shots without scoring") is the obvious next step.

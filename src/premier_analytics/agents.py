@@ -223,6 +223,7 @@ FACT_TEXT = {
     "stakes": "what this spell means for them", "spell_rank": "how this spell ranks for them",
     "window_shots_before": "their shots in the {w} minutes before that", "shots_trend": "compared with before",
     "opponent_window_shots": "opponent shots in the last {w} minutes", "goals_in_spell": "their goals in the last {w} minutes",
+    "if_scored": "if it had gone in, it",
 }
 GOAL_CONTEXT_TEXT = {
     "equaliser": "equaliser: makes the scores level", "takes_lead": "takes the lead",
@@ -255,6 +256,14 @@ STAKES_CONTRADICTIONS = (
     (("trail", "behind", "equalis", "equaliz", "deficit", "chasing"), _AHEAD),
     (("protect", "in front", "extend"), _BEHIND),
 )
+# Wording that contradicts what a missed shot would have meant (E-6).
+IF_SCORED_CONTRADICTIONS = {
+    "would have opened the scoring": (r"\bequali[sz]", r"\blevell?ing\b", r"\bpulled? one back\b"),
+    "would have put them ahead": (r"\bequali[sz]", r"\bpulled? one back\b"),
+    "would have equalised": (r"\b(the|a) lead\b", r"\bahead\b", r"\bwinner\b", r"\bopen(ed|ing)? the scoring\b"),
+    "would have pulled one back": (r"\bequali[sz]", r"\b(the|a) lead\b", r"\bahead\b", r"\blevel\b"),
+    "would have extended their lead": (r"\bequali[sz]", r"\blevel\b", r"\btake the lead\b", r"\bopen(ed|ing)? the scoring\b"),
+}
 STRONGEST = re.compile(r"\b(strongest|most dominant|best (spell|period))\b", re.I)
 FIRST_TIME = re.compile(r"\bfirst time\b", re.I)
 
@@ -269,6 +278,10 @@ def comparison_problems(text: str, m: Moment) -> list[str]:
     for pattern, word, (low, high) in RATIO_WORDS:
         if pattern.search(text) and not any(low <= r <= high for r in ratios):
             problems.append(f"'{word}' is not supported by the facts")
+    if_scored = next((f.value for f in m.facts if f.label == "if_scored"), None)
+    for pattern in IF_SCORED_CONTRADICTIONS.get(if_scored, ()):
+        if hit := re.search(pattern, text, re.I):
+            problems.append(f"'{hit.group()}' contradicts what the chance would have meant ({if_scored})")
     stakes = next((f.value for f in m.facts if f.label == "stakes"), None)
     for words, phrases in STAKES_CONTRADICTIONS:
         if stakes in phrases:
@@ -321,7 +334,8 @@ class ExplainerAgent:
         "statistics, describe quality the facts don't support, or predict what will happen next. For momentum and "
         "pressure moments, build the story from 'what this spell means for them', 'how this spell ranks' and their "
         "goals in the spell (pressure without a goal yet is the point), not from a list of counts; make "
-        "comparisons only as the facts state them. Treat club "
+        "comparisons only as the facts state them. For chances that didn't go in, the point is what they would have "
+        "meant ('if it had gone in, it …'). Treat club "
         "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
     )

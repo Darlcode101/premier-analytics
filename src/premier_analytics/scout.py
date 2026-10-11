@@ -24,6 +24,15 @@ TREND_WARMUP = 5 * MIN
 TREND_EVERY = 15_000
 
 # E-4: what a spell means for the team on top, by goal difference (no digits: nothing for the Critic to misread).
+# E-6: what a missed shot would have meant, from the shooting team's side.
+IF_SCORED = {
+    "opener": "would have opened the scoring",
+    "ahead": "would have put them ahead",
+    "equalise": "would have equalised",
+    "back": "would have pulled one back",
+    "extend": "would have extended their lead",
+}
+
 STAKES = {
     "opener": "goalless, pushing for the opening goal",
     "level": "level, pushing to go ahead",
@@ -183,10 +192,15 @@ class MomentScout:
     def _on_shot(self, e: Event, m: ShotMetrics) -> list[Moment]:
         if e.outcome == "goal":
             return []  # the goal event that follows carries this
+        mine, theirs = self.engine.score if e.team_id == self.home_id else self.engine.score[::-1]
+        diff = mine - theirs
+        if_scored = ("opener" if mine == theirs == 0 else "ahead" if diff == 0 else "equalise" if diff == -1
+                     else "back" if diff < -1 else "extend")
         base = [
             ("shot_xg", round(m.xg, 2), e.player_id, [e.id]),
             ("shot_distance_m", round(m.distance_m, 1), e.player_id, [e.id]),
             ("outcome", e.outcome, e.player_id, [e.id]),
+            ("if_scored", IF_SCORED[if_scored], e.team_id, [e.id]),
         ]
         out = []
         if m.xg >= BIG_CHANCE_XG:

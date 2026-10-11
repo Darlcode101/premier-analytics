@@ -19,8 +19,10 @@ from .scout import Moment
 
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 _ARABIC = re.compile(r"[؀-ۿ]")
-_ES_WORDS = {"el", "la", "los", "las", "del", "con", "para", "por", "una", "un", "que", "en", "al", "y", "gol", "tiros"}
-_EN_WORDS = {"the", "and", "with", "for", "a", "of", "to", "in", "on", "their", "after", "goal", "shots"}
+_ES_WORDS = {"el", "la", "los", "las", "de", "del", "con", "para", "por", "una", "un", "que", "en", "al", "y", "gol",
+             "goles", "tiros", "disparos", "tras", "hasta", "ahora", "minuto", "partido", "sigue", "pero", "su", "sus"}
+_EN_WORDS = {"the", "and", "with", "for", "of", "to", "in", "on", "their", "after", "goal", "shots", "but", "still",
+             "minute", "match"}  # "a" is left out: it is a Spanish word too
 
 
 def number_density(text: str) -> float:

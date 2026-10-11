@@ -1,18 +1,19 @@
 {
-  "overlays": 151,
+  "overlays": 147,
   "matches": 3,
   "critic_recheck_pass": 1.0,
-  "language_correct": 1,
+  "language_correct": 1.0,
   "within_length": 1,
   "pairs": 34,
-  "analyst_more_numbers": 0.9705882352941176,
-  "fan_plain": 0.9722222222222222,
+  "analyst_more_numbers": 0.9117647058823529,
+  "fan_plain": 0.9428571428571428,
   "numbers_per_100_chars": {
-    "fan": 1.7647872386840742,
-    "analyst": 3.1453303070919816
+    "fan": 1.615620093822666,
+    "analyst": 3.1620529615685626
   },
   "flesch": {
-    "fan": 69.31287308436852,
-    "analyst": 64.57720795486462
-  }
+    "fan": 68.36152066226276,
+    "analyst": 68.79826778859218
+  },
+  "note": "language_correct recomputed after fixing the detector (it misread one accent-free Spanish caption as English); 0.993 before"
 }

@@ -68,15 +68,15 @@ real player, club or Premier League data, logos or fonts are used.
 
 ## Results
 
-Evaluated on 3 matches × 4 audiences (175 AI captions); full write-up in [docs/EVALS.md](docs/EVALS.md).
+Evaluated on 3 matches × 4 audiences (147 AI captions); full write-up in [docs/EVALS.md](docs/EVALS.md).
 
 | | |
 |---|---|
 | Published text that passes the Critic re-check | 100 % |
-| Groundedness (Azure AI Evaluation, 1–5) | 4.85 |
+| Groundedness (Azure AI Evaluation, 1–5) | 4.84 |
 | Output in the requested language | 100 % |
-| Analyst version carries more numbers than the fan version | 90 % |
-| Explains *why* (custom judge, 1–5) | 3.76: goals and big moments ≥ 4; momentum and pressure moments are the weak spot |
+| Analyst version carries more numbers than the fan version | 91 % |
+| Explains *why* (custom judge, 1–5) | 4.21 (from 3.09 at the first evaluation): spells and missed chances now come with computed meaning |
 
 ## Run it locally
 

@@ -115,3 +115,38 @@ def test_score_wording_must_match_the_stakes():
     assert any("equalis" in p for p in problems("Harbourside push for an equaliser.", up))
     down = trend(stakes=STAKES["one_down"], spell_rank="back on top")
     assert any("protect" in p for p in problems("Harbourside protect their lead.", down))
+
+
+# ---------- E-6: missed chances ----------
+
+MISSED = ("big_chance", "woodwork", "shot_on_target", "rocket_shot")
+
+
+@pytest.mark.parametrize("seed", [42, 7, 9])
+def test_missed_chances_say_what_they_would_have_meant(seed):
+    from premier_analytics.scout import IF_SCORED
+    m = generate_match("har", "ngc", seed)
+    scout = MomentScout("har", "ngc", m.meta.match_id)
+    found = 0
+    for e in m.events:
+        for mo in scout.observe(e):
+            if mo.kind not in MISSED:
+                continue
+            found += 1
+            f = facts(mo)
+            mine, theirs = (f["score_home"], f["score_away"]) if mo.team_id == "har" else (f["score_away"], f["score_home"])
+            diff = mine - theirs
+            key = ("opener" if mine == theirs == 0 else "ahead" if diff == 0 else "equalise" if diff == -1
+                   else "back" if diff < -1 else "extend")
+            assert f["if_scored"] == IF_SCORED[key]
+    assert found
+
+
+def test_captions_must_not_contradict_what_the_miss_would_have_meant():
+    from premier_analytics.scout import IF_SCORED
+    opener = trend(if_scored=IF_SCORED["opener"])
+    assert any("equalis" in p for p in problems("It would have been the equaliser.", opener))
+    assert problems("It would have broken the deadlock.", opener) == []
+    equalise = trend(if_scored=IF_SCORED["equalise"])
+    assert any("lead" in p for p in problems("So close to giving them the lead.", equalise))
+    assert problems("So close to levelling it.", equalise) == []

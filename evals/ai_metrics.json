@@ -1,22 +1,22 @@
 {
   "metrics": {
-    "groundedness.groundedness": 4.8344370860927155,
-    "groundedness.groundedness_score": 4.8344370860927155,
-    "groundedness.groundedness_passed": 0.9801324503311258,
-    "relevance.relevance": 4.231788079470198,
-    "relevance.relevance_score": 4.231788079470198,
+    "groundedness.groundedness": 4.836734693877551,
+    "groundedness.groundedness_score": 4.836734693877551,
+    "groundedness.groundedness_passed": 0.9863945578231292,
+    "relevance.relevance": 4.285714285714286,
+    "relevance.relevance_score": 4.285714285714286,
     "relevance.relevance_passed": 1.0,
-    "coherence.coherence": 3.986754966887417,
-    "coherence.coherence_score": 3.986754966887417,
+    "coherence.coherence": 3.979591836734694,
+    "coherence.coherence_score": 3.979591836734694,
     "coherence.coherence_passed": 1.0,
-    "fluency.fluency": 3.2847682119205297,
-    "fluency.fluency_score": 3.2847682119205297,
-    "fluency.fluency_passed": 0.9933774834437086,
-    "why.explains_why": 3.9205298013245033,
-    "groundedness.binary_aggregate": 0.98,
+    "fluency.fluency": 3.3877551020408165,
+    "fluency.fluency_score": 3.3877551020408165,
+    "fluency.fluency_passed": 1.0,
+    "why.explains_why": 4.210884353741497,
+    "groundedness.binary_aggregate": 0.99,
     "relevance.binary_aggregate": 1.0,
     "coherence.binary_aggregate": 1.0,
-    "fluency.binary_aggregate": 0.99
+    "fluency.binary_aggregate": 1.0
   },
-  "studio_url": "https://ai.azure.com/resource/build/evaluation/81858da4-9b4b-4ac9-a650-203b2a6a1be8?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a"
+  "studio_url": "https://ai.azure.com/resource/build/evaluation/0ca943a6-9f76-479e-8a8d-1d25b05fc92f?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a"
 }

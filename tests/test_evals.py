@@ -20,6 +20,9 @@ def test_flesch_scores_simple_text_higher_than_dense_text():
     ("Kai Greaves gives Northgate the lead with a fine finish", "en"),
     ("Kai Greaves adelanta al Northgate con un gran disparo desde el área", "es"),
     ("Kai Greaves يمنح Northgate التقدم بتسديدة رائعة", "ar"),
+    # Seen in evaluation round 5: Spanish with no accents and the shared word "a"
+    ("Gol de Zielinski da a Kingsmere ventaja 3-1 Minuto 74: Zielinski anota tras pase de Sherwood, poniendo a "
+     "Kingsmere dos goles arriba con 10 disparos hasta ahora.", "es"),
 ])
 def test_detect_language(text, lang):
     assert detect_language(text) == lang
