@@ -285,3 +285,22 @@ def test_index_is_never_stale_but_hashed_assets_cache_forever(tmp_path):
         for path in ("/", "/fan?match=x"):
             assert c.get(path).headers["cache-control"] == "no-cache"
         assert "immutable" in c.get("/assets/index-abc123.js").headers["cache-control"]
+
+
+def test_user_assigned_identity_is_selected_by_client_id(monkeypatch):
+    from premier_analytics.agents import AgentFrameworkLLM
+
+    monkeypatch.setenv("IDENTITY_ENDPOINT", "http://localhost:42356/msi/token")
+    monkeypatch.setenv("IDENTITY_HEADER", "x")
+    monkeypatch.setenv("AZURE_CLIENT_ID", "11111111-2222-3333-4444-555555555555")
+    seen = {}
+    real = __import__("azure.identity.aio", fromlist=["ManagedIdentityCredential"]).ManagedIdentityCredential
+
+    class Spy(real):
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+            super().__init__(**kwargs)
+
+    monkeypatch.setattr("azure.identity.aio.ManagedIdentityCredential", Spy)
+    AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p")
+    assert seen.get("client_id") == "11111111-2222-3333-4444-555555555555"

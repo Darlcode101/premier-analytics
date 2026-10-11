@@ -124,9 +124,13 @@ class AgentFrameworkLLM:
 
             self.auth = "entra"
             if credential is None:
-                # In App Service go straight to the managed identity: DefaultAzureCredential probes
-                # several sources first, and that first fetch can outlast a per-call timeout.
-                credential = ManagedIdentityCredential() if os.environ.get("IDENTITY_ENDPOINT") else DefaultAzureCredential()
+                # On Azure (App Service / Container Apps) go straight to the managed identity:
+                # DefaultAzureCredential probes several sources first, and that first fetch can
+                # outlast a per-call timeout. AZURE_CLIENT_ID selects a user-assigned identity.
+                if os.environ.get("IDENTITY_ENDPOINT"):
+                    credential = ManagedIdentityCredential(client_id=os.environ.get("AZURE_CLIENT_ID") or None)
+                else:
+                    credential = DefaultAzureCredential()
             # A token provider in place of the key: same OpenAI-compatible v1 endpoint, short-lived tokens.
             token = get_bearer_token_provider(credential, FOUNDRY_SCOPE)
         self._token = token
