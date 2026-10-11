@@ -5,6 +5,7 @@ import { askQuestion, useMatch } from '../api'
 import { teamColors } from '../colors'
 import { AttackMomentumChart, Agents, Recaps } from '../components/Panels'
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
+import { PatternPitch } from '../components/PatternPitch'
 import {
   boardName, formation, formationLines, loadUsed, playerMarkers, saveUsed, scorers, subsUsed, timeline, topOpenPoint, topPerformers,
   type Markers, type PerformerMetric,
@@ -14,10 +15,11 @@ import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
 import type {
-  AskResult, ClubInfo, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PlayerInfo, PlayerLine, Profile, SourceLink, TeamStats,
+  AskResult, ClubInfo, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
+  TeamStats,
 } from '../types'
 
-const TABS = ['stats', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
+const TABS = ['stats', 'patterns', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
 type Tab = typeof TABS[number]
 type Side = 'home' | 'away'
 
@@ -223,6 +225,12 @@ function TalkingPoints({ state, ctx, used, toggle }: { state: State; ctx: Ctx; u
   const feed = team ? state.feed.filter(o => o.team_id === team) : state.feed
   const next = topOpenPoint(feed, used)
   const openCount = feed.filter(o => !used.has(o.id)).length
+  // PA-6: pattern alerts sit among the talking points at the minute they were spotted.
+  const alerts = state.patternAlerts.filter(a => !team || a.team_id === team)
+  const items: ({ type: 'alert'; a: (typeof alerts)[number]; at: number } | { type: 'point'; o: Overlay; at: number })[] = [
+    ...alerts.map(a => ({ type: 'alert' as const, a, at: a.elapsed_ms })),
+    ...feed.map(o => ({ type: 'point' as const, o, at: o.elapsed_in_ms })),
+  ].sort((x, y) => y.at - x.at)
   const { home, away } = ctx.hello
   return (
     <section className="cd-panel cd-points" aria-labelledby="tp-title">
@@ -236,13 +244,70 @@ function TalkingPoints({ state, ctx, used, toggle }: { state: State; ctx: Ctx; u
         </div>
       </header>
       <div className="cd-scroll">
-        {!feed.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
-        {feed.map(o => (
-          <TalkingPoint key={o.id} o={o} used={used.has(o.id)} next={o.id === next} toggle={() => toggle(o.id)} ctx={ctx}
-            contexts={state.contexts.filter(c => c.moment_id === o.moment_id && c.language === ctx.lang)} />
+        {!feed.length && !alerts.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
+        {items.map(item => item.type === 'alert' ? <PatternAlert key={item.a.pattern_id} a={item.a} ctx={ctx} /> : (
+          <TalkingPoint key={item.o.id} o={item.o} used={used.has(item.o.id)} next={item.o.id === next} toggle={() => toggle(item.o.id)} ctx={ctx}
+            contexts={state.contexts.filter(c => c.moment_id === item.o.moment_id && c.language === ctx.lang)} />
         ))}
       </div>
     </section>
+  )
+}
+
+function PatternAlert({ a, ctx }: { a: PatternNote & { minute: string }; ctx: Ctx }) {
+  const team = ctx.hello[a.team_id === ctx.hello.home.id ? 'home' : 'away']
+  return (
+    <article className="cd-point cd-pattern-alert" data-testid="pattern-alert" dir={ctx.lang === 'ar' ? 'rtl' : 'ltr'}>
+      <header>
+        <span className="cd-min">{ctx.num(a.minute)}'</span>
+        <span className="cd-kind cd-pattern-tag">{dt(ctx.lang, 'newPattern')}</span>
+        <span className="cd-teamtag"><Bar color={ctx.colors[team.id]} />{team.short_name}</span>
+        {a.source === 'ai' && <span className="ai-tag">AI</span>}
+      </header>
+      <h3>{ctx.num(a.text)}</h3>
+    </article>
+  )
+}
+
+// ---------- patterns (PA-5) ----------
+
+function PatternsTab({ state, ctx }: { state: State; ctx: Ctx }) {
+  const notes = state.patterns?.notes ?? []
+  const [picked, setPicked] = useState<string | null>(null)
+  const current = notes.find(n => n.pattern_id === picked) ?? notes[0]
+  if (!notes.length) return <p className="empty">{dt(ctx.lang, 'noPatterns')}</p>
+  const side = (id: string) => (id === ctx.hello.home.id ? 'home' : 'away') as 'home' | 'away'
+  return (
+    <div className="cd-patterns">
+      {current && state.shape && (
+        <figure className="cd-pattern-figure">
+          <PatternPitch note={current} shape={state.shape[side(current.team_id)]} color={ctx.colors[current.team_id]} lang={ctx.lang} />
+          <figcaption>{dt(ctx.lang, 'patternHint')}</figcaption>
+        </figure>
+      )}
+      {(['home', 'away'] as const).map(s => {
+        const club = ctx.hello[s]
+        const mine = notes.filter(n => n.team_id === club.id)
+        return (
+          <section key={s} className="cd-pattern-team">
+            <h4><Bar color={ctx.colors[club.id]} />{club.short_name}</h4>
+            {!mine.length && <p className="cd-note">–</p>}
+            {mine.map(n => (
+              <button key={n.pattern_id} className={`cd-pattern-note${current?.pattern_id === n.pattern_id ? ' on' : ''}`}
+                data-testid="pattern-note" data-kind={n.kind} data-scope={n.scope === 'season' ? 'season' : 'match'}
+                aria-pressed={current?.pattern_id === n.pattern_id} onClick={() => setPicked(n.pattern_id)}>
+                <span className={`cd-pattern-scope ${n.scope === 'season' ? 'season' : 'today'}`}>
+                  {n.scope === 'season' ? dt(ctx.lang, 'knownFor') : dt(ctx.lang, 'today')}
+                </span>
+                <span dir="auto">{ctx.num(n.text)}</span>
+                {n.source === 'ai' && <span className="ai-tag">AI</span>}
+              </button>
+            ))}
+          </section>
+        )
+      })}
+      <p className="cd-note">{dt(ctx.lang, 'patternMethod')}</p>
+    </div>
   )
 }
 
@@ -537,7 +602,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   if (!h) return <div className="cd" data-testid="desk"><p className="empty">{t(lang, 'kickOffSoon')}</p></div>
   const ctx: Ctx = { lang, hello: h, colors, names, num: v => localDigits(v, lang) }
   const tabLabel = (id: Tab) => id === 'timeline' ? dt(lang, 'timeline') : id === 'season' ? dt(lang, 'season')
-    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'momentum' ? t(lang, 'momentumChart') : t(lang, id)
+    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'patterns' ? dt(lang, 'patterns') : id === 'momentum' ? t(lang, 'momentumChart') : t(lang, id)
 
   return (
     <div className="cd" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="desk">
@@ -554,6 +619,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
           <div className="cd-scroll" role="tabpanel">
             {tab === 'stats' && <StatsTab state={state} ctx={ctx} />}
             {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} />}
+            {tab === 'patterns' && <PatternsTab state={state} ctx={ctx} />}
             {tab === 'momentum' && (
               <div className="cd-momentum">
                 <AttackMomentumChart state={state} colors={colors} names={names} lang={lang} topTeam={null} />

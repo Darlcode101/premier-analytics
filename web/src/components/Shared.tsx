@@ -75,7 +75,7 @@ export function zoneSentence(state: State, lang: Language): string | null {
 const PITCH_L = 105
 const PITCH_W = 68
 
-function PitchMarkings() {
+export function PitchMarkings() {
   const line = { stroke: 'rgba(255,255,255,.85)', strokeWidth: 0.5, fill: 'none' }
   return (
     <g {...line}>

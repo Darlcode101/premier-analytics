@@ -6,6 +6,8 @@ export type Channel = 'left' | 'centre' | 'right'
 
 const L = 105
 const W = 68
+export const PITCH_L = L
+export const PITCH_W = W
 
 const band = (v: number, size: number) => Math.min(2, Math.max(0, Math.floor((v / size) * 3)))
 

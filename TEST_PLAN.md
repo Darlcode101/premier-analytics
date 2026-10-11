@@ -130,6 +130,19 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Goals carry run of play, shots it took and the wait for a goal, consistent with the match (3 seeds); contradicting captions rejected | E-7 | pytest |
 | Football phrases that must pass: "doubles their lead", "would have made it 2-1", "cut the lead", "still ahead" for a consolation goal | E-5..E-7 | pytest |
 
+### Pattern Analyst (PA-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Clubs have styles; favoured flank 42–62 % over a season, balanced clubs 25–43 % per channel; pressing sides win the ball higher; long-shot sides shoot from distance; every club has a playmaker; league realism still passes | PA-1 | pytest |
+| Binomial tail; channels named from the attacker's view; counts equal the events; every pattern significant and carries its numbers | PA-2, PA-3 | pytest |
+| Season profiles recover each club's configured styles (and not for balanced clubs); known styles come with today's numbers | PA-3b | pytest |
+| Over 380 matches: strong flank styles found in ≥ 50 % of matches, balanced clubs flagged in ≤ 5 % | PA-9 | pytest |
+| Wording for every pattern in EN/ES/AR uses only the pattern's numbers; fan lines have no numbers or jargon | PA-7, PA-8 | pytest |
+| Agent notes checked: invented numbers and unknown ids fall back to plain wording; "remains/confirms" rejected when today contradicts the known style | PA-4 | pytest |
+| Alerts need two checks in a row and fire once | PA-6 | pytest |
+| AI off: desk and fan receive patterns, stats carry the shape, late joiners get the latest notes | PA-8 | pytest |
+| Desk Patterns tab shows Today / Known-for notes and draws the selected one on the pitch; alerts appear among talking points; fan Stats shows plain lines without digits | PA-5..PA-7 | e2e |
+
 ### Fan app polish (F-*)
 | Test | Covers | Layer |
 |---|---|---|

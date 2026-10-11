@@ -142,6 +142,34 @@ export interface AskResult {
   remaining: number
 }
 
+/** Pattern Analyst (PA-*): one note about how a team is playing. scope 'season' = what they're known for. */
+export interface PatternNote {
+  pattern_id: string
+  team_id: string
+  kind: 'flank' | 'switch' | 'high_regains' | 'long_shots' | 'hub' | 'counters' | 'unusual' | 'playmaker'
+  scope: 'match' | 'second_half' | 'season'
+  value: string
+  text: string
+  numbers: Record<string, number | string>
+  source: 'ai' | 'plain'
+}
+
+export interface PatternsUpdate {
+  minute: string
+  elapsed_ms: number
+  language: Language
+  notes: PatternNote[]
+  alerts: string[]
+  fan_lines: Record<string, string>
+}
+
+/** Raw counts behind the pattern pictures, per team in its own attacking frame. */
+export interface TeamShape {
+  entries: Record<'left' | 'centre' | 'right', number>
+  regains: Record<'defensive' | 'middle' | 'attacking', number>
+  shots: { x: number; y: number; counter: boolean }[]
+}
+
 export interface ClubSeason {
   position: number
   played: number
@@ -214,6 +242,7 @@ export type Message =
       season?: SeasonContext | null
       context?: ContextCard[]
       explainers?: Record<string, Explainer>
+      patterns?: (PatternsUpdate & { type: 'patterns' }) | null
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -234,7 +263,8 @@ export type Message =
       end_x: number | null
       end_y: number | null
     }
-  | { type: 'stats'; home: TeamStats; away: TeamStats; players?: Record<string, PlayerLine>; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
+  | { type: 'patterns' } & PatternsUpdate
+  | { type: 'stats'; home: TeamStats; away: TeamStats; players?: Record<string, PlayerLine>; shape?: { home: TeamShape; away: TeamShape }; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
   | { type: 'incident'; incident: Incident }
   | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }

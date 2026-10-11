@@ -24,6 +24,8 @@ from .agents import (
 )
 from .mcp_server import MatchState
 from .context import ContextAgent, ContextCard, ContextEntry, check_card
+from .pattern_agent import AlertGate, Note, PatternAnalystAgent, fan_lines, plain_notes
+from .patterns import PatternTracker
 from .overlay import (
     STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, display_minute, fast_overlay, validate,
 )
@@ -37,6 +39,7 @@ AI_KINDS = frozenset({
     "pressure_spell", "half_time", "full_time",
 })
 
+PATTERN_CHECK_MS = 5 * 60_000
 TREND_KINDS = frozenset({"momentum_shift", "pressure_spell"})
 TREND_GAP_MS = 15 * 60_000
 
@@ -87,7 +90,8 @@ class Orchestrator:
                  recaps: bool = False, recap_tools: list | None = None, recap_llm: LLM | None = None,
                  on_recap: Callable[[Recap], None] | None = None, max_ai_audiences: int | None = None,
                  on_trace: Callable[[TraceEvent], None] | None = None,
-                 context_library: list[ContextEntry] | None = None, on_context: Callable[[dict], None] | None = None):
+                 context_library: list[ContextEntry] | None = None, on_context: Callable[[dict], None] | None = None,
+                 season_profiles: dict | None = None, on_patterns: Callable[[dict], None] | None = None):
         self.names = names
         self.audiences: list[Audience] = []
         self.max_ai_audiences = max_ai_audiences
@@ -126,6 +130,14 @@ class Orchestrator:
         self.contexts: list[dict] = []
         self._context_cards: dict[str, asyncio.Task] = {}
         self._context_used: set[str] = set()
+        # Pattern Analyst (PA-*): runs with or without the AI; the AI only sharpens the wording.
+        self.pattern_tracker = PatternTracker(home_id, away_id, season_profiles)
+        self.pattern_agent = PatternAnalystAgent(llm, critic) if llm is not None else None
+        self.pattern_gate = AlertGate()
+        self.on_patterns = on_patterns
+        self.latest_patterns: dict[str, dict] = {}
+        self._next_pattern_check = PATTERN_CHECK_MS
+        self._pattern_checks = 0
         if llm is not None:
             self.explainer = ExplainerAgent(llm)
             self.personaliser = PersonaliserAgent(llm)
@@ -137,6 +149,9 @@ class Orchestrator:
         """Process one event. Returns fast-path overlays at once; AI work continues in the background."""
         self.match_now = e.elapsed_ms
         fast: list[Overlay] = []
+        self.pattern_tracker.observe(e)
+        if e.elapsed_ms >= self._next_pattern_check or e.type == "period_end":
+            self._check_patterns(e)
         moments = self.scout.observe(e)
         self.state.add_moments(moments)
         for m in moments:
@@ -278,6 +293,77 @@ class Orchestrator:
         self.contexts.append(card_out)
         if self.on_context:
             self.on_context(card_out)
+
+    # ---------- Pattern Analyst ----------
+
+    def _check_patterns(self, e: Event) -> None:
+        """Every 5 match minutes: update alerts; publish notes every 10 minutes, at the end of a half, or on an alert."""
+        if e.type != "period_end":
+            self._next_pattern_check += PATTERN_CHECK_MS
+        self._pattern_checks += 1
+        today = {p.id for p in self.pattern_tracker.patterns()}
+        alerts = self.pattern_gate.update(today)
+        if alerts or e.type == "period_end" or self._pattern_checks % 2 == 0:
+            self._spawn(self._publish_patterns(display_minute(e), e.elapsed_ms, sorted(alerts)))
+
+    async def _publish_patterns(self, minute: str, elapsed_ms: int, alerts: list[str]) -> None:
+        tracker = self.pattern_tracker
+        candidates, per_team = [], {}
+        for p in tracker.patterns() + tracker.style_notes():
+            if per_team.get(p.team_id, 0) < 4:
+                per_team[p.team_id] = per_team.get(p.team_id, 0) + 1
+                candidates.append(p)
+        if not candidates:
+            return
+        english: list[Note] = plain_notes(candidates, self.names, "en")
+        if self.pattern_agent is not None:
+            start = time.perf_counter()
+            with tracer.start_as_current_span("invoke_agent pattern_analyst", attributes={
+                "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "pattern_analyst",
+            }) as span:
+                try:
+                    english = await self.pattern_agent.run(candidates, self.names)
+                    span.set_attribute("pa.outcome", "ok")
+                    self._trace("patterns", "*", "pattern_analyst", "ok", self.pattern_agent.model,
+                                (time.perf_counter() - start) * 1000)
+                except Exception as err:  # the plain wording stands
+                    span.set_status(StatusCode.ERROR, repr(err)[:200])
+                    self._trace("patterns", "*", "pattern_analyst", "error", detail=repr(err)[:200])
+        by_id = {p.id: p for p in candidates}
+        for language in sorted({a.language for a in self.audiences} or {"en"}):
+            notes = english if language == "en" else await self._localise_notes(english, by_id, language)
+            payload = {
+                "type": "patterns", "minute": minute, "elapsed_ms": elapsed_ms, "language": language,
+                "notes": [n.model_dump() for n in notes], "alerts": alerts,
+                "fan_lines": fan_lines(candidates, self.names, language),
+            }
+            self.latest_patterns[language] = payload
+            if self.on_patterns:
+                self.on_patterns(payload)
+
+    async def _localise_notes(self, notes: list[Note], by_id: dict, language: str) -> list[Note]:
+        out = []
+        plain = {n.pattern_id: n for n in plain_notes(list(by_id.values()), self.names, language)}
+        for n in notes:
+            if n.source != "ai" or self.pattern_agent is None:
+                out.append(plain.get(n.pattern_id) or n)
+                continue
+            try:
+                res = await self.translator.run_full(Personalised(headline="-", body=n.text), language)
+                text = res.value.body
+                # Numbers and names are re-checked; the "season wording" check is for English text only.
+                problems = [x for x in self.pattern_agent.problems(text, by_id[n.pattern_id], self.names)
+                            if not x.startswith("a season style")]
+                out.append(plain[n.pattern_id] if problems else n.model_copy(update={"text": text}))
+            except Exception:
+                out.append(plain[n.pattern_id])
+        return out
+
+    def _trace(self, moment_id: str, audience: str, agent: str, outcome: str, model=None, ms=0.0, detail=""):
+        event = TraceEvent(moment_id, audience, agent, outcome, model, ms, detail)
+        self.trace.append(event)
+        if self.on_trace:
+            self.on_trace(event)
 
     def _publish(self, o: Overlay) -> None:
         self.published.append(o)

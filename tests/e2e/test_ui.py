@@ -439,3 +439,41 @@ def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
     assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=added-time]')).backgroundColor") == "rgb(233, 0, 82)"
     expect(hero.locator("[data-testid^=scorers-] li").first).to_be_visible(timeout=40_000)
     expect(hero.locator("[data-testid^=scorers-] li").first).to_contain_text(re.compile(r"\w+ \d+'"))
+
+
+# ---------- Pattern Analyst (PA-*) ----------
+
+def pattern_match(base: str, speed: float = 600) -> str:
+    r = httpx.post(f"{base}/api/matches", json={"home": "har", "away": "kin", "seed": 42, "speed": speed})
+    r.raise_for_status()
+    return r.json()["match_id"]
+
+
+def test_desk_patterns_panel_shows_notes_and_their_pitch(server, page: Page):
+    page.goto(f"{server}/desk?match={pattern_match(server)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    page.get_by_role("tab", name="Patterns").click()
+    notes = page.get_by_test_id("pattern-note")
+    expect(notes.first).to_be_visible(timeout=10_000)
+    expect(page.locator("[data-testid=pattern-note][data-scope=match]").first).to_contain_text("down the left")
+    expect(page.locator("[data-testid=pattern-note][data-scope=season]").first).to_contain_text("this season")
+    page.locator("[data-testid=pattern-note][data-kind=flank]").first.click()
+    pitch = page.get_by_test_id("pattern-pitch")
+    expect(pitch).to_have_attribute("data-kind", "flank")
+    expect(pitch.locator("[data-testid=channel-share]")).to_have_count(3)
+
+
+def test_pattern_alerts_appear_among_talking_points(server, page: Page):
+    page.goto(f"{server}/desk?match={pattern_match(server)}")
+    alert = page.get_by_test_id("pattern-alert").first
+    expect(alert).to_be_visible(timeout=60_000)
+    expect(alert).to_contain_text("Harbourside keep going down the left")
+
+
+def test_fan_stats_show_how_each_team_is_playing(server, page: Page):
+    page.goto(f"{server}/fan?match={pattern_match(server, speed=300)}")
+    page.get_by_role("button", name="Stats").click()
+    card = page.get_by_test_id("how-they-play")
+    expect(card).to_be_visible(timeout=60_000)
+    expect(card).to_contain_text(re.compile(r"Harbourside attack mostly down the left|Jovanovic is running Harbourside"))
+    expect(card.locator(r"text=/\d/")).to_have_count(0)  # plain words, no numbers

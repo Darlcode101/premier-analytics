@@ -10,6 +10,7 @@ import { scorers } from '../desk'
 import { formatClock, useMatchClock } from '../clock'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
+import type { State } from '../state'
 import type { Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
@@ -31,6 +32,35 @@ function MomentCard({ o, color, names, lang, mine }: { o: Overlay; color: string
         {open && <Evidence overlay={o} names={names} lang={lang} />}
       </div>
     </article>
+  )
+}
+
+/** PA-7: one plain line per team on how they're playing, with where they attack shown as a bar (no numbers). */
+function HowTheyPlay({ state, colors, lang, order }: { state: State; colors: Record<string, string>; lang: Language; order: string[] }) {
+  const lines = state.patterns?.fan_lines ?? {}
+  const h = state.hello
+  if (!h || !order.some(id => lines[id])) return null
+  return (
+    <section className="how-they-play" data-testid="how-they-play">
+      <h3 className="section-title">{t(lang, 'howTheyPlay')}</h3>
+      {order.map(id => {
+        const shape = state.shape?.[id === h.home.id ? 'home' : 'away']
+        const total = shape ? shape.entries.left + shape.entries.centre + shape.entries.right : 0
+        return lines[id] && (
+          <div key={id} className="htp-row" style={{ '--team': colors[id] } as React.CSSProperties}>
+            <p dir="auto">{lines[id]}</p>
+            {shape && total > 0 && (
+              <div className="htp-bar" dir="ltr" role="img" aria-label={t(lang, 'attackSides')}>
+                {(['left', 'centre', 'right'] as const).map(c => (
+                  <span key={c} style={{ flexGrow: shape.entries[c] || 0.01, opacity: 0.35 + (0.65 * shape.entries[c]) / total }} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+      <p className="htp-legend">{t(lang, 'attackSides')}</p>
+    </section>
   )
 }
 
@@ -161,7 +191,12 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               </div>
             </>
           )}
-          {tab === 'stats' && <div className="sheet-pad"><Stats state={state} colors={colors} lang={lang} names={names} topTeam={clubId} /></div>}
+          {tab === 'stats' && (
+            <div className="sheet-pad">
+              <HowTheyPlay state={state} colors={colors} lang={lang} order={board ? [board.left.club.id, board.right.club.id] : []} />
+              <Stats state={state} colors={colors} lang={lang} names={names} topTeam={clubId} />
+            </div>
+          )}
           {tab === 'recap' && <div className="sheet-pad"><Recaps state={state} lang={lang} /></div>}
           {tab === 'me' && h && (
             <div className="sheet-pad settings" data-testid="me">

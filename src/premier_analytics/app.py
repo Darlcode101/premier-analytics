@@ -122,7 +122,7 @@ class Viewer:
 class MatchSession:
     def __init__(self, match_id: str, req: MatchRequest, league: League, llm: LLM | None, critic: CriticAgent,
                  max_ai_audiences: int, season: Season | None = None, library: list[ContextEntry] | None = None,
-                 researcher: ResearcherAgent | None = None):
+                 researcher: ResearcherAgent | None = None, profiles: dict | None = None):
         self.id = match_id
         self.req = req
         self.league = league
@@ -144,6 +144,7 @@ class MatchSession:
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
             on_trace=self._on_trace, max_ai_audiences=max_ai_audiences,
             context_library=library, on_context=self._on_context,
+            season_profiles=profiles, on_patterns=self._on_patterns,
         )
         self.library = library or []
         self.ask_desk = AskDesk(researcher) if researcher else None
@@ -172,6 +173,7 @@ class MatchSession:
             "incidents": list(self.incidents), "subs_allowed": SUBS_ALLOWED, "season": self.season,
             "context": [c for c in self.orch.contexts if a.mode == "analyst" and c["language"] == a.language],
             "explainers": self._explainers(a.language),
+            "patterns": self.orch.latest_patterns.get(a.language),
         }
 
     def _explainers(self, language: str) -> dict:
@@ -240,6 +242,9 @@ class MatchSession:
         self._send({"type": "overlay", "overlay": o.model_dump(mode="json")}, audience=o.audience)
         self._push_screens()
 
+    def _on_patterns(self, payload: dict) -> None:
+        self._send(payload, language=payload["language"])
+
     def _on_context(self, card: dict) -> None:
         for v in self.viewers:
             if v.audience.mode == "analyst" and v.audience.language == card["language"]:
@@ -287,7 +292,9 @@ class MatchSession:
             data["last10"] = last_window(data, then[side] if then else None, snap.elapsed_ms, then_ms)
         players = {pid: {k: round(getattr(p, k), 3) if isinstance(getattr(p, k), float) else getattr(p, k)
                          for k in PLAYER_FIELDS} for pid, p in snap.players.items()}
-        return {"type": "stats", "home": home, "away": away, "players": players,
+        tracker = self.orch.pattern_tracker
+        shape = {"home": tracker.summary(self.names.home_id), "away": tracker.summary(self.names.away_id)}
+        return {"type": "stats", "home": home, "away": away, "players": players, "shape": shape,
                 "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period,
                 "elapsed_ms": snap.elapsed_ms, "attack": self.attack.point(minute)}
 
@@ -364,6 +371,7 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
     league = load_league()
     if season == "default":
         season = default_season()
+    profiles = season.profiles() if season else None
     if context_library == "default":
         context_library = load_library()
     if researcher == "env":
@@ -386,7 +394,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
         if len(sessions) >= max_sessions:
             raise HTTPException(429, "too many matches running; try again shortly")
         sid = uuid.uuid4().hex[:8]
-        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences, season, context_library, researcher)
+        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences, season, context_library, researcher,
+                                     profiles)
         return sessions[sid]
 
     @app.get("/api/health")

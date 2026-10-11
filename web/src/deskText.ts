@@ -96,6 +96,13 @@ const en = {
   explainers: 'Explainers',
   noContext: 'Context cards appear beside big moments.',
   explain: 'What is this?',
+  patterns: 'Patterns',
+  today: 'Today',
+  knownFor: 'Known for',
+  newPattern: 'New pattern',
+  noPatterns: 'Patterns appear once there is enough evidence (checked every 5 minutes).',
+  patternHint: 'Select a note to see it on the pitch. Arrows: attacks into the final third.',
+  patternMethod: 'Only patterns that pass a significance test are shown; "known for" comes from this season.',
 } as const
 
 export type DeskKey = keyof typeof en
@@ -196,6 +203,13 @@ const es: Dict = {
   explainers: 'Explicaciones',
   noContext: 'El contexto aparece junto a las jugadas importantes.',
   explain: '¿Qué es esto?',
+  patterns: 'Patrones',
+  today: 'Hoy',
+  knownFor: 'Conocido por',
+  newPattern: 'Nuevo patrón',
+  noPatterns: 'Los patrones aparecen cuando hay pruebas suficientes (se revisa cada 5 minutos).',
+  patternHint: 'Elige una nota para verla en el campo. Flechas: llegadas al último tercio.',
+  patternMethod: 'Solo se muestran patrones que superan una prueba de significación; "conocido por" viene de esta temporada.',
 }
 
 const ar: Dict = {
@@ -293,6 +307,13 @@ const ar: Dict = {
   explainers: 'شروحات',
   noContext: 'تظهر بطاقات السياق بجانب اللحظات المهمة.',
   explain: 'ما هذا؟',
+  patterns: 'الأنماط',
+  today: 'اليوم',
+  knownFor: 'معروف بـ',
+  newPattern: 'نمط جديد',
+  noPatterns: 'تظهر الأنماط عند توفر أدلة كافية (تُفحص كل 5 دقائق).',
+  patternHint: 'اختر ملاحظة لعرضها على الملعب. الأسهم: الهجمات نحو الثلث الأخير.',
+  patternMethod: 'لا تُعرض إلا الأنماط التي تجتاز اختبار الدلالة الإحصائية؛ "معروف بـ" من هذا الموسم.',
 }
 
 export const deskDictionaries: Record<Language, Dict> = { en, es, ar }

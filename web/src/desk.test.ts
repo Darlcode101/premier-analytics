@@ -161,3 +161,17 @@ describe('followed player (F-5)', () => {
     expect(involves(o('p9'), null)).toBe(false)
   })
 })
+
+describe('patterns (PA-6)', () => {
+  it('alerted patterns become talking points once', () => {
+    const note = (id: string) => ({ pattern_id: id, team_id: 'har', kind: 'flank' as const, scope: 'match' as const, value: 'left',
+      text: 't', numbers: {}, source: 'plain' as const })
+    const upd = (alerts: string[], minute: string) => ({ type: 'patterns' as const, minute, elapsed_ms: 1, language: 'en' as const,
+      notes: [note('a'), note('b')], alerts, fan_lines: {} })
+    let s = reducer(initialState, upd([], '10'))
+    s = reducer(s, upd(['a'], '15'))
+    s = reducer(s, upd(['a'], '20'))
+    expect(s.patternAlerts.map(a => [a.pattern_id, a.minute])).toEqual([['a', '15']])
+    expect(s.patterns?.minute).toBe('20')
+  })
+})

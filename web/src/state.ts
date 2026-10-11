@@ -1,4 +1,4 @@
-import type { AttackPoint, ContextCard, Hello, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, ContextCard, Hello, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -39,13 +39,16 @@ export interface State {
   players: Record<string, PlayerLine>
   contexts: ContextCard[]
   clockMs: number  // match clock from the latest event or stats
+  patterns: PatternsUpdate | null
+  patternAlerts: (PatternNote & { minute: string; elapsed_ms: number })[]
+  shape: { home: TeamShape; away: TeamShape } | null
 }
 
 export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
-  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0,
+  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -75,6 +78,9 @@ export function reducer(s: State, m: Action): State {
         animatedMoments: s.hello?.match_id === m.match_id ? s.animatedMoments : new Set(),
         incidents: m.incidents ?? [],
         contexts: m.context ?? [],
+        patterns: m.patterns ?? null,
+        patternAlerts: s.hello?.match_id === m.match_id ? s.patternAlerts : [],
+        shape: s.hello?.match_id === m.match_id ? s.shape : null,
         players: s.hello?.match_id === m.match_id ? s.players : {},
       }
     case 'backfill': {
@@ -109,7 +115,7 @@ export function reducer(s: State, m: Action): State {
         attack = [...s.attack.filter(a => a.minute !== p.minute), p].sort((a, b) => a.minute - b.minute)
       }
       return { ...s, stats: { home: m.home, away: m.away }, momentum, attack, players: m.players ?? s.players,
-        clockMs: m.period === s.period ? Math.max(s.clockMs, m.clock_ms) : s.clockMs }
+        clockMs: m.period === s.period ? Math.max(s.clockMs, m.clock_ms) : s.clockMs, shape: m.shape ?? s.shape }
     }
     case 'overlay': {
       const o = m.overlay
@@ -134,6 +140,13 @@ export function reducer(s: State, m: Action): State {
     }
     case 'incident':
       return s.incidents.some(i => i.id === m.incident.id) ? s : { ...s, incidents: [...s.incidents, m.incident] }
+    case 'patterns': {
+      // PA-6: alerted patterns become talking points (once each).
+      const known = new Set(s.patternAlerts.map(a => a.pattern_id))
+      const fresh = m.notes.filter(n => m.alerts.includes(n.pattern_id) && !known.has(n.pattern_id))
+        .map(n => ({ ...n, minute: m.minute, elapsed_ms: m.elapsed_ms }))
+      return { ...s, patterns: m, patternAlerts: fresh.length ? [...s.patternAlerts, ...fresh] : s.patternAlerts }
+    }
     case 'context': {
       const c = m.context
       const known = s.contexts.some(x => x.moment_id === c.moment_id && x.language === c.language)
