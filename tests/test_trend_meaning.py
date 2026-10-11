@@ -104,3 +104,14 @@ def test_superlatives_need_the_spell_fact():
 
 def test_first_half_is_not_a_superlative():
     assert problems("Pressure building in the first half.", trend(spell_rank="back on top")) == []
+
+
+def test_score_wording_must_match_the_stakes():
+    from premier_analytics.scout import STAKES
+    level = trend(stakes=STAKES["opener"], spell_rank="back on top", score_home=0, score_away=0)
+    assert any("trail" in p for p in problems("Northgate dominate but trail 0-0.", level))
+    assert problems("Northgate dominate but it's still 0-0.", level) == []
+    up = trend(stakes=STAKES["one_up"], spell_rank="back on top")
+    assert any("equalis" in p for p in problems("Harbourside push for an equaliser.", up))
+    down = trend(stakes=STAKES["one_down"], spell_rank="back on top")
+    assert any("protect" in p for p in problems("Harbourside protect their lead.", down))

@@ -246,6 +246,15 @@ RATIO_WORDS = (
     (re.compile(r"\b(double[ds]?|twice|two times)\b", re.I), "double", (1.75, 2.4)),
     (re.compile(r"\b(triple[ds]?|treble[ds]?|three times)\b", re.I), "three times", (2.6, 3.5)),
 )
+# Score wording that contradicts the scout's stakes fact (e.g. "trail" at 0-0).
+_LEVEL = ("goalless, pushing for the opening goal", "level, pushing to go ahead")
+_AHEAD = ("one goal up, looking for a second to make it safer", "two or more goals up, in control")
+_BEHIND = ("one goal down, chasing an equaliser", "two or more goals down, chasing the game")
+STAKES_CONTRADICTIONS = (
+    (("trail", "behind", "deficit"), _LEVEL),
+    (("trail", "behind", "equalis", "equaliz", "deficit", "chasing"), _AHEAD),
+    (("protect", "in front", "extend"), _BEHIND),
+)
 STRONGEST = re.compile(r"\b(strongest|most dominant|best (spell|period))\b", re.I)
 FIRST_TIME = re.compile(r"\bfirst time\b", re.I)
 
@@ -260,6 +269,10 @@ def comparison_problems(text: str, m: Moment) -> list[str]:
     for pattern, word, (low, high) in RATIO_WORDS:
         if pattern.search(text) and not any(low <= r <= high for r in ratios):
             problems.append(f"'{word}' is not supported by the facts")
+    stakes = next((f.value for f in m.facts if f.label == "stakes"), None)
+    for words, phrases in STAKES_CONTRADICTIONS:
+        if stakes in phrases:
+            problems += [f"'{w}' contradicts the score ({stakes})" for w in words if re.search(rf"\b{w}", text, re.I)]
     rank = next((f.value for f in m.facts if f.label == "spell_rank"), None)
     if rank is not None:
         if STRONGEST.search(text) and rank != "strongest spell so far":
