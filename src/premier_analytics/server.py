@@ -12,11 +12,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from . import telemetry
 from .app import create_app
 from .demo_llm import down_llm, scripted_llm
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
+# Traces to the Application Insights resource attached to the Foundry project (A-7), if configured.
+telemetry.configure(os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"), os.environ.get("PA_VERSION", "dev"))
 
 mode = os.environ.get("PA_AI", "on")
 llm = {"off": None, "fake": scripted_llm(), "down": down_llm()}.get(mode, "env")

@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import asyncio
 import time
+
+from opentelemetry.trace import StatusCode
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -23,6 +25,7 @@ from .agents import (
 from .mcp_server import MatchState
 from .overlay import STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, fast_overlay, validate
 from .recap import Recap, RecapProducer
+from .telemetry import tracer
 from .schema import Event
 from .scout import Moment, MomentScout
 
@@ -45,6 +48,10 @@ class TraceEvent:
 
 class _Stop(Exception):
     """The AI path gave up for this moment/audience; the fast overlay stays."""
+
+    def __init__(self, reason: str = "rejected"):
+        super().__init__(reason)
+        self.reason = reason  # rejected | error
 
 
 class Orchestrator:
@@ -148,11 +155,17 @@ class Orchestrator:
     async def _recap(self, m: Moment) -> None:
         for language in sorted({a.language for a in self.audiences}):
             start = time.perf_counter()
-            try:
-                recap = await self.recap_producer.run(m.kind, language)
-            except Exception as err:  # recaps are best-effort; the template overlay already covers HT/FT
-                self._record(m, language, "recap", "error", detail=repr(err)[:200])
-                continue
+            with tracer.start_as_current_span(f"recap {m.kind}", attributes={
+                "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "recap", "pa.language": language,
+            }) as span:
+                try:
+                    recap = await self.recap_producer.run(m.kind, language)
+                except Exception as err:  # recaps are best-effort; the template overlay already covers HT/FT
+                    span.set_status(StatusCode.ERROR, repr(err)[:200])
+                    span.set_attribute("pa.outcome", "error")
+                    self._record(m, language, "recap", "error", detail=repr(err)[:200])
+                    continue
+                span.set_attribute("pa.outcome", "rejected" if recap is None else "published")
             ms = (time.perf_counter() - start) * 1000
             if recap is None:
                 self._record(m, language, "recap", "rejected", ms=ms)
@@ -178,18 +191,29 @@ class Orchestrator:
             self.on_trace(event)
 
     async def _call(self, m: Moment, audience: str, agent: str, coro):
-        try:
-            res = await coro
-        except AllModelsFailed as err:
-            self._record(m, audience, agent, "error", detail=str(err))
-            raise _Stop() from err
-        self._record(m, audience, agent, "ok", res.model, res.ms)
-        return res.value
+        with tracer.start_as_current_span(f"invoke_agent {agent}", attributes={
+            "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": agent,
+            "pa.moment.id": m.id, "pa.audience": audience,
+        }) as span:
+            try:
+                res = await coro
+            except AllModelsFailed as err:
+                span.set_status(StatusCode.ERROR, str(err)[:200])
+                span.set_attribute("pa.outcome", "error")
+                self._record(m, audience, agent, "error", detail=str(err))
+                raise _Stop("error") from err
+            span.set_attributes({"gen_ai.request.model": res.model, "pa.outcome": "ok", "pa.latency_ms": round(res.ms)})
+            self._record(m, audience, agent, "ok", res.model, res.ms)
+            return res.value
 
     def _check(self, m: Moment, audience: str, headline: str, body: str, evidence=None, viewer=None) -> str:
         """Run the Critic; returns '' if approved, else the feedback text."""
         start = time.perf_counter()
-        verdict = self.critic.review(headline, body, m, self.names, evidence=evidence, audience=viewer)
+        with tracer.start_as_current_span("critic") as span:
+            verdict = self.critic.review(headline, body, m, self.names, evidence=evidence, audience=viewer)
+            span.set_attribute("pa.critic.verdict", "ok" if verdict.ok else "rejected")
+            if verdict.problems:
+                span.set_attribute("pa.critic.problems", "; ".join(verdict.problems)[:500])
         ms = (time.perf_counter() - start) * 1000
         outcome = "ok" if verdict.ok else "rejected"
         self._record(m, audience, "critic", outcome, None, ms, "; ".join(verdict.problems))
@@ -227,6 +251,16 @@ class Orchestrator:
         return cache[key]
 
     async def _enrich(self, m: Moment, a: Audience, fast: Overlay, started: float) -> None:
+        with tracer.start_as_current_span(f"moment {m.kind}", attributes={
+            "pa.moment.id": m.id, "pa.moment.kind": m.kind, "pa.moment.severity": m.severity,
+            "pa.audience": a.key, "pa.language": a.language, "pa.mode": a.mode,
+        }) as span:
+            outcome = await self._enrich_traced(m, a, fast, started)
+            span.set_attribute("pa.outcome", outcome)
+            if outcome == "error":
+                span.set_status(StatusCode.ERROR)
+
+    async def _enrich_traced(self, m: Moment, a: Audience, fast: Overlay, started: float) -> str:
         try:
             exp = await self._shared(self._explanations, m.id, lambda: self._explain(m))
             persona = (m.id, a.mode, a.club_id, a.player_id)
@@ -235,11 +269,11 @@ class Orchestrator:
                 text = await self._shared(
                     self._translations, persona + (a.language,), lambda: self._translate(m, text, a),
                 )
-        except _Stop:
-            return
+        except _Stop as stop:
+            return stop.reason
         except Exception as err:  # never let the AI path take the stream down
             self._record(m, a.key, "orchestrator", "error", detail=repr(err)[:200])
-            return
+            return "error"
 
         age_ms = (time.perf_counter() - started) * 1000
         upgraded = fast.model_copy(update={
@@ -252,6 +286,7 @@ class Orchestrator:
         except ValidationError as err:
             outcome = "stale" if "stale" in str(err) else "rejected"
             self._record(m, a.key, "validator", outcome, ms=age_ms, detail=str(err))
-            return
+            return outcome
         self._record(m, a.key, "validator", "published", ms=age_ms)
         self._publish(upgraded)
+        return "published"
