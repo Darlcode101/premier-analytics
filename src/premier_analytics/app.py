@@ -95,6 +95,23 @@ def _abs_coords(e: Event, home_id: str) -> dict[str, float | None]:
     return {"x": fx(e.x), "y": fy(e.y), "end_x": fx(e.end_x), "end_y": fy(e.end_y)}
 
 
+def fitting_ai_version(overlays: list[Overlay], a: Audience) -> Overlay | None:
+    """F-4: an AI version written for another audience that still fits this one: same mode and language,
+    and not written for a different club or player. Prefers the closest (same club, then neutral)."""
+    def parts(key: str) -> tuple[str, str, str | None, str | None]:
+        mode, language, club, player = key.split(".")
+        return mode, language, None if club == "-" else club, None if player == "-" else player
+
+    fits = []
+    for o in overlays:
+        mode, language, club, player = parts(o.audience)
+        if (o.source == "ai" and mode == a.mode and language == a.language
+                and club in (None, a.club_id) and player in (None, a.player_id)):
+            closeness = (club == a.club_id and club is not None) * 2 + (player == a.player_id and player is not None)
+            fits.append((closeness, o.version, o))
+    return max(fits, key=lambda f: (f[0], f[1]))[2] if fits else None
+
+
 @dataclass
 class Viewer:
     audience: Audience
@@ -172,17 +189,29 @@ class MatchSession:
         self.viewers.append(v)
         self.orch.add_audience(a)
         v.queue.put_nowait(self.hello(a))
-        wanted = [m for m in self.orch.state.moments if a.wants(m)][-BACKFILL:]
+        wanted = self.orch.visible(a)[-BACKFILL:]
         # Latest version of each overlay already produced for this audience (AI upgrades included).
         latest: dict[str, Overlay] = {}
+        ai_by_moment: dict[str, list[Overlay]] = {}
         for o in self.orch.published:
             if o.audience == a.key and (o.id not in latest or o.version > latest[o.id].version):
                 latest[o.id] = o
+            if o.source == "ai":
+                ai_by_moment.setdefault(o.moment_id, []).append(o)
+
+        def best(m) -> Overlay:
+            own = latest.get(overlay_id(m, a))
+            if own is not None and own.source == "ai":
+                return own
+            # F-4: after a settings change, reuse an AI version written for a compatible audience.
+            borrowed = fitting_ai_version(ai_by_moment.get(m.id, []), a)
+            if borrowed is not None:
+                return borrowed.model_copy(update={"id": overlay_id(m, a), "audience": a.key})
+            return own or fast_overlay(m, a, self.names)
+
         v.queue.put_nowait({
             "type": "backfill",
-            "overlays": [
-                (latest.get(overlay_id(m, a)) or fast_overlay(m, a, self.names)).model_dump(mode="json") for m in wanted
-            ],
+            "overlays": [best(m).model_dump(mode="json") for m in wanted],
         })
         if self.status != "waiting":
             v.queue.put_nowait(self._stats())
@@ -217,7 +246,9 @@ class MatchSession:
                 v.queue.put_nowait({"type": "context", "context": card})
 
     def _on_recap(self, r: Recap) -> None:
-        self._send({"type": "recap", "recap": r.model_dump(mode="json")}, language=r.language)
+        for v in self.viewers:
+            if v.audience.language == r.language and v.audience.mode == r.mode:
+                v.queue.put_nowait({"type": "recap", "recap": r.model_dump(mode="json")})
 
     def _on_trace(self, t: TraceEvent) -> None:
         msg = {"type": "trace", "trace": {

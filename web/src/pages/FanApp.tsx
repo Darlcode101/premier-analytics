@@ -5,21 +5,23 @@ import { Celebration, Crest, Evidence, KindIcon, ZoneMap } from '../components/S
 import { Recaps, Stats } from '../components/Panels'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import { kitColors } from '../colors'
-import { scoreboardSides } from '../scoreboard'
+import { involves, scoreboardSides } from '../scoreboard'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
 import type { Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
 
-function MomentCard({ o, color, names, lang }: { o: Overlay; color: string; names: Record<string, string>; lang: Language }) {
+function MomentCard({ o, color, names, lang, mine }: { o: Overlay; color: string; names: Record<string, string>; lang: Language; mine: boolean }) {
   const [open, setOpen] = useState(false)
   return (
-    <article className={`moment-card k-${o.kind}`} dir={o.direction} data-testid="feed-item" style={{ '--team': color } as React.CSSProperties}>
+    <article className={`moment-card k-${o.kind}${mine ? ' mine' : ''}`} dir={o.direction} data-testid="feed-item"
+      data-mine={mine ? 'true' : undefined} style={{ '--team': color } as React.CSSProperties}>
       <div className="moment-minute">{localDigits(o.minute, lang)}'</div>
       <div className="moment-body">
         <div className="moment-kind"><KindIcon kind={o.kind} /> {KIND_LABELS[lang][o.kind] ?? o.kind}
           {o.source === 'ai' && <span className="ai-tag">AI</span>}
+          {mine && <span className="mine-tag"><i aria-hidden />{t(lang, 'yourPlayer')}</span>}
         </div>
         <h3>{localDigits(o.headline, lang)}</h3>
         <p>{localDigits(o.body, lang)}</p>
@@ -101,17 +103,24 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
           {possessionClub && (
             <p className="possession-line"><span className="dot" />{possessionClub.short_name} {t(lang, 'inPossession')}</p>
           )}
+          {playerId && names[playerId] && (
+            <p className="following-chip" data-testid="following">
+              <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" /></svg>
+              {t(lang, 'following')} <b dir="auto">{names[playerId]}</b>
+            </p>
+          )}
         </section>
 
         <section className="sheet">
           {tab === 'live' && (
             <>
-              <ZoneMap state={state} colors={colors} lang={lang}
+              <ZoneMap state={state} colors={colors} lang={lang} layout="row"
                 mirror={h ? mirrorFor(clubId, state.period, h.home.id) : false} />
               <div className="timeline">
                 {!state.feed.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
                 {state.feed.map(o => (
-                  <MomentCard key={o.id} o={o} color={(o.team_id && colors[o.team_id]) || '#37003c'} names={names} lang={lang} />
+                  <MomentCard key={o.id} o={o} color={(o.team_id && colors[o.team_id]) || '#37003c'} names={names} lang={lang}
+                    mine={involves(o, playerId)} />
                 ))}
               </div>
             </>
@@ -150,6 +159,11 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
                   ))}
                 </select>
               </label>
+              {playerId && names[playerId] && (
+                <p className="follow-confirm" data-testid="follow-confirm">
+                  {t(lang, 'followConfirm').replace('{name}', names[playerId])}
+                </p>
+              )}
               <p className="fictional dark">{t(lang, 'fictional')}</p>
             </div>
           )}

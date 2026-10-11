@@ -121,6 +121,16 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Context cards translated; links unchanged | CX-5 | pytest + e2e |
 | With search down, desk otherwise unchanged and no context errors shown | CX-6 | e2e |
 
+### Fan app polish (F-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Trend throttle: same team within 15' dropped, other team allowed, after 15' allowed; fans get fewer trend cards than commentators over a full match | F-1 | pytest |
+| Late-joining fan's backfill equals what a fan watching from kick-off saw | F-1 | pytest |
+| Latest card's headline is above the tab bar on a 375×812 phone | F-2 | e2e |
+| Fan recap written separately with plain instructions; decimals and jargon rejected for fans only; fans and commentators each receive their own | F-3 | pytest |
+| After a settings change, backfill reuses a fitting AI version, never one written for another club or player | F-4 | pytest |
+| Following a player shows the chip and the confirmation; clearing it removes them; cards about the player are marked | F-5 | e2e + unit |
+
 ## 8. Non-functional
 - Latency at 1× over a full match: fast path p95 ≤ 0.5 s, AI upgrade p95 ≤ 4 s (N-1).
 - Cost per full match logged; projected judging cost < budget (N-2).

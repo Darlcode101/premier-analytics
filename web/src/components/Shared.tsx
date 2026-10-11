@@ -99,8 +99,10 @@ function PitchMarkings() {
 }
 
 /** A pitch with a glowing hue in the possessing team's colour over the ball's area (one of 9 zones). */
-export function ZoneMap({ state, colors, lang, compact = false, mirror = false }: {
+export function ZoneMap({ state, colors, lang, compact = false, mirror = false, layout = 'stack' }: {
   state: State; colors: Record<string, string>; lang: Language; compact?: boolean
+  /** 'row': pitch thumbnail beside the text, so the story below stays on screen (F-2). */
+  layout?: 'stack' | 'row'
   /** Flip the drawing end to end (e.g. so the fan's club always attacks right). The label is unaffected. */
   mirror?: boolean
 }) {
@@ -113,7 +115,7 @@ export function ZoneMap({ state, colors, lang, compact = false, mirror = false }
   const cx = cell ? (cell.col + 0.5) * (PITCH_L / 3) : PITCH_L / 2
   const cy = cell ? (cell.row + 0.5) * (PITCH_W / 3) : PITCH_W / 2
   return (
-    <div className={`zone-card${compact ? ' compact' : ''}`} data-testid="zone-map">
+    <div className={`zone-card${compact ? ' compact' : ''}${layout === 'row' ? ' row' : ''}`} data-testid="zone-map">
       <div className="zone-head"><span>{t(lang, 'whereBall')}</span></div>
       <svg className="mini-pitch" viewBox={`0 0 ${PITCH_L} ${PITCH_W}`} role="img" aria-label={sentence ?? t(lang, 'offBall')}
         data-testid="mini-pitch" data-mirrored={mirror}>

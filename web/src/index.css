@@ -130,6 +130,20 @@ button, select, input { font: inherit; color: inherit; }
 .mini-pitch .attack-chevron { opacity: .9; filter: drop-shadow(0 0 1.5px rgba(0,0,0,.4)); }
 .zone-card.compact .mini-pitch { max-height: 170px; }
 .zone-text { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--ink); }
+/* F-2: ball map beside its sentence so the latest moment stays above the fold */
+.zone-card.row { display: grid; grid-template-columns: 58% 1fr; grid-template-rows: auto 1fr; column-gap: 12px; align-items: center; padding: 10px 12px; margin-block: 10px 4px; }
+.zone-card.row .mini-pitch { grid-row: 1 / 3; grid-column: 1; }
+.zone-card.row .zone-head { grid-column: 2; margin: 0; align-self: end; font-size: 11px; }
+.zone-card.row .zone-text { grid-column: 2; margin: 2px 0 0; text-align: start; align-self: start; font-size: 13px; line-height: 1.3; }
+.following-chip { display: inline-flex; align-items: center; gap: 6px; margin: 6px auto 0; padding: 3px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.16); font-size: 12px; color: #fff; }
+.following-chip svg { fill: currentColor; opacity: .85; }
+.hero .following-chip { display: flex; width: fit-content; }
+.follow-confirm { margin: -4px 0 14px; font-size: 13px; color: var(--ink-dim); }
+.moment-card.mine { box-shadow: inset 3px 0 0 var(--pl-pink); }
+[dir='rtl'] .moment-card.mine { box-shadow: inset -3px 0 0 var(--pl-pink); }
+.mine-tag { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: 6px; font-size: 11px; font-weight: 700; color: var(--pl-pink); text-transform: none; letter-spacing: 0; }
+.mine-tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--pl-pink); }
 .timeline { padding: 4px 14px 16px; }
 .moment-card { display: grid; grid-template-columns: 46px 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--sheet-line); }
 .moment-minute { font-family: 'Barlow Condensed', var(--font-display); font-weight: 800; font-size: 18px; color: var(--pl-purple); text-align: center; padding-top: 2px; direction: ltr; }

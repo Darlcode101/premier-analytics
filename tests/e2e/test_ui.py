@@ -377,3 +377,29 @@ def test_search_outage_is_reported_and_nothing_else_breaks(page: Page):
         expect(page.get_by_test_id("context-card")).to_have_count(0)
     finally:
         _stop(proc)
+
+
+# ---------- fan app polish (F-*) ----------
+
+def test_following_a_player_is_visible(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=60)}")
+    page.get_by_role("button", name="Me").click()
+    select = page.locator("select")
+    first = select.locator("optgroup").first.locator("option").nth(9)
+    value, label = first.get_attribute("value"), first.inner_text()
+    name = label.split(". ", 1)[1]
+    select.select_option(value)
+    expect(page.get_by_test_id("follow-confirm")).to_contain_text(name)
+    expect(page.get_by_test_id("following")).to_contain_text(name)
+    select.select_option("")
+    expect(page.get_by_test_id("following")).to_have_count(0)
+
+
+def test_latest_moment_is_visible_without_scrolling(server, page: Page):
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
+    card = page.get_by_test_id("feed-item").first
+    expect(card).to_be_visible(timeout=30_000)
+    box = card.bounding_box()
+    tabbar = page.locator("nav.tabbar").bounding_box()
+    assert box["y"] + 60 < tabbar["y"], (box, tabbar)  # the headline of the latest card is above the tab bar

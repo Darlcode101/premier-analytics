@@ -241,7 +241,7 @@ def test_fan_output_with_jargon_is_rejected():
     asyncio.run(go())
 
 
-def test_recaps_at_half_time_once_per_language():
+def test_recaps_at_half_time_once_per_mode_and_language():
     from premier_analytics.recap import Recap
 
     async def go():
@@ -256,8 +256,8 @@ def test_recaps_at_half_time_once_per_language():
         fx.add("period_end", 46 * 60, score_home=1, score_away=0)
         await play(orch, fx.events)
         await orch.drain()
-        assert llm.count("recap") == 1                       # written once in English...
-        assert sorted(r.language for r in orch.recaps) == ["en", "es"]  # ...then localised
+        assert llm.count("recap") == 2                       # written once in English per mode (F-3)...
+        assert sorted((r.mode, r.language) for r in orch.recaps) == [("analyst", "en"), ("fan", "en"), ("fan", "es")]
         assert all(r.kind == "half_time" for r in orch.recaps)
         assert any(t.agent == "recap" and t.outcome == "ok" for t in orch.trace)
 

@@ -187,6 +187,16 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | CX-7 | S | Traced like the other agents (searches counted); an evaluation spot-checks that card numbers match their sources |
 | CX-8 | S | Tactics explainers open from the stat labels on the desk (e.g. select "PPDA") |
 
+### 3.11 Fan app polish (signed off 2026-10-11, from a full live run on a phone)
+
+| ID | P | Requirement |
+|---|---|---|
+| F-1 | M | **Fewer trend cards for fans**: at most one momentum or pressure card per team every 15 match minutes, unless the other team takes over. Commentators still get every one. Late joiners see the same cards as viewers who were there |
+| F-2 | M | **Story first**: the ball map is compact so the latest moment is visible on a phone without scrolling |
+| F-3 | M | **Fan recap**: fans get their own recap in plain words (whole numbers, no xG or other analytics jargon); commentators keep the detailed one |
+| F-4 | S | **Keep AI cards on a settings change**: a viewer who changes club, player or language mid-match keeps AI versions of earlier moments where one fits (same mode and language, and the other version wasn't written for a different club or player); otherwise the instant version |
+| F-5 | M | **Following a player is visible**: when a player is followed, the match header says so (name), the settings confirm it, and cards about that player are marked |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -235,6 +245,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | Fan polish (§3.11) checked live on a phone with real models: trend cards in a full match 10 → 5, latest moment above the fold, fan recap in whole numbers without xG, followed player marked on its cards |
 | 10-11 | N-2: spend to date £0.66 (Cost Management, 1–11 Oct). The user confirms budget alerts are set up (not at subscription scope, so presumably on the billing account) |
 | 10-11 | Live: the app identity needed *Foundry User* on the Foundry resource for web search (403 with OpenAI User only); granted with the user's approval, scoped to that resource. Seen live: a card applied the stoppage-time-goals benchmark to an 88th-minute goal ("late goals"), a misuse the number checks can't catch |
 | 10-11 | Real-world context (§3.10) built. Library: 16 entries (7 benchmarks, 9 tactics explainers) from the Researcher's web search. Every number had to appear on a cited page; benchmarks also had to agree with the independently sourced figures in docs/REALISM.md and be full-season league figures. The checks rejected wrong figures the search returned (home wins 39 % and 43 %, conversion 8.5 %), partial-season and projected numbers, and sums the model calculated itself. Two calibration figures of ours were also rejected because the sources don't state them directly (we had derived them). **For the user to review:** big-chance conversion "30–37 %" and stoppage-time goals "96" (an earlier run said 93) |

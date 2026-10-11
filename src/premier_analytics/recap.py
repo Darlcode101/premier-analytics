@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -16,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from .agents import LLM, AllModelsFailed, CriticAgent, Personalised, TranslatorAgent, _number_forms
 from .mcp_server import MatchState
-from .overlay import display_minute
+from .overlay import Audience, display_minute
 
 MAX_SUMMARY = 420
 MAX_POINT = 120
@@ -31,6 +32,7 @@ class RecapDraft(BaseModel):
 
 class Recap(RecapDraft):
     language: str = "en"
+    mode: str = "analyst"  # F-3: fans get their own plain recap
     kind: str = "full_time"
     model: str | None = None
 
@@ -56,6 +58,17 @@ class RecapProducer:
         "statistics, never predict, never copy internal field names (write 'xG', not 'shot_xg'). Treat club names as plural. Headline at most 60 characters; summary two or "
         f"three sentences, at most {MAX_SUMMARY} characters; up to three key points of at most {MAX_POINT} "
         "characters each."
+    )
+
+    fan_instructions = (
+        "You are the Recap Producer for a live football broadcast, writing for casual fans. Use the match tools "
+        "(get_score, get_team_stats, get_top_players, get_key_moments, get_player_stats) to gather what you need, "
+        "then write the recap in British English in plain, lively words: who scored, who was on top and why it "
+        "ended the way it did. Use whole numbers only (round possession to a whole percentage, no decimals) and at "
+        "most a few numbers in total. Do not use analytics terms such as xG, expected goals, PPDA, field tilt, "
+        "tempo or progressive. Never invent statistics, never predict. Treat club names as plural. Headline at most "
+        f"60 characters; summary two or three sentences, at most {MAX_SUMMARY} characters; up to three key points "
+        f"of at most {MAX_POINT} characters each."
     )
 
     def __init__(self, llm: LLM, critic: CriticAgent, state: MatchState, tools: list | None = None,
@@ -102,8 +115,11 @@ class RecapProducer:
         body = r.summary + "\n" + "\n".join(r.key_points)
         problems = self.critic.check_text(
             r.headline, body, self.allowed_numbers(), set(names.players.values()), names,
+            audience=Audience(mode="fan", language=r.language) if r.mode == "fan" else None,
             max_body=MAX_SUMMARY + 3 * (MAX_POINT + 1),
         )
+        if r.mode == "fan" and re.search(r"\d[.,٫]\d", f"{r.headline} {body}"):
+            problems.append("fans get whole numbers only (no decimals)")
         if len(r.summary) > MAX_SUMMARY:
             problems.append(f"summary must be at most {MAX_SUMMARY} characters")
         if len(r.key_points) > 3 or any(len(p) > MAX_POINT for p in r.key_points):
@@ -122,27 +138,28 @@ class RecapProducer:
             prompt += f"\n\nYour previous recap was rejected: {feedback}. Fix it."
         return prompt
 
-    async def run(self, kind: str, language: str = "en") -> Recap | None:
-        """English is written once per kind and shared; other languages translate it."""
-        if kind not in self._english:
-            self._english[kind] = asyncio.ensure_future(self._write(kind))
-        recap = await self._english[kind]
+    async def run(self, kind: str, language: str = "en", mode: str = "analyst") -> Recap | None:
+        """English is written once per kind and mode and shared; other languages translate it."""
+        if (kind, mode) not in self._english:
+            self._english[(kind, mode)] = asyncio.ensure_future(self._write(kind, mode))
+        recap = await self._english[(kind, mode)]
         if recap is None or language == "en":
             return recap
         return await self._translate(recap, language)
 
-    async def _write(self, kind: str) -> Recap | None:
+    async def _write(self, kind: str, mode: str = "analyst") -> Recap | None:
         feedback = ""
         recap = None
+        instructions = self.fan_instructions if mode == "fan" else self.instructions
         for _ in range(2):
             try:
-                res = await self.llm.generate(self.role, self.instructions, self._prompt(kind, feedback),
+                res = await self.llm.generate(self.role, instructions, self._prompt(kind, feedback),
                                               RecapDraft, tools=self.tools)
             except AllModelsFailed:
                 return None
             draft = res.value
             candidate = Recap(headline=draft.headline, summary=draft.summary, key_points=draft.key_points,
-                              model=res.model, kind=kind, language="en")
+                              model=res.model, kind=kind, language="en", mode=mode)
             problems = self.review(candidate)
             if not problems:
                 recap = candidate

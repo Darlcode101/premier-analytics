@@ -150,3 +150,14 @@ describe('context cards (CX-2, CX-5)', () => {
     expect(s.contexts.map(c => c.moment_id)).toEqual(['m1', 'm2'])
   })
 })
+
+describe('followed player (F-5)', () => {
+  it('a card is about the player if they are its main player or appear in its facts', async () => {
+    const { involves } = await import('./scoreboard')
+    const o = (player_id: string | null, data: Record<string, string | number | boolean> = {}) => ({ player_id, data }) as Overlay
+    expect(involves(o('p9'), 'p9')).toBe(true)
+    expect(involves(o(null, { assist: 'p9' }), 'p9')).toBe(true)
+    expect(involves(o('p7', { scorer: 'p7' }), 'p9')).toBe(false)
+    expect(involves(o('p9'), null)).toBe(false)
+  })
+})

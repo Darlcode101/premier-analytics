@@ -104,6 +104,7 @@ class Overlay(BaseModel):
     audience: str
     kind: str
     team_id: str | None = None
+    player_id: str | None = None  # the moment's main player (F-5: the fan app marks cards about a followed player)
     priority: float
     slot: Slot
     clock_in_ms: int
@@ -281,7 +282,7 @@ def fast_overlay(m: Moment, a: Audience, names: Names) -> Overlay:
     duration = DURATION_MS.get(m.kind, DEFAULT_DURATION_MS)
     return Overlay(
         id=overlay_id(m, a), match_id=m.id.rsplit("-mo", 1)[0], moment_id=m.id, audience=a.key,
-        kind=m.kind, team_id=m.team_id, priority=m.severity, slot=SLOTS[m.kind],
+        kind=m.kind, team_id=m.team_id, player_id=m.player_id, priority=m.severity, slot=SLOTS[m.kind],
         clock_in_ms=m.clock_ms, clock_out_ms=m.clock_ms + duration, minute=display_minute(m),
         elapsed_in_ms=m.elapsed_ms,
         headline=headline_t.format(**ctx).strip(), body=(analyst_t if a.mode == "analyst" else fan_t).format(**ctx).strip(),

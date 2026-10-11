@@ -37,6 +37,29 @@ AI_KINDS = frozenset({
     "pressure_spell", "half_time", "full_time",
 })
 
+TREND_KINDS = frozenset({"momentum_shift", "pressure_spell"})
+TREND_GAP_MS = 15 * 60_000
+
+
+class TrendThrottle:
+    """F-1: fans get at most one momentum/pressure card per team every 15 minutes, unless the other team
+    has had one since (the story changed). Other moments pass straight through."""
+
+    def __init__(self):
+        self.last: tuple[str | None, int] | None = None  # (team, elapsed_ms) of the last trend card shown
+        self.by_team: dict[str | None, int] = {}
+
+    def allow(self, m: Moment) -> bool:
+        if m.kind not in TREND_KINDS:
+            return True
+        took_over = self.last is not None and self.last[0] != m.team_id
+        previous = self.by_team.get(m.team_id)
+        if previous is not None and not took_over and m.elapsed_ms - previous < TREND_GAP_MS:
+            return False
+        self.last = (m.team_id, m.elapsed_ms)
+        self.by_team[m.team_id] = m.elapsed_ms
+        return True
+
 
 @dataclass
 class TraceEvent:
@@ -86,6 +109,8 @@ class Orchestrator:
                 translator=TranslatorAgent(llm, names=list(names.players.values()) + list(names.clubs.values())),
             )
         self.schedulers: dict[str, Scheduler] = {}
+        self._throttles: dict[str, TrendThrottle] = {}
+        self._visible: dict[str, set[str]] = {}
         for a in audiences:
             self.add_audience(a)
         self.published: list[Overlay] = []
@@ -118,7 +143,7 @@ class Orchestrator:
             if self.recap_producer is not None and m.kind in ("half_time", "full_time"):
                 self._spawn(self._recap(m))
             for a in self.audiences:
-                if not a.wants(m):
+                if not self._decide(a, m):
                     continue
                 o = validate(fast_overlay(m, a, self.names), m, now_elapsed_ms=e.elapsed_ms)
                 self._publish(o)
@@ -127,7 +152,7 @@ class Orchestrator:
                     self._spawn(self._enrich(m, a, o, time.perf_counter()))
             if self.context_agent is not None and m.kind in AI_KINDS:
                 languages = {a.language for a in self.audiences
-                             if a.mode == "analyst" and a.wants(m) and self.ai_enabled_for(a)}
+                             if a.mode == "analyst" and m.id in self._visible.get(a.key, ()) and self.ai_enabled_for(a)}
                 if languages and self.context_agent.candidates(m, self._context_used):
                     for language in sorted(languages):
                         self._spawn(self._context(m, language))
@@ -138,10 +163,28 @@ class Orchestrator:
         if a.key not in self.schedulers:
             self.audiences.append(a)
             self.schedulers[a.key] = Scheduler(max_on_screen=self.max_on_screen)
+            self._throttles[a.key] = TrendThrottle()
+            self._visible[a.key] = set()
+            for m in self.state.moments:  # a late joiner sees what it would have seen from kick-off
+                self._decide(a, m)
 
     def remove_audience(self, key: str) -> None:
         self.audiences = [a for a in self.audiences if a.key != key]
         self.schedulers.pop(key, None)
+        self._throttles.pop(key, None)
+        self._visible.pop(key, None)
+
+    def _decide(self, a: Audience, m: Moment) -> bool:
+        """Does this audience get this moment? Decided once per moment, so live and backfill agree."""
+        show = a.wants(m) and (a.mode != "fan" or self._throttles[a.key].allow(m))
+        if show:
+            self._visible[a.key].add(m.id)
+        return show
+
+    def visible(self, a: Audience) -> list[Moment]:
+        """The moments this audience has been shown, in order (for backfill)."""
+        shown = self._visible.get(a.key, set())
+        return [m for m in self.state.moments if m.id in shown]
 
     def ai_enabled_for(self, a: Audience) -> bool:
         if self.llm is None:
@@ -169,13 +212,13 @@ class Orchestrator:
         task.add_done_callback(self._tasks.discard)
 
     async def _recap(self, m: Moment) -> None:
-        for language in sorted({a.language for a in self.audiences}):
+        for mode, language in sorted({(a.mode, a.language) for a in self.audiences}):
             start = time.perf_counter()
             with tracer.start_as_current_span(f"recap {m.kind}", attributes={
-                "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "recap", "pa.language": language,
+                "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "recap", "pa.language": language, "pa.mode": mode,
             }) as span:
                 try:
-                    recap = await self.recap_producer.run(m.kind, language)
+                    recap = await self.recap_producer.run(m.kind, language, mode=mode)
                 except Exception as err:  # recaps are best-effort; the template overlay already covers HT/FT
                     span.set_status(StatusCode.ERROR, repr(err)[:200])
                     span.set_attribute("pa.outcome", "error")

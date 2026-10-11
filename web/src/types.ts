@@ -33,6 +33,7 @@ export interface Overlay {
   audience: string
   kind: string
   team_id: string | null
+  player_id?: string | null
   priority: number
   slot: 'lower_third' | 'corner' | 'ticker'
   clock_in_ms: number
