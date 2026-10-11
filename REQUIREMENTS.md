@@ -201,6 +201,25 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | F-4 | S | **Keep AI cards on a settings change**: a viewer who changes club, player or language mid-match keeps AI versions of earlier moments where one fits (same mode and language, and the other version wasn't written for a different club or player); otherwise the instant version |
 | F-5 | M | **Following a player is visible**: when a player is followed, the match header says so (name), the settings confirm it, and cards about that player are marked |
 
+### 3.12 Pattern Analyst (signed off 2026-10-11, fan card included)
+
+Commentators look for how a team is playing: which flank they attack, where they win the ball, where their shots
+come from, who makes them tick, where the opponent is hurting them. A pattern is only worth saying if it is real:
+in one match, a 45/55 split is usually chance. Checked 10-11: in the simulation every club currently attacks
+about a third each down the left, centre and right, so styles must exist before patterns can.
+
+| ID | P | Requirement |
+|---|---|---|
+| PA-1 | M | **Club playing styles** in the simulation: each club has a favoured attacking flank (or central), a long-shot tendency and a pressing height (exists); the generator honours them. League realism (D-*, docs/REALISM.md) still passes |
+| PA-2 | M | **Pattern detectors** (deterministic), per team, for the match so far and since half-time: attacking channel of final-third entries; where they win the ball back; where their shots come from (inside/outside the box, channel); who makes them tick (share of entries or shots through one player); where the opponent attacks them (their exposed flank); counter-attacks (shots within 15 s of winning the ball) |
+| PA-3 | M | **Only real patterns**: a minimum number of actions and a significance test against chance (e.g. a third per channel) or against the club's own season style (from the simulated season); each pattern carries its numbers and the events behind it |
+| PA-4 | M | **Pattern Analyst agent** picks the most useful 1–3 per team and writes one-line commentator notes ("Northgate keep going down the left: 9 of their 14 attacks"); numbers checked by the Critic; plain deterministic wording if the AI is off or fails |
+| PA-5 | M | **Desk "Patterns" panel**: notes per team; selecting one shows it on the pitch (flank arrows with shares, ball-winning zones, shot origins as a heatmap) |
+| PA-6 | S | **Pattern alerts**: a new pattern, or one that changes ("Harbourside switched to the right since half-time"; "unusually for them, Northgate aren't using the left today"), appears as a talking point |
+| PA-7 | S | **Fan app**: one plain card on Stats, "How they're playing", e.g. "Northgate attack mostly down the left", with the mini pitch; no statistics jargon |
+| PA-8 | M | EN / ES / AR; everything except the AI wording works with the AI off |
+| PA-9 | S | **Detector check over the simulated season**: it finds each club's configured favoured flank in most matches, and reports a flank pattern for a balanced club in no more than 5 % of matches (false alarms) |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -249,6 +268,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | PA-1 club styles: favoured flank (har left 0.7, kin right 0.7, sto right 0.5, oak left 0.5, elm left 0.4; ngc/sil/iro balanced) and long-shot tendency. Tuned to realistic levels (favoured flank 44–57 % of entries over a season, like strongly one-sided real teams) after a first version gave 69 %. Finding: balanced clubs reach 51–54 % down one side in single matches (entries come in correlated chains), so the detector's test must be strict. Home advantage retuned 0.012 → 0.007 (home wins 42 % on two seasons vs 40.8 % real) after the styles reshuffled results |
 | 10-11 | E-7 (evaluation round 6, kept): goals 3.79 → 4.03 (re-scored); explains why 4.07 overall. Replaying the matches and counting Critic rejection reasons found three over-strict rules ("doubles their lead", "would have made it 2-1", "cut the lead"), corrected with tests. The strict run scored 4.37 only because false rejections held captions back: a stricter checker is not better captions. Run-to-run noise ≈ ±0.2 overall |
 | 10-11 | E-6 (evaluation round 5, kept): explains why **4.21** (bar 4 met); 3.92 → 4.27 when rounds 4 and 5 are re-scored together; missed chances 3.66 → 4.46. Language detector fixed (an accent-free Spanish caption was misread as English); all rounds 100 % |
 | 10-11 | E-4/E-5 (evaluation round 4, kept): explains why 3.76 → 3.92; momentum and pressure 3.39 → 4.09 (3.27 → 4.04 when both rounds were re-scored by the same judge); other moments within noise; Critic 100 %, analyst more numbers 97 %, fan plain 97 %. Woodwork (2.9) is now the weakest type |

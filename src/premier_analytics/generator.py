@@ -21,6 +21,7 @@ from .schema import Event, Lineup, Match, MatchMeta, Weather
 SEC = 1000
 MIN = 60 * SEC
 GOAL_Y = (W / 2 - 3.66, W / 2 + 3.66)
+BOX_X = 105.0 - 16.5  # edge of the penalty area
 SHOOTING_RANGE_X = 80.0  # 25 m out: speculative shots from further are rare
 FINISHING = 0.93         # global finishing multiplier on xG
 
@@ -92,7 +93,7 @@ class _Sim:
     def strength(self, team: str) -> float:
         """Multiplier from momentum and numbers on the pitch (red cards hurt)."""
         m = self.momentum if team == self.home.id else -self.momentum
-        home_adv = 0.012 if team == self.home.id else -0.012
+        home_adv = 0.007 if team == self.home.id else -0.007  # tuned with the PA-1 styles: 42 % home wins vs 40.8 % real
         return math.exp(0.22 * m + home_adv) * (len(self.on_pitch[team]) / 11) ** 1.5
 
     def pick(self, team: str, x: float, exclude: str | None = None) -> str:
@@ -235,6 +236,8 @@ class _Sim:
                 centrality = 1 - min(abs(y - W / 2) / (W / 2), 1)
                 depth = (x - SHOOTING_RANGE_X) / (L - SHOOTING_RANGE_X)
                 p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 1.08 * s ** 0.5
+                # Style (PA-1): some sides shoot from distance more readily (0.5 = league norm).
+                p_shot *= (0.45 + 1.1 * club.long_shots) if x < BOX_X else (1.12 - 0.24 * club.long_shots)
                 if rng.random() < p_shot:
                     return self.shoot(team, x, y, carrier, last_pass, pressed)
 
@@ -251,6 +254,10 @@ class _Sim:
             if x < 20 and c.position == "GK":
                 dx = abs(dx) + rng.uniform(10, 45 * directness + 10)
             dy = rng.gauss(0, 7.0 + 8.0 * directness)
+            # Style (PA-1): building up through midfield, they steer play towards their favoured flank.
+            if club.flank != "balanced" and 30 < x < 80 and rng.random() < 0.28 * club.flank_strength:
+                target = W / 6 if club.flank == "left" else 5 * W / 6
+                dy = (target - y) * rng.uniform(0.45, 0.85) + rng.gauss(0, 4.0)
             # Wide players cross towards the box.
             if x > 80 and abs(y - W / 2) > 18 and rng.random() < 0.35:
                 dx, dy = rng.uniform(L - 14 - x, L - 6 - x), (W / 2 - y) * rng.uniform(0.6, 1.0)

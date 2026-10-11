@@ -88,6 +88,10 @@ class Club:
     possession: float  # 0-1: preference for keeping the ball with short passing
     pressing: float    # 0-1: how often they press the ball carrier
     discipline: float  # 0-1: higher = fewer fouls and cards
+    # PA-1: playing style, which the Pattern Analyst should be able to spot
+    flank: str = "balanced"     # favoured attacking flank: "left", "right" or "balanced"
+    flank_strength: float = 0.0  # 0-1: how strongly they favour it
+    long_shots: float = 0.5      # 0-1: readiness to shoot from outside the box (0.5 = league norm)
     starting_xi: tuple[str, ...] = field(default=())
     bench: tuple[str, ...] = field(default=())
 
@@ -103,6 +107,18 @@ _CLUBS = [
     ("iro", "Ironmoor Town", "Ironmoor", "Ironmoor", "Forge Road", ("#2F2F2F", "#D35400"), 0.54, 0.64, 0.28, 0.60, 0.45),
     ("elm", "Elmstead Rangers", "Elmstead", "Elmstead", "The Elms", ("#1E5631", "#A4DE02"), 0.50, 0.56, 0.50, 0.45, 0.58),
 ]
+
+# Playing styles (PA-1). Three balanced clubs let the Pattern Analyst's false alarms be measured (PA-9).
+_STYLES = {
+    "har": ("left", 0.7, 0.45),
+    "ngc": ("balanced", 0.0, 0.55),
+    "kin": ("right", 0.7, 0.40),
+    "sil": ("balanced", 0.0, 0.85),
+    "sto": ("right", 0.5, 0.55),
+    "oak": ("left", 0.5, 0.30),
+    "iro": ("balanced", 0.0, 0.70),
+    "elm": ("left", 0.4, 0.50),
+}
 
 
 class League:
@@ -166,6 +182,7 @@ def load_league() -> League:
         clubs.append(Club(
             id=cid, name=name, short_name=short, city=city, stadium=stadium, colors=colours,
             attack=att, defence=dfn, possession=poss, pressing=press, discipline=disc,
+            flank=_STYLES[cid][0], flank_strength=_STYLES[cid][1], long_shots=_STYLES[cid][2],
             starting_xi=tuple(xi), bench=tuple(bench),
         ))
     return League(clubs, players)
