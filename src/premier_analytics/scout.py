@@ -33,6 +33,14 @@ IF_SCORED = {
     "extend": "would have extended their lead",
 }
 
+# E-7: how a goal fits the game, from both sides' xG.
+RUN_OF_PLAY = {
+    "rewards": "rewards their pressure: they had made the better chances",
+    "against": "against the run of play: the other side had made the better chances",
+    "even": "in an even game: chances had been level",
+}
+RUN_OF_PLAY_MARGIN = 0.3
+
 STAKES = {
     "opener": "goalless, pushing for the opening goal",
     "level": "level, pushing to go ahead",
@@ -75,6 +83,8 @@ class MomentScout:
         self._last_shift = -MOMENTUM_COOLDOWN
         self._last_spell = {home_id: -PRESSURE_COOLDOWN, away_id: -PRESSURE_COOLDOWN}
         self._goal_times: dict[str, list[int]] = {home_id: [], away_id: []}
+        self._shots_at_goal = {home_id: 0, away_id: 0}
+        self._last_goal_ms = 0
         self._spells: list[tuple[str, float]] = []  # (team, window xG) of each trend moment so far
 
     # ---------- construction helpers ----------
@@ -179,6 +189,17 @@ class MomentScout:
             ]
         if e.assist_id:
             facts.append(("assist", e.assist_id, e.team_id, [e.id]))
+        opponent = eng.teams[self.other(e.team_id)]
+        margin = team.xg - opponent.xg
+        run = "rewards" if margin > RUN_OF_PLAY_MARGIN else "against" if -margin > RUN_OF_PLAY_MARGIN else "even"
+        facts += [
+            ("opponent_xg", round(opponent.xg, 2), self.other(e.team_id), src),
+            ("run_of_play", RUN_OF_PLAY[run], e.team_id, src),
+            ("shots_since_their_last_goal", team.shots - self._shots_at_goal[e.team_id], e.team_id, src),
+            ("minutes_since_last_goal", (e.elapsed_ms - self._last_goal_ms) // MIN, None, [e.id]),
+        ]
+        self._shots_at_goal[e.team_id] = team.shots
+        self._last_goal_ms = e.elapsed_ms
         out = [self._moment("goal", 1.0 if late_decisive else 0.95, e, facts, e.team_id, e.player_id)]
         if scorer_goals >= 2:
             out.append(self._moment(
@@ -201,6 +222,9 @@ class MomentScout:
             ("shot_distance_m", round(m.distance_m, 1), e.player_id, [e.id]),
             ("outcome", e.outcome, e.player_id, [e.id]),
             ("if_scored", IF_SCORED[if_scored], e.team_id, [e.id]),
+            # the score it would have made, so "would have made it 2-1" can be said and checked
+            ("score_home_if_scored", self.engine.score[0] + (e.team_id == self.home_id), e.team_id, [e.id]),
+            ("score_away_if_scored", self.engine.score[1] + (e.team_id != self.home_id), e.team_id, [e.id]),
         ]
         out = []
         if m.xg >= BIG_CHANCE_XG:

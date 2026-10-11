@@ -68,15 +68,15 @@ real player, club or Premier League data, logos or fonts are used.
 
 ## Results
 
-Evaluated on 3 matches × 4 audiences (147 AI captions); full write-up in [docs/EVALS.md](docs/EVALS.md).
+Evaluated on 3 matches × 4 audiences (154 AI captions); full write-up in [docs/EVALS.md](docs/EVALS.md).
 
 | | |
 |---|---|
 | Published text that passes the Critic re-check | 100 % |
-| Groundedness (Azure AI Evaluation, 1–5) | 4.84 |
+| Groundedness (Azure AI Evaluation, 1–5) | 4.81 |
 | Output in the requested language | 100 % |
 | Analyst version carries more numbers than the fan version | 91 % |
-| Explains *why* (custom judge, 1–5) | 4.21 (from 3.09 at the first evaluation): spells and missed chances now come with computed meaning |
+| Explains *why* (custom judge, 1–5) | 4.07 (from 3.09 at the first evaluation): spells, missed chances and goals come with computed meaning |
 
 ## Run it locally
 

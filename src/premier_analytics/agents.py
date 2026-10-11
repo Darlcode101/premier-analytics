@@ -224,6 +224,9 @@ FACT_TEXT = {
     "window_shots_before": "their shots in the {w} minutes before that", "shots_trend": "compared with before",
     "opponent_window_shots": "opponent shots in the last {w} minutes", "goals_in_spell": "their goals in the last {w} minutes",
     "if_scored": "if it had gone in, it",
+    "opponent_xg": "opponent xG in the match so far", "run_of_play": "how the goal fits the game",
+    "shots_since_their_last_goal": "their shots it took (since their last goal, including this one)",
+    "minutes_since_last_goal": "minutes since the last goal in the match (or kick-off)",
 }
 GOAL_CONTEXT_TEXT = {
     "equaliser": "equaliser: makes the scores level", "takes_lead": "takes the lead",
@@ -235,7 +238,9 @@ CONTRADICTIONS = {
     "equaliser": (r"\blead\b", r"\bahead\b", r"\bin front\b", r"\bdeadlock\b", r"\bwinner\b"),
     "takes_lead": (r"\bequali[sz]", r"\blevel", r"\bextends?\b"),
     "extends_lead": (r"\bequali[sz]", r"\blevel", r"\bdeadlock\b", r"\btakes? the lead\b"),
-    "pulls_one_back": (r"\blead\b", r"\bahead\b", r"\bin front\b", r"\bequali[sz]", r"\blevel", r"\bdeadlock\b"),
+    # "cut the lead" and "X still ahead" are right for a consolation goal; taking the lead or levelling is not
+    "pulls_one_back": (r"\b(take|takes|took|taken|taking) the lead\b", r"\b(go|goes|went|gone) ahead\b",
+                       r"\bin front\b", r"\bequali[sz]", r"\blevel(s|led|ling)?\b(?! of)", r"\bdeadlock\b"),
 }
 
 # E-5: ratio words need two facts in that ratio; spell superlatives need the scout's spell fact.
@@ -258,12 +263,21 @@ STAKES_CONTRADICTIONS = (
 )
 # Wording that contradicts what a missed shot would have meant (E-6).
 IF_SCORED_CONTRADICTIONS = {
-    "would have opened the scoring": (r"\bequali[sz]", r"\blevell?ing\b", r"\bpulled? one back\b"),
+    "would have opened the scoring": (r"\bequali[sz]", r"\blevell?(ed|ing)\b", r"\bpulled? one back\b"),
     "would have put them ahead": (r"\bequali[sz]", r"\bpulled? one back\b"),
-    "would have equalised": (r"\b(the|a) lead\b", r"\bahead\b", r"\bwinner\b", r"\bopen(ed|ing)? the scoring\b"),
-    "would have pulled one back": (r"\bequali[sz]", r"\b(the|a) lead\b", r"\bahead\b", r"\blevel\b"),
-    "would have extended their lead": (r"\bequali[sz]", r"\blevel\b", r"\btake the lead\b", r"\bopen(ed|ing)? the scoring\b"),
+    "would have equalised": (r"\b(take|taken|giv(e|en|ing) them) the lead\b", r"\bput them ahead\b",
+                             r"\bgo(ne)? ahead\b", r"\bwinner\b", r"\bopen(ed|ing)? the scoring\b"),
+    "would have pulled one back": (r"\bequali[sz]", r"\blevell?(ed|ing)? (it|the score|things|the match)\b",
+                                   r"\bput them ahead\b", r"\bgo(ne)? ahead\b", r"\b(take|taken) the lead\b"),
+    "would have extended their lead": (r"\bequali[sz]", r"\blevell?(ed|ing)? (it|the score|things|the match)\b",
+                                       r"\b(take|taken) the lead\b", r"\bopen(ed|ing)? the scoring\b"),
 }
+# Wording that contradicts how a goal fits the game (E-7).
+RUN_OF_PLAY_CONTRADICTIONS = {
+    "against the run of play": (r"\bdeserved?\b", r"\breward(s|ed|ing)?\b", r"\bdominan\w*", r"\bfinally\b"),
+    "rewards their pressure": (r"\bagainst the run of play\b", r"\bout of nothing\b", r"\bsmash and grab\b"),
+}
+DOUBLE_THE_LEAD = re.compile(r"\bdoubl\w* (the|their|its|his|her|a) (lead|advantage|cushion)\b", re.I)
 STRONGEST = re.compile(r"\b(strongest|most dominant|best (spell|period))\b", re.I)
 FIRST_TIME = re.compile(r"\bfirst time\b", re.I)
 
@@ -275,13 +289,19 @@ def comparison_problems(text: str, m: Moment) -> list[str]:
         if a in values and b in values and values[a] and values[b]:
             ratios += [values[a] / values[b], values[b] / values[a]]
     problems = []
+    plain = DOUBLE_THE_LEAD.sub(" ", text)  # "doubles their lead" means 2-0, not a ratio
     for pattern, word, (low, high) in RATIO_WORDS:
-        if pattern.search(text) and not any(low <= r <= high for r in ratios):
+        if pattern.search(plain) and not any(low <= r <= high for r in ratios):
             problems.append(f"'{word}' is not supported by the facts")
     if_scored = next((f.value for f in m.facts if f.label == "if_scored"), None)
     for pattern in IF_SCORED_CONTRADICTIONS.get(if_scored, ()):
         if hit := re.search(pattern, text, re.I):
             problems.append(f"'{hit.group()}' contradicts what the chance would have meant ({if_scored})")
+    run = next((f.value for f in m.facts if f.label == "run_of_play"), "")
+    for key, patterns in RUN_OF_PLAY_CONTRADICTIONS.items():
+        if run.startswith(key):
+            problems += [f"'{hit.group()}' contradicts the run of play ({key})"
+                         for p in patterns if (hit := re.search(p, text, re.I))]
     stakes = next((f.value for f in m.facts if f.label == "stakes"), None)
     for words, phrases in STAKES_CONTRADICTIONS:
         if stakes in phrases:
@@ -335,7 +355,8 @@ class ExplainerAgent:
         "pressure moments, build the story from 'what this spell means for them', 'how this spell ranks' and their "
         "goals in the spell (pressure without a goal yet is the point), not from a list of counts; make "
         "comparisons only as the facts state them. For chances that didn't go in, the point is what they would have "
-        "meant ('if it had gone in, it …'). Treat club "
+        "meant ('if it had gone in, it …'). For goals, say how the goal fits the game (run of play, how long it took) "
+        "rather than retelling the goal. Treat club "
         "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
     )

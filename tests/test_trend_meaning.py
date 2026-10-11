@@ -150,3 +150,81 @@ def test_captions_must_not_contradict_what_the_miss_would_have_meant():
     equalise = trend(if_scored=IF_SCORED["equalise"])
     assert any("lead" in p for p in problems("So close to giving them the lead.", equalise))
     assert problems("So close to levelling it.", equalise) == []
+
+
+# ---------- E-7: goals ----------
+
+@pytest.mark.parametrize("seed", [42, 7, 9])
+def test_goals_say_how_they_fit_the_game(seed):
+    from premier_analytics.scout import RUN_OF_PLAY
+    m = generate_match("har", "ngc", seed)
+    scout = MomentScout("har", "ngc", m.meta.match_id)
+    shots = {"har": 0, "ngc": 0}
+    shots_at_goal = {"har": 0, "ngc": 0}
+    last_goal_ms = 0
+    found = 0
+    for e in m.events:
+        if e.type == "shot":
+            shots[e.team_id] += 1
+        for mo in scout.observe(e):
+            if mo.kind != "goal":
+                continue
+            found += 1
+            f = facts(mo)
+            mine, theirs = f["team_xg"], f["opponent_xg"]
+            key = "rewards" if mine - theirs > 0.3 else "against" if theirs - mine > 0.3 else "even"
+            assert f["run_of_play"] == RUN_OF_PLAY[key]
+            assert f["shots_since_their_last_goal"] == shots[mo.team_id] - shots_at_goal[mo.team_id]
+            assert f["minutes_since_last_goal"] == (e.elapsed_ms - last_goal_ms) // MIN
+        if e.type == "goal":
+            shots_at_goal[e.team_id] = shots[e.team_id]
+            last_goal_ms = e.elapsed_ms
+    assert found
+
+
+def test_captions_must_not_contradict_the_run_of_play():
+    from premier_analytics.scout import RUN_OF_PLAY
+    against = trend(run_of_play=RUN_OF_PLAY["against"])
+    assert any("deserved" in p for p in problems("A deserved goal after all their pressure.", against))
+    assert problems("A goal against the run of play.", against) == []
+    rewards = trend(run_of_play=RUN_OF_PLAY["rewards"])
+    assert any("against the run of play" in p for p in problems("A goal against the run of play.", rewards))
+
+
+# ---------- false positives seen when replaying round 6 ----------
+
+def test_doubling_a_lead_is_football_language_not_a_ratio():
+    m = trend(team_shots=6, opponent_shots=5, spell_rank="back on top")
+    assert problems("Harbourside double their lead.", m) == []
+    assert problems("A goal that doubles the advantage.", m) == []
+    assert any("double" in p for p in problems("Double the shots of Northgate.", m))
+
+
+def test_the_score_a_missed_chance_would_have_made_is_allowed():
+    from premier_analytics.scout import IF_SCORED
+    m = generate_match("kin", "oak", 9)
+    scout = MomentScout("kin", "oak", m.meta.match_id)
+    for e in m.events:
+        for mo in scout.observe(e):
+            if mo.kind in MISSED:
+                f = facts(mo)
+                if mo.team_id == "kin":
+                    assert (f["score_home_if_scored"], f["score_away_if_scored"]) == (f["score_home"] + 1, f["score_away"])
+                else:
+                    assert (f["score_home_if_scored"], f["score_away_if_scored"]) == (f["score_home"], f["score_away"] + 1)
+    back = trend(if_scored=IF_SCORED["back"], score_home=2, score_away=0, score_home_if_scored=2, score_away_if_scored=1)
+    assert problems("A goal would have made it 2-1 and cut the lead.", back) == []
+
+
+def test_cutting_the_lead_is_not_taking_it():
+    from premier_analytics.scout import IF_SCORED
+    back = trend(if_scored=IF_SCORED["back"], score_home=2, score_away=0)
+    assert problems("Kingsmere still ahead 2-0; it would have cut the lead.", back) == []
+    assert any("level" in p for p in problems("It would have levelled the score.", back))
+    goal = Moment(id="g", kind="goal", severity=1, event_id="e", period=2, clock_ms=60 * MIN, elapsed_ms=60 * MIN,
+                  team_id="ngc", facts=[Fact(id="g-f0", label="goal_context", value="pulls_one_back", subject="ngc",
+                                             source_event_ids=["e"]),
+                                        Fact(id="g-f1", label="score_home", value=2, source_event_ids=["e"]),
+                                        Fact(id="g-f2", label="score_away", value=1, source_event_ids=["e"])])
+    assert problems("Northgate cut the lead to 2-1, Harbourside still ahead.", goal) == []
+    assert any("take" in p.lower() or "lead" in p for p in problems("Northgate take the lead!", goal))
