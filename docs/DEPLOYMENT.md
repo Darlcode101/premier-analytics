@@ -30,5 +30,5 @@ The `Microsoft.App` resource provider on this subscription has reported `Registe
 requests, so the environment, the app and every rollout go through `az rest`.
 
 ## Fallback
-App Service (`premier-analytics-0931`, B1 Linux) ran the same image before Container Apps was available;
-`scripts/deploy_appservice.sh` still deploys there.
+App Service (B1 Linux) ran the same image before Container Apps worked; it was deleted on 2026-10-11 to save
+credit. `scripts/deploy_appservice.sh` can recreate it from the same image if ever needed.

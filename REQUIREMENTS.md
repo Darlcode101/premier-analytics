@@ -181,6 +181,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-10 | UI redesign (Alex): phone fan app + laptop commentator desk, PL-app look "as close as possible" without logo/wordmark/font, 9-zone ball location instead of a pitch, possession colour wash, animations for goals, red cards, big chances, momentum, HT/FT |
 | 10-11 | **Production moved to Azure Container Apps**: the CLI was blocked by a provider stuck in 'Registering', but the ARM API accepted the environment and app directly (`az rest`). Keyless via managed identity; verified 13 AI overlays, 0 errors. App Service kept as fallback for now |
 | 10-11 | Container Apps runs in **Express** mode (Standard unavailable in switzerlandnorth for this subscription), with a **user-assigned identity** for Foundry and image pulls. URL https://premier-analytics.salmondune-d779c5b4.switzerlandnorth.azurecontainerapps.io |
+| 10-11 | App Service fallback deleted (saves ~$13/month); Container Apps is the only production host |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones
