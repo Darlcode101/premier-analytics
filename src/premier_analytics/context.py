@@ -343,7 +343,8 @@ class AskDesk:
             answer = await asyncio.wait_for(self.researcher.ask(question, language), self.timeout_s)
         except asyncio.TimeoutError:
             return self._result("timeout")
-        except Exception:
+        except Exception as err:  # the desk shows a plain message; the server log keeps the reason
+            print(f"ask box search failed: {err!r}"[:500], flush=True)
             return self._result("error")
         if answer.text.strip() == "OFF_TOPIC":
             return self._result("off_topic")
