@@ -1,4 +1,4 @@
-"""Evaluate the AI path on fixed matches (A-8) and write docs/EVALS.md.
+"""Evaluate the AI path on fixed matches (A-8); results go to evals/, summarised in docs/EVALS.md.
 
     python scripts/run_evals.py [--matches 3] [--no-project]
 
