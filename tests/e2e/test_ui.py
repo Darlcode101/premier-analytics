@@ -222,3 +222,12 @@ def test_attack_momentum_bars_explain_themselves(server, page: Page):
     why = page.get_by_test_id("attack-why")
     expect(why).to_contain_text(re.compile(r"on top|Evenly balanced|Quiet spell"))
     expect(why).to_contain_text(re.compile(r"\d+'–\d+'"))
+
+
+def test_stats_follow_the_pinned_club(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
+    page.get_by_role("button", name="Me").click()
+    page.get_by_role("button", name="Northgate").click()
+    page.get_by_role("button", name="Stats").click()
+    expect(page.get_by_test_id("stats-left")).to_have_text("Northgate", timeout=15_000)
+    expect(page.get_by_test_id("stats-right")).to_have_text("Harbourside")

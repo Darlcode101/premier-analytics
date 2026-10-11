@@ -302,3 +302,5 @@ button, select, input { font: inherit; color: inherit; }
 .attack-why .hint { margin: 6px 0 0; opacity: .6; font-size: 12px; }
 .attack-ai { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(127,127,127,.25); }
 .attack-ai p { margin: 2px 0 0; opacity: .85; }
+.stats-head { display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; padding: 4px 0 2px; filter: saturate(1.2) brightness(.9); }
+.desk .stats-head { filter: brightness(1.3); }

@@ -115,7 +115,7 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
         )}
         {moments.map(o => (
           <div key={o.id} className="attack-ai" dir={o.direction}>
-            <span className="ai-tag">✦ AI</span> <strong>{o.headline}</strong>
+            {o.source === 'ai' && <span className="ai-tag" data-testid="attack-ai-tag">✦ AI</span>} <strong>{o.headline}</strong>
             <p>{o.body}</p>
           </div>
         ))}
@@ -130,8 +130,11 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
 }) {
   const hello = state.hello
   if (!state.stats || !hello) return <p className="empty">{t(lang, 'waiting')}</p>
-  const { home, away } = state.stats
-  const c: [string, string] = [colors[hello.home.id], colors[hello.away.id]]
+  // Same order as the scoreboard: the viewer's pinned club first.
+  const flip = topTeam === hello.away.id
+  const home = flip ? state.stats.away : state.stats.home
+  const away = flip ? state.stats.home : state.stats.away
+  const c: [string, string] = flip ? [colors[hello.away.id], colors[hello.home.id]] : [colors[hello.home.id], colors[hello.away.id]]
   const pct = (v: number) => `${Math.round(v)}%`
   const rows: [StringKey, (s: TeamStats) => number, ((v: number) => string)?][] = [
     ['possession', s => s.possession_pct, pct],
@@ -153,6 +156,10 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
   return (
     <div data-testid="stats">
       <AttackMomentumChart state={state} colors={colors} names={names} lang={lang} topTeam={topTeam} />
+      <div className="stats-head" dir="ltr">
+        <span data-testid="stats-left" style={{ color: c[0] }}>{(flip ? hello.away : hello.home).short_name}</span>
+        <span data-testid="stats-right" style={{ color: c[1] }}>{(flip ? hello.home : hello.away).short_name}</span>
+      </div>
       {rows.map(([k, get, fmt]) => (
         <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} />
       ))}
