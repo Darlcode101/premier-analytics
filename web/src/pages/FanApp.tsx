@@ -4,6 +4,7 @@ import { Celebration, Crest, Evidence, KindIcon, ZoneMap } from '../components/S
 import { Recaps, Stats } from '../components/Panels'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import { kitColors } from '../colors'
+import { scoreboardSides } from '../scoreboard'
 import type { Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
@@ -47,6 +48,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
   useEffect(() => { if (state.recaps.full_time) setTab(tb => (tb === 'live' ? 'recap' : tb)) }, [state.recaps.full_time])
 
   const possessionClub = h && state.possession ? (state.possession === h.home.id ? h.home : h.away) : null
+  const board = h ? scoreboardSides(h.home, h.away, state.score, clubId) : null
   // The wash uses the club's kit colour, the colour fans associate with them.
   const wash = possessionClub && state.possession ? colors[state.possession] : '#37003c'
 
@@ -61,11 +63,16 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
             <span className="wordmark small"><span className="mark" aria-hidden /> {t(lang, 'appTitle')}</span>
             <span className={`clock-pill${state.status === 'live' ? ' live' : ''}`} data-testid="clock">{clock}</span>
           </div>
-          {h && (
-            <div className="hero-score">
-              <div className="side"><Crest club={h.home} size={46} /><span>{h.home.short_name}</span></div>
-              <div className="big-score" data-testid="score" dir="ltr">{state.score[0]}<i>–</i>{state.score[1]}</div>
-              <div className="side"><Crest club={h.away} size={46} /><span>{h.away.short_name}</span></div>
+          {board && (
+            <div className="hero-score" dir="ltr">
+              <div className={`side${board.pinned ? ' pinned' : ''}`} data-testid="hero-left">
+                <Crest club={board.left.club} size={46} /><span>{board.left.club.short_name}</span>
+                {board.pinned && <em className="fav-badge" data-testid="fav-badge">★ {t(lang, 'yourClub')}</em>}
+              </div>
+              <div className="big-score" data-testid="score">{board.left.goals}<i>–</i>{board.right.goals}</div>
+              <div className="side" data-testid="hero-right">
+                <Crest club={board.right.club} size={46} /><span>{board.right.club.short_name}</span>
+              </div>
             </div>
           )}
           {possessionClub && (

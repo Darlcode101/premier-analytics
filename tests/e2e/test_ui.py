@@ -178,3 +178,15 @@ def test_model_outage_keeps_graphics_flowing(page: Page):
         expect(page.locator(".ai-tag")).to_have_count(0)
     finally:
         _stop(proc)
+
+
+def test_favourite_club_is_pinned_left_with_a_badge(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=60)}")
+    left = page.get_by_test_id("hero-left")
+    expect(left).to_contain_text("Harbourside")          # home-left by default
+    expect(page.get_by_test_id("fav-badge")).to_have_count(0)
+    page.get_by_role("button", name="Me").click()
+    page.get_by_role("button", name="Northgate").click()  # away side
+    expect(left).to_contain_text("Northgate")
+    expect(page.get_by_test_id("fav-badge")).to_have_text("★ Your club")
+    expect(page.get_by_test_id("hero-right")).to_contain_text("Harbourside")

@@ -90,6 +90,7 @@ const en = {
   kickOffSoon: "Waiting for kick-off",
   settings: "Settings",
   offBall: "Ball out of play",
+  yourClub: "Your club",
 } as const
 
 export type StringKey = keyof typeof en
@@ -184,6 +185,7 @@ const es: Dict = {
   kickOffSoon: "Esperando el inicio",
   settings: "Ajustes",
   offBall: "Balón parado",
+  yourClub: "Tu club",
 }
 
 const ar: Dict = {
@@ -275,6 +277,7 @@ const ar: Dict = {
   kickOffSoon: "بانتظار صافرة البداية",
   settings: "الإعدادات",
   offBall: "الكرة خارج اللعب",
+  yourClub: "ناديك",
 }
 
 export const dictionaries: Record<Language, Dict> = { en, es, ar }
