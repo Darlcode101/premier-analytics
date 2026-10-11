@@ -115,7 +115,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               </div>
             </>
           )}
-          {tab === 'stats' && <div className="sheet-pad"><Stats state={state} colors={colors} lang={lang} /></div>}
+          {tab === 'stats' && <div className="sheet-pad"><Stats state={state} colors={colors} lang={lang} names={names} topTeam={clubId} /></div>}
           {tab === 'recap' && <div className="sheet-pad"><Recaps state={state} lang={lang} /></div>}
           {tab === 'me' && h && (
             <div className="sheet-pad settings" data-testid="me">

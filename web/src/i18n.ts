@@ -91,6 +91,9 @@ const en = {
   settings: "Settings",
   offBall: "Ball out of play",
   yourClub: "Your club",
+  attackMomentum: "Attack momentum",
+  tapBar: "Tap a bar to see why",
+  why2: "Why",
 } as const
 
 export type StringKey = keyof typeof en
@@ -186,6 +189,9 @@ const es: Dict = {
   settings: "Ajustes",
   offBall: "Balón parado",
   yourClub: "Tu club",
+  attackMomentum: "Dominio ofensivo",
+  tapBar: "Toca una barra para ver por qué",
+  why2: "Por qué",
 }
 
 const ar: Dict = {
@@ -278,6 +284,9 @@ const ar: Dict = {
   settings: "الإعدادات",
   offBall: "الكرة خارج اللعب",
   yourClub: "ناديك",
+  attackMomentum: "الزخم الهجومي",
+  tapBar: "اضغط على عمود لمعرفة السبب",
+  why2: "السبب",
 }
 
 export const dictionaries: Record<Language, Dict> = { en, es, ar }

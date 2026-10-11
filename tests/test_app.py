@@ -310,3 +310,15 @@ def test_health_reports_the_running_version(monkeypatch):
     monkeypatch.setenv("PA_VERSION", "abc1234")
     with TestClient(create_app(llm=None, live_session=False)) as c:
         assert c.get("/api/health").json()["version"] == "abc1234"
+
+
+def test_attack_momentum_streams_and_backfills(client):
+    mid = start(client)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as first:
+        msgs = collect(first)
+    points = [m["attack"] for m in msgs if m["type"] == "stats" and "attack" in m]
+    assert points and {"minute", "value", "window", "home", "away"} <= set(points[-1])
+    with client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as late:
+        hello = late.receive_json()
+    series = hello["attack"]
+    assert len(series) >= 90 and [p["minute"] for p in series] == list(range(len(series)))

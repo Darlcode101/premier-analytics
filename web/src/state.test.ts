@@ -156,3 +156,21 @@ describe('momentum history', () => {
     expect(s.momentum).toEqual([{ minute: 1, value: 0.1 }, { minute: 2, value: -0.3 }])
   })
 })
+
+describe('attack momentum series', () => {
+  const pt = (minute: number, value: number) => ({
+    minute, value, window: [Math.max(0, minute - 2), minute] as [number, number], label: String(minute + 1),
+    home: { shots: 0, xg: 0, final_third_passes: 0, high_regains: 0 }, away: { shots: 0, xg: 0, final_third_passes: 0, high_regains: 0 },
+  })
+  it('hello seeds it and stats update the current minute in place', () => {
+    let s = run({ ...(hello as object), attack: [pt(0, 0), pt(1, 0.2)] } as Message)
+    expect(s.attack.map(p => p.value)).toEqual([0, 0.2])
+    const stats = (p: ReturnType<typeof pt>): Message => ({
+      type: 'stats', clock_ms: 0, period: 1, chaos: 0, attack: p,
+      home: { window: { momentum: 0 } } as never, away: { window: { momentum: 0 } } as never,
+    })
+    s = reducer(s, stats(pt(1, 0.5)))
+    s = reducer(s, stats(pt(2, -0.3)))
+    expect(s.attack.map(p => [p.minute, p.value])).toEqual([[0, 0], [1, 0.5], [2, -0.3]])
+  })
+})

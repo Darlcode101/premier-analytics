@@ -96,6 +96,16 @@ export interface Recap {
   model: string | null
 }
 
+export interface AttackCounts { shots: number; xg: number; final_third_passes: number; high_regains: number }
+export interface AttackPoint {
+  minute: number
+  value: number          // -1..1, > 0 = home on top
+  window: [number, number]
+  label: string          // broadcast clock, e.g. "45+2"
+  home: AttackCounts
+  away: AttackCounts
+}
+
 export type Message =
   | {
       type: 'hello'
@@ -112,6 +122,7 @@ export type Message =
       score_home: number
       score_away: number
       momentum?: { minute: number; value: number }[]
+      attack?: AttackPoint[]
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -132,7 +143,7 @@ export type Message =
       end_x: number | null
       end_y: number | null
     }
-  | { type: 'stats'; home: TeamStats; away: TeamStats; chaos: number; clock_ms: number; period: number; elapsed_ms?: number }
+  | { type: 'stats'; home: TeamStats; away: TeamStats; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
   | { type: 'trace'; trace: TraceEvent }

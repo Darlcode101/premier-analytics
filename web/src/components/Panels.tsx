@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { KIND_LABELS, t, type StringKey } from '../i18n'
 import type { State } from '../state'
 import type { Hello, Language, Overlay, TeamStats } from '../types'
+import { explainAttack, linkedMoments } from '../explain'
 import { Evidence } from './Shared'
 
 function FeedItem({ o, color, names, lang }: { o: Overlay; color: string; names: Record<string, string>; lang: Language }) {
@@ -55,7 +56,78 @@ function StatRow({ label, home, away, fmt = String, colors }: {
   )
 }
 
-export function Stats({ state, colors, lang }: { state: State; colors: Record<string, string>; lang: Language }) {
+/** Per-minute bars towards the team on top, with the reasons for any bar you tap. */
+export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
+  state: State; colors: Record<string, string>; names: Record<string, string>; lang: Language; topTeam: string | null
+}) {
+  const [picked, setPicked] = useState<number | null>(null)
+  const h = state.hello
+  const series = state.attack
+  if (!h || !series.length) return null
+  const top = topTeam ?? h.home.id
+  const bottom = top === h.home.id ? h.away.id : h.home.id
+  const sign = top === h.home.id ? 1 : -1
+  const n = Math.max(96, series.length)
+  const W = n * 3
+  const H = 84
+  const mid = H / 2
+  const momentMinutes = new Set(
+    state.feed.filter(o => o.kind === 'momentum_shift' || o.kind === 'pressure_spell').map(o => Math.floor(o.elapsed_in_ms / 60_000)),
+  )
+  const halftime = series.findIndex((p, i) => i > 0 && p.label === '46' && series[i - 1].label.startsWith('45'))
+  const selected = series[picked ?? series.length - 1]
+  const why = explainAttack(selected, h.home.id, h.away.id, names, lang)
+  const moments = linkedMoments(state.feed, selected)
+  const label = (m: number) => series[m]?.label ?? String(m + 1)
+  return (
+    <section className="attack-chart" data-testid="attack-momentum">
+      <h3 className="section-title">{t(lang, 'attackMomentum')}</h3>
+      <div className="attack-legend" dir="ltr">
+        <span><i style={{ background: colors[top] }} />{names[top]}</span>
+        <span><i style={{ background: colors[bottom] }} />{names[bottom]}</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="group" aria-label={t(lang, 'attackMomentum')}>
+        <line x1={0} x2={W} y1={mid} y2={mid} className="axis" />
+        {halftime > 0 && <line x1={halftime * 3} x2={halftime * 3} y1={4} y2={H - 4} className="ht" />}
+        {series.map(p => {
+          const v = p.value * sign
+          const hgt = Math.max(Math.abs(v) * (mid - 6), v === 0 ? 0 : 1)
+          const isSel = p.minute === selected.minute
+          return (
+            <g key={p.minute} onClick={() => setPicked(p.minute)} className={`bar${isSel ? ' sel' : ''}`}
+              data-testid="attack-bar" role="button" aria-label={`${label(p.minute)}'`}>
+              <rect x={p.minute * 3} y={0} width={3} height={H} fill="transparent" />
+              <rect x={p.minute * 3 + 0.4} y={v >= 0 ? mid - hgt : mid} width={2.2} height={hgt} rx={0.6}
+                fill={v >= 0 ? colors[top] : colors[bottom]} opacity={isSel ? 1 : 0.8} />
+              {momentMinutes.has(p.minute) && <circle cx={p.minute * 3 + 1.5} cy={v >= 0 ? mid - hgt - 3 : mid + hgt + 3} r={1.3} className="moment-dot" />}
+            </g>
+          )
+        })}
+      </svg>
+      <div className="attack-why" data-testid="attack-why">
+        <div className="attack-why-head">
+          <b>{label(selected.window[0])}'–{label(selected.window[1])}'</b>
+          <span style={{ color: why.leader ? colors[why.leader] : undefined }} className="leader">{why.headline}</span>
+        </div>
+        {why.reasons.length > 0 && <ul>{why.reasons.map(r => <li key={r}>{r}</li>)}</ul>}
+        {why.leader && why.opponentReasons.length > 0 && (
+          <p className="opp">{names[why.leader === h.home.id ? h.away.id : h.home.id]}: {why.opponentReasons.join(' · ')}</p>
+        )}
+        {moments.map(o => (
+          <div key={o.id} className="attack-ai" dir={o.direction}>
+            <span className="ai-tag">✦ AI</span> <strong>{o.headline}</strong>
+            <p>{o.body}</p>
+          </div>
+        ))}
+        {picked === null && <p className="hint">{t(lang, 'tapBar')}</p>}
+      </div>
+    </section>
+  )
+}
+
+export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
+  state: State; colors: Record<string, string>; lang: Language; names?: Record<string, string>; topTeam?: string | null
+}) {
   const hello = state.hello
   if (!state.stats || !hello) return <p className="empty">{t(lang, 'waiting')}</p>
   const { home, away, chaos } = state.stats
@@ -80,6 +152,7 @@ export function Stats({ state, colors, lang }: { state: State; colors: Record<st
   ]
   return (
     <div data-testid="stats">
+      <AttackMomentumChart state={state} colors={colors} names={names} lang={lang} topTeam={topTeam} />
       {rows.map(([k, get, fmt]) => (
         <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} />
       ))}

@@ -280,3 +280,25 @@ button, select, input { font: inherit; color: inherit; }
 .outcome-error, .outcome-stale { color: var(--pl-pink); }
 .trace-item .detail { opacity: .6; grid-column: 2 / 4; }
 .desk-foot { padding: 8px 20px 14px; font-size: 12px; opacity: .6; }
+
+/* ---------- attack momentum ---------- */
+.attack-chart { margin-bottom: 18px; }
+.attack-legend { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.attack-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.attack-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.attack-chart svg { width: 100%; height: 96px; display: block; background: rgba(127,127,127,.08); border-radius: 10px; cursor: pointer; }
+.attack-chart .axis { stroke: rgba(127,127,127,.5); stroke-width: .4; }
+.attack-chart .ht { stroke: rgba(127,127,127,.6); stroke-width: .5; stroke-dasharray: 2 2; }
+.attack-chart .bar.sel rect + rect { filter: brightness(1.15); }
+.attack-chart .bar.sel rect:first-child { fill: rgba(127,127,127,.15); }
+.attack-chart .moment-dot { fill: var(--pl-pink); }
+.attack-why { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(127,127,127,.1); font-size: 13px; }
+.attack-why-head { display: flex; gap: 10px; align-items: baseline; }
+.attack-why-head b { font-family: 'Barlow Condensed', var(--font-display); font-size: 15px; direction: ltr; }
+.attack-why-head .leader { font-weight: 800; filter: saturate(1.2) brightness(.9); }
+.desk .attack-why-head .leader { filter: brightness(1.3); }
+.attack-why ul { margin: 6px 0 0; padding-inline-start: 18px; }
+.attack-why .opp { margin: 6px 0 0; opacity: .7; }
+.attack-why .hint { margin: 6px 0 0; opacity: .6; font-size: 12px; }
+.attack-ai { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(127,127,127,.25); }
+.attack-ai p { margin: 2px 0 0; opacity: .85; }

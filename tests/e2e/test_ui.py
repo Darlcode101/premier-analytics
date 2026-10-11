@@ -208,3 +208,17 @@ def test_favourite_flips_the_pitch_and_is_remembered(server, page: Page):
     expect(page.get_by_test_id("fav-badge")).to_be_visible()          # remembered after a refresh
     expect(page.get_by_test_id("hero-left")).to_contain_text("Northgate")
     expect(page.get_by_test_id("mini-pitch")).to_have_attribute("data-mirrored", "true")
+
+
+def test_attack_momentum_bars_explain_themselves(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=300)}")
+    expect(page.get_by_test_id("zone-text")).not_to_have_text("Ball out of play", timeout=15_000)
+    page.wait_for_timeout(4000)  # let a few minutes of bars build up
+    page.get_by_role("button", name="Stats").click()
+    chart = page.get_by_test_id("attack-momentum")
+    expect(chart).to_be_visible()
+    assert page.get_by_test_id("attack-bar").count() >= 5
+    page.get_by_test_id("attack-bar").nth(2).dispatch_event("click")
+    why = page.get_by_test_id("attack-why")
+    expect(why).to_contain_text(re.compile(r"on top|Evenly balanced|Quiet spell"))
+    expect(why).to_contain_text(re.compile(r"\d+'–\d+'"))

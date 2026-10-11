@@ -1,4 +1,4 @@
-import type { Hello, MatchEvent, Message, Overlay, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, Hello, MatchEvent, Message, Overlay, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -28,6 +28,7 @@ export interface State {
   screen: Overlay[]
   stats: { home: TeamStats; away: TeamStats; chaos: number } | null
   momentum: { minute: number; value: number }[]
+  attack: AttackPoint[]
   trace: TraceEvent[]
   counts: { published: number; rejected: number; stale: number; error: number }
   recaps: Partial<Record<Recap['kind'], Recap>>
@@ -38,7 +39,7 @@ export interface State {
 
 export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
-  feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], trace: [],
+  feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
   possession: null, animations: [], animatedMoments: new Set(),
 }
@@ -61,6 +62,7 @@ export function reducer(s: State, m: Action): State {
         ball: s.hello?.match_id === m.match_id ? s.ball : null,
         trail: s.hello?.match_id === m.match_id ? s.trail : [],
         momentum: m.momentum ?? (s.hello?.match_id === m.match_id ? s.momentum : []),
+        attack: m.attack ?? (s.hello?.match_id === m.match_id ? s.attack : []),
         minute: s.hello?.match_id === m.match_id ? s.minute : '0',
         possession: s.hello?.match_id === m.match_id ? s.possession : null,
         // moments already celebrated stay celebrated when the viewer changes profile
@@ -92,7 +94,12 @@ export function reducer(s: State, m: Action): State {
       const momentum = s.momentum.length && s.momentum[s.momentum.length - 1].minute === minute
         ? [...s.momentum.slice(0, -1), point]
         : [...s.momentum, point]
-      return { ...s, stats: { home: m.home, away: m.away, chaos: m.chaos }, momentum }
+      let attack = s.attack
+      if (m.attack) {
+        const p = m.attack
+        attack = [...s.attack.filter(a => a.minute !== p.minute), p].sort((a, b) => a.minute - b.minute)
+      }
+      return { ...s, stats: { home: m.home, away: m.away, chaos: m.chaos }, momentum, attack }
     }
     case 'overlay': {
       const o = m.overlay

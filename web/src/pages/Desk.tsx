@@ -100,7 +100,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
               ))}
             </div>
             <div className="tab-body">
-              {tab === 'stats' && <Stats state={state} colors={colors} lang={lang} />}
+              {tab === 'stats' && <Stats state={state} colors={colors} lang={lang} names={names} />}
               {tab === 'agents' && <Agents state={state} lang={lang} />}
               {tab === 'recap' && <Recaps state={state} lang={lang} />}
             </div>

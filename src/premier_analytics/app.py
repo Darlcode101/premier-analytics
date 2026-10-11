@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, ValidationError
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
 from .generator import generate_match
 from .league import League, load_league
+from .momentum import AttackMomentum
 from .orchestrator import Orchestrator, TraceEvent
 from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, overlay_id
 from .recap import Recap
@@ -91,6 +92,7 @@ class MatchSession:
         self.score = (0, 0)
         self.period, self.clock_ms = 1, 0
         self.momentum: list[dict] = []  # one point per elapsed minute, for late joiners
+        self.attack = AttackMomentum(req.home, req.away)
         self.orch = Orchestrator(
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
@@ -117,6 +119,7 @@ class MatchSession:
             "audience": a.key, "home": club(meta.home_id), "away": club(meta.away_id), "venue": meta.venue,
             "referee": meta.referee, "kickoff": meta.kickoff_local, "weather": meta.weather.model_dump(),
             "score_home": self.score[0], "score_away": self.score[1], "momentum": list(self.momentum),
+            "attack": self.attack.series(),
         }
 
     def join(self, a: Audience) -> Viewer:
@@ -195,9 +198,10 @@ class MatchSession:
             data["window"] = {k: (round(v, 3) if isinstance(v, float) else v) for k, v in t.window.model_dump().items()}
             return data
 
+        minute = snap.elapsed_ms // MIN
         return {"type": "stats", "home": team(self.names.home_id), "away": team(self.names.away_id),
                 "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period,
-                "elapsed_ms": snap.elapsed_ms}
+                "elapsed_ms": snap.elapsed_ms, "attack": self.attack.point(minute)}
 
     def _end(self) -> dict:
         return {"type": "end", "score_home": self.score[0], "score_away": self.score[1]}
@@ -223,6 +227,7 @@ class MatchSession:
             if e.type in ("goal", "period_end"):
                 self.score = (e.score_home, e.score_away)
             await self.orch.handle(e)
+            self.attack.observe(e, self.orch.scout.engine.metrics.get(e.id))
             self._send({
                 "type": "event", "kind": e.type, "seq": e.seq, "period": e.period, "clock_ms": e.clock_ms,
                 "display_minute": display_minute(e), "team_id": e.team_id, "player_id": e.player_id,
