@@ -62,6 +62,19 @@ class MomentScout:
         """facts: (label, value, subject, source_event_ids)"""
         mid = f"{self.match_id}-mo{self._count:04d}"
         self._count += 1
+        # Context every explanation needs: the scoreline and the time, plus shot totals for trends.
+        have = {f[0] for f in facts}
+        context = [
+            ("score_home", self.engine.score[0], None, [e.id]),
+            ("score_away", self.engine.score[1], None, [e.id]),
+            ("minute", e.clock_ms // MIN + 1, None, [e.id]),
+        ]
+        if kind in ("momentum_shift", "pressure_spell") and team:
+            context += [
+                ("team_shots", self.engine.teams[team].shots, team, [e.id]),
+                ("opponent_shots", self.engine.teams[self.other(team)].shots, self.other(team), [e.id]),
+            ]
+        facts = list(facts) + [c for c in context if c[0] not in have]
         return Moment(
             id=mid, kind=kind, severity=round(min(1.0, severity), 3), event_id=e.id,
             period=e.period, clock_ms=e.clock_ms, elapsed_ms=e.elapsed_ms,

@@ -254,3 +254,13 @@ def test_goal_context_is_stated(before, scorer, expected):
     fx.goal(5, scorer, s, h + (scorer == HOME), a + (scorer == AWAY))
     goal = next(m for m in scout_all(fx) if m.kind == "goal")
     assert {f.label: f.value for f in goal.facts}["goal_context"] == expected
+
+
+def test_every_moment_carries_score_and_minute_context(many_matches):
+    """Explanations can only say why a moment matters if they know the scoreline and the time."""
+    m = many_matches[0]
+    for mo in run_match(m):
+        labels = {f.label for f in mo.facts}
+        assert {"score_home", "score_away", "minute"} <= labels, (mo.kind, labels)
+        if mo.kind in ("momentum_shift", "pressure_spell"):
+            assert {"team_shots", "opponent_shots"} <= labels

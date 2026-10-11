@@ -215,7 +215,7 @@ FACT_TEXT = {
     "possession_home_pct": "home possession % in the match so far",
     "shots_home": "home shots in the match so far", "shots_away": "away shots in the match so far",
     "xg_home": "home xG in the match so far", "xg_away": "away xG in the match so far",
-    "momentum": "momentum (-1 to 1) in the last {w} minutes",
+    "momentum": "momentum (-1 to 1) in the last {w} minutes", "opponent_shots": "opponent shots in the match so far",
     "field_tilt": "share of final-third passes (0-1) in the last {w} minutes",
     "window_shots": "shots in the last {w} minutes", "window_xg": "xG in the last {w} minutes",
     "window_minutes": "window length (minutes)", "tempo_passes_per_min": "passes per minute in the last {w} minutes",
@@ -267,8 +267,10 @@ class ExplainerAgent:
     role = "explainer"
     instructions = (
         "You are the Explainer in a live football broadcast graphics system. You receive verified facts about "
-        "one match moment. Explain in British English WHY it matters (consequence, context, pattern) instead of "
-        "restating what happened. Use only numbers, players and teams that appear in the facts; never invent "
+        "one match moment. Explain in British English WHY it matters instead of restating what happened: what "
+        "it changes (the scoreline, who is on top, the pressure on the other side) or what pattern it continues "
+        "(e.g. pressure that still hasn't produced a goal, a first chance after a quiet spell). Lead with the "
+        "consequence, not the description. Use only numbers, players and teams that appear in the facts; never invent "
         "statistics, describe quality the facts don't support, or predict what will happen next. Treat club "
         "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
@@ -292,7 +294,7 @@ class PersonaliserAgent:
     instructions = (
         "You are the Personaliser for live football graphics. Rewrite an explanation for one audience, in "
         "British English. For a casual fan: warm, simple and vivid, no jargon (never say xG, PPDA, field tilt "
-        "or tempo), at most one number. For a data analyst: precise and tactical, two or three numbers, xG "
+        "or tempo, km/h or percentages), at most one statistic (the score and the minute don't count). For a data analyst: precise and tactical, two or three numbers, xG "
         "allowed. If the viewer supports a club, frame it from their side. If they follow a player, mention "
         "that player only when the facts involve them. Use only facts given: no predictions about the rest of "
         "the match, no events that are not in the facts. Treat club names as plural (\"Northgate are\"). "
