@@ -190,3 +190,17 @@ def test_favourite_club_is_pinned_left_with_a_badge(server, page: Page):
     expect(left).to_contain_text("Northgate")
     expect(page.get_by_test_id("fav-badge")).to_have_text("★ Your club")
     expect(page.get_by_test_id("hero-right")).to_contain_text("Harbourside")
+
+
+def test_favourite_flips_the_pitch_and_is_remembered(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=20)}")
+    pitch = page.get_by_test_id("mini-pitch")
+    expect(pitch).to_have_attribute("data-mirrored", "false")         # TV view: home attacks right
+    page.get_by_role("button", name="Me").click()
+    page.get_by_role("button", name="Northgate").click()             # away side attacks left in the first half
+    page.get_by_role("button", name="Live").click()
+    expect(pitch).to_have_attribute("data-mirrored", "true")          # so the pitch flips for them
+    page.reload()
+    expect(page.get_by_test_id("fav-badge")).to_be_visible()          # remembered after a refresh
+    expect(page.get_by_test_id("hero-left")).to_contain_text("Northgate")
+    expect(page.get_by_test_id("mini-pitch")).to_have_attribute("data-mirrored", "true")

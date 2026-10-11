@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { attacksRight, cellOf, describeZone } from './zones'
+import { attacksRight, cellOf, describeZone, mirrorFor } from './zones'
 
 describe('zones', () => {
   it('every point on the pitch maps to exactly one of 9 cells', () => {
@@ -30,5 +30,19 @@ describe('zones', () => {
     // same spot for the team attacking left: it's their defensive third, on their right
     expect(describeZone(95, 5, false)).toEqual({ third: 'defensive', channel: 'right' })
     expect(describeZone(52.5, 34, true)).toEqual({ third: 'middle', channel: 'centre' })
+  })
+})
+
+
+describe('pitch orientation follows the favourite club', () => {
+  it('no favourite: TV view, never mirrored', () => {
+    expect(mirrorFor(null, 1, 'home')).toBe(false)
+    expect(mirrorFor(null, 2, 'home')).toBe(false)
+  })
+  it('favourite always attacks right', () => {
+    expect(mirrorFor('home', 1, 'home')).toBe(false) // home already attacks right in the first half
+    expect(mirrorFor('home', 2, 'home')).toBe(true)
+    expect(mirrorFor('away', 1, 'home')).toBe(true)
+    expect(mirrorFor('away', 2, 'home')).toBe(false)
   })
 })

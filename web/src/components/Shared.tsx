@@ -98,20 +98,24 @@ function PitchMarkings() {
 }
 
 /** A pitch with a glowing hue in the possessing team's colour over the ball's area (one of 9 zones). */
-export function ZoneMap({ state, colors, lang, compact = false }: {
+export function ZoneMap({ state, colors, lang, compact = false, mirror = false }: {
   state: State; colors: Record<string, string>; lang: Language; compact?: boolean
+  /** Flip the drawing end to end (e.g. so the fan's club always attacks right). The label is unaffected. */
+  mirror?: boolean
 }) {
   const h = state.hello
-  const cell = state.ball ? cellOf(state.ball.x, state.ball.y) : null
+  const ball = state.ball && (mirror ? { x: PITCH_L - state.ball.x, y: PITCH_W - state.ball.y } : state.ball)
+  const cell = ball ? cellOf(ball.x, ball.y) : null
   const color = (state.possession && colors[state.possession]) || '#00ff85'
   const sentence = zoneSentence(state, lang)
-  const attackRight = h && state.possession ? attacksRight(state.possession, state.period, h.home.id) : null
+  const attackRight = h && state.possession ? attacksRight(state.possession, state.period, h.home.id) !== mirror : null
   const cx = cell ? (cell.col + 0.5) * (PITCH_L / 3) : PITCH_L / 2
   const cy = cell ? (cell.row + 0.5) * (PITCH_W / 3) : PITCH_W / 2
   return (
     <div className={`zone-card${compact ? ' compact' : ''}`} data-testid="zone-map">
       <div className="zone-head"><span>{t(lang, 'whereBall')}</span></div>
-      <svg className="mini-pitch" viewBox={`0 0 ${PITCH_L} ${PITCH_W}`} role="img" aria-label={sentence ?? t(lang, 'offBall')}>
+      <svg className="mini-pitch" viewBox={`0 0 ${PITCH_L} ${PITCH_W}`} role="img" aria-label={sentence ?? t(lang, 'offBall')}
+        data-testid="mini-pitch" data-mirrored={mirror}>
         <defs>
           <radialGradient id="hue" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={color} stopOpacity={1} />

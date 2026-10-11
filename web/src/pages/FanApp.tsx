@@ -5,6 +5,8 @@ import { Recaps, Stats } from '../components/Panels'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import { kitColors } from '../colors'
 import { scoreboardSides } from '../scoreboard'
+import { loadFavourite, saveFavourite } from '../prefs'
+import { mirrorFor } from '../zones'
 import type { Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
@@ -49,6 +51,17 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
 
   const possessionClub = h && state.possession ? (state.possession === h.home.id ? h.home : h.away) : null
   const board = h ? scoreboardSides(h.home, h.away, state.score, clubId) : null
+
+  // Restore the remembered favourite once we know which clubs are playing.
+  const homeId = h?.home.id
+  const awayId = h?.away.id
+  useEffect(() => {
+    if (homeId && awayId) setClubId(c => c ?? loadFavourite([homeId, awayId]))
+  }, [homeId, awayId])
+  const chooseClub = (id: string | null) => {
+    setClubId(id)
+    saveFavourite(id)
+  }
   // The wash uses the club's kit colour, the colour fans associate with them.
   const wash = possessionClub && state.possession ? colors[state.possession] : '#37003c'
 
@@ -83,7 +96,8 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
         <section className="sheet">
           {tab === 'live' && (
             <>
-              <ZoneMap state={state} colors={colors} lang={lang} />
+              <ZoneMap state={state} colors={colors} lang={lang}
+                mirror={h ? mirrorFor(clubId, state.period, h.home.id) : false} />
               <div className="timeline">
                 {!state.feed.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
                 {state.feed.map(o => (
@@ -109,7 +123,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
                 <span>{t(lang, 'favouriteClub')}</span>
                 <div className="club-pick">
                   {[h.home, h.away].map(c => (
-                    <button key={c.id} aria-pressed={clubId === c.id} onClick={() => setClubId(clubId === c.id ? null : c.id)}>
+                    <button key={c.id} aria-pressed={clubId === c.id} onClick={() => chooseClub(clubId === c.id ? null : c.id)}>
                       <Crest club={c} size={28} /> {c.short_name}
                     </button>
                   ))}
