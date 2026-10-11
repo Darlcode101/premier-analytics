@@ -8,7 +8,7 @@ Production runs on **Azure Container Apps** in Switzerland North, subscription *
 | Container registry | `premieranalytics0931ac23` (Basic) | images tagged with the git commit |
 | Container Apps environment | `pa-env`, **Express** mode | Standard mode "is not currently available in this region" for this subscription |
 | Container app | `premier-analytics` | 0.5 vCPU / 1 GiB, **exactly 1 replica** (match sessions are in memory), liveness probe `/api/health` |
-| User-assigned identity | `pa-identity` | *Cognitive Services OpenAI User* on the Foundry resource, *AcrPull* on the registry. Pulls images and calls Foundry: no keys or registry passwords stored |
+| User-assigned identity | `pa-identity` | *Cognitive Services OpenAI User* and *Foundry User* on the Foundry resource, *AcrPull* on the registry. Pulls images and calls Foundry: no keys or registry passwords stored. *Foundry User* is needed for the Responses API with web search (the ask box); without it those calls return 403 |
 | Foundry | `premieranalytics-resource` in `rg-darling6-3123` | |
 
 URL: https://premier-analytics.salmondune-d779c5b4.switzerlandnorth.azurecontainerapps.io
