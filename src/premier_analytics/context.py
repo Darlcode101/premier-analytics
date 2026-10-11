@@ -21,8 +21,11 @@ from typing import Any, Callable, Literal, Protocol
 from pydantic import BaseModel, Field
 
 from .agents import LLMResult, _normalise_numbers, _number_forms, describe_facts
+from opentelemetry.trace import StatusCode
+
 from .overlay import Names, display_minute
 from .scout import Moment
+from .telemetry import tracer
 
 LIBRARY_PATH = Path(__file__).parent / "data" / "context_library.json"
 
@@ -339,17 +342,23 @@ class AskDesk:
             return {**self.cache[key], "status": "cached", "remaining": self.limit - self.used}
         if self.used >= self.limit:
             return self._result("limit")
-        try:
-            answer = await asyncio.wait_for(self.researcher.ask(question, language), self.timeout_s)
-        except asyncio.TimeoutError:
-            return self._result("timeout")
-        except Exception as err:  # the desk shows a plain message; the server log keeps the reason
-            print(f"ask box search failed: {err!r}"[:500], flush=True)
-            return self._result("error")
-        if answer.text.strip() == "OFF_TOPIC":
-            return self._result("off_topic")
-        if not answer.sources:
-            return self._result("no_source")
+        with tracer.start_as_current_span("invoke_agent researcher", attributes={
+            "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "researcher", "pa.language": language,
+        }) as span:  # CX-7; prompts and answers are not recorded
+            try:
+                answer = await asyncio.wait_for(self.researcher.ask(question, language), self.timeout_s)
+            except asyncio.TimeoutError:
+                span.set_attribute("pa.outcome", "timeout")
+                return self._result("timeout")
+            except Exception as err:  # the desk shows a plain message; the trace keeps the reason
+                span.set_status(StatusCode.ERROR, repr(err)[:300])
+                span.set_attribute("pa.outcome", "error")
+                print(f"ask box search failed: {err!r}"[:500], flush=True)
+                return self._result("error")
+            outcome = "off_topic" if answer.text.strip() == "OFF_TOPIC" else "no_source" if not answer.sources else "ok"
+            span.set_attributes({"pa.outcome": outcome, "pa.sources": len(answer.sources)})
+        if outcome != "ok":
+            return self._result(outcome)
         self.used += 1
         result = self._result("ok", answer.text, answer.sources)
         self.cache[key] = result

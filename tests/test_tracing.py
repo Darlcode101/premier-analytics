@@ -101,3 +101,15 @@ def test_recaps_are_traced(spans):
     asyncio.run(go())
     recap = by_name(spans, "recap half_time")[0]
     assert recap.attributes["gen_ai.agent.name"] == "recap" and recap.attributes["pa.outcome"] == "published"
+
+
+def test_ask_box_searches_are_traced(spans):
+    from premier_analytics.context import AskDesk, ResearcherAgent
+
+    from test_context import ANSWER, FakeSearch
+
+    asyncio.run(AskDesk(ResearcherAgent(FakeSearch(ANSWER))).ask("xG?", "en"))
+    asyncio.run(AskDesk(ResearcherAgent(FakeSearch(RuntimeError("forbidden")))).ask("xG?", "en"))
+    ok, failed = by_name(spans, "invoke_agent researcher")
+    assert ok.attributes["gen_ai.agent.name"] == "researcher" and ok.attributes["pa.outcome"] == "ok"
+    assert failed.status.status_code == trace.StatusCode.ERROR and "forbidden" in failed.status.description
