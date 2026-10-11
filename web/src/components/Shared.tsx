@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localDigits } from '../digits'
 import { CONTEXT_LABELS, FACT_LABELS, KIND_LABELS, t } from '../i18n'
 import type { State } from '../state'
 import type { ClubInfo, Hello, Language, Overlay } from '../types'
@@ -55,7 +56,7 @@ export function Evidence({ overlay, names, lang }: { overlay: Overlay; names: Re
       {Object.entries(overlay.data).map(([label, value]) => (
         <div key={label} style={{ display: 'contents' }}>
           <dt>{FACT_LABELS[lang][label] ?? label}</dt>
-          <dd>{factValue(value, label, names, lang)}</dd>
+          <dd>{localDigits(factValue(value, label, names, lang), lang)}</dd>
         </div>
       ))}
     </dl>
@@ -186,12 +187,12 @@ export function Celebration({ state, colors, names, lang, onDone }: {
         {club && <Crest club={club} size={current.kind === 'goal' ? 64 : 44} />}
         <div className="celebrate-title">{label}</div>
         {(current.kind === 'goal' || current.kind.endsWith('_time')) && (
-          <div className="celebrate-score" dir="ltr">{scoreLine(h, [Number(o.data.score_home ?? 0), Number(o.data.score_away ?? 0)])}</div>
+          <div className="celebrate-score" dir="ltr">{localDigits(scoreLine(h, [Number(o.data.score_home ?? 0), Number(o.data.score_away ?? 0)]), lang)}</div>
         )}
         {current.kind === 'goal' && typeof o.data.scorer === 'string' && (
-          <div className="celebrate-sub" data-testid="celebration-scorer">{names[o.data.scorer] ?? o.data.scorer} · {o.minute}'</div>
+          <div className="celebrate-sub" data-testid="celebration-scorer">{names[o.data.scorer] ?? o.data.scorer} · {localDigits(o.minute, lang)}'</div>
         )}
-        {!['goal', 'half_time', 'full_time'].includes(current.kind) && <div className="celebrate-sub">{o.headline}</div>}
+        {!['goal', 'half_time', 'full_time'].includes(current.kind) && <div className="celebrate-sub">{localDigits(o.headline, lang)}</div>}
       </div>
     </div>
   )

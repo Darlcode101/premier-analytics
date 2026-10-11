@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { localDigits } from '../digits'
 import { useMatch } from '../api'
 import { teamColors } from '../colors'
 import { Agents, Momentum, Recaps, Stats } from '../components/Panels'
@@ -13,13 +14,13 @@ function TalkingPoint({ o, color, names, lang }: { o: Overlay; color: string; na
   return (
     <article className="talking-point" dir={o.direction} data-testid="feed-item" style={{ '--team': color } as React.CSSProperties}>
       <header>
-        <span className="tp-minute">{o.minute}'</span>
+        <span className="tp-minute">{localDigits(o.minute, lang)}'</span>
         <span className="tp-kind"><KindIcon kind={o.kind} size={14} /> {KIND_LABELS[lang][o.kind] ?? o.kind}</span>
-        {o.source === 'ai' ? <span className="ai-tag">✦ AI</span> : <span className="instant-tag">{t(lang, 'instant')}</span>}
+        {o.source === 'ai' ? <span className="ai-tag">AI</span> : <span className="instant-tag">{t(lang, 'instant')}</span>}
         <button className="why" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(lang, 'why')}</button>
       </header>
-      <h3>{o.headline}</h3>
-      <p>{o.body}</p>
+      <h3>{localDigits(o.headline, lang)}</h3>
+      <p>{localDigits(o.body, lang)}</p>
       {open && <Evidence overlay={o} names={names} lang={lang} />}
     </article>
   )
@@ -39,7 +40,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
     }
     return out
   }, [h])
-  const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${state.minute}'` : t(lang, 'kickOffSoon')
+  const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${localDigits(state.minute, lang)}'` : t(lang, 'kickOffSoon')
   const possessionClub = h && state.possession ? (state.possession === h.home.id ? h.home : h.away) : null
 
   return (
@@ -49,7 +50,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
         {h && (
           <div className="desk-score">
             <Crest club={h.home} size={30} /><b>{h.home.short_name}</b>
-            <span className="big" data-testid="score" dir="ltr">{state.score[0]} – {state.score[1]}</span>
+            <span className="big" data-testid="score" dir="ltr">{localDigits(state.score[0], lang)} – {localDigits(state.score[1], lang)}</span>
             <b>{h.away.short_name}</b><Crest club={h.away} size={30} />
             <span className={`clock-pill${state.status === 'live' ? ' live' : ''}`} data-testid="clock">{clock}</span>
           </div>
@@ -80,8 +81,8 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
                   style={{ '--team': (o.team_id && colors[o.team_id]) || 'var(--pl-green)' } as React.CSSProperties}
                   data-testid={`overlay-${o.slot}`}>
                   <span className="k">{KIND_LABELS[lang][o.kind] ?? o.kind}</span>
-                  <strong>{o.headline}</strong>
-                  <span className="b">{o.body}</span>
+                  <strong>{localDigits(o.headline, lang)}</strong>
+                  <span className="b">{localDigits(o.body, lang)}</span>
                 </div>
               ))}
             </div>

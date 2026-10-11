@@ -124,6 +124,8 @@ def test_fan_settings_switch_language_to_arabic(server, page: Page):
     page.get_by_role("button", name="العربية").click()
     expect(page.locator("html")).to_have_attribute("dir", "rtl")
     expect(page.get_by_role("button", name="أنا")).to_be_visible()
+    expect(page.get_by_test_id("score")).to_have_text(re.compile(r"^[٠-٩]+–[٠-٩]+$"))  # Eastern Arabic digits
+    expect(page.get_by_test_id("clock")).not_to_contain_text(re.compile(r"[0-9]"))
 
 
 def test_fan_moment_cards_explain_why(server, page: Page):

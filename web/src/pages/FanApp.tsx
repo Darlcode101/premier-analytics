@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { localDigits } from '../digits'
 import { useMatch } from '../api'
 import { Celebration, Crest, Evidence, KindIcon, ZoneMap } from '../components/Shared'
 import { Recaps, Stats } from '../components/Panels'
@@ -15,13 +16,13 @@ function MomentCard({ o, color, names, lang }: { o: Overlay; color: string; name
   const [open, setOpen] = useState(false)
   return (
     <article className={`moment-card k-${o.kind}`} dir={o.direction} data-testid="feed-item" style={{ '--team': color } as React.CSSProperties}>
-      <div className="moment-minute">{o.minute}'</div>
+      <div className="moment-minute">{localDigits(o.minute, lang)}'</div>
       <div className="moment-body">
         <div className="moment-kind"><KindIcon kind={o.kind} /> {KIND_LABELS[lang][o.kind] ?? o.kind}
-          {o.source === 'ai' && <span className="ai-tag">✦ AI</span>}
+          {o.source === 'ai' && <span className="ai-tag">AI</span>}
         </div>
-        <h3>{o.headline}</h3>
-        <p>{o.body}</p>
+        <h3>{localDigits(o.headline, lang)}</h3>
+        <p>{localDigits(o.body, lang)}</p>
         <button className="why" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(lang, 'why')}</button>
         {open && <Evidence overlay={o} names={names} lang={lang} />}
       </div>
@@ -65,7 +66,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
   // The wash uses the club's kit colour, the colour fans associate with them.
   const wash = possessionClub && state.possession ? colors[state.possession] : '#37003c'
 
-  const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${state.minute}'` : t(lang, 'kickOffSoon')
+  const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${localDigits(state.minute, lang)}'` : t(lang, 'kickOffSoon')
 
   return (
     <div className="phone-stage">
@@ -91,7 +92,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
                   )}
                 </span>
               </div>
-              <div className="big-score" data-testid="score">{board.left.goals}<i>–</i>{board.right.goals}</div>
+              <div className="big-score" data-testid="score">{localDigits(board.left.goals, lang)}<i>–</i>{localDigits(board.right.goals, lang)}</div>
               <div className="side" data-testid="hero-right">
                 <Crest club={board.right.club} size={46} /><span>{board.right.club.short_name}</span>
               </div>

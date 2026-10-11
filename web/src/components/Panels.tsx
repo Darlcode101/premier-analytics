@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { localDigits } from '../digits'
 import { KIND_LABELS, t, type StringKey } from '../i18n'
 import type { State } from '../state'
 import type { Hello, Language, Overlay, TeamStats } from '../types'
@@ -10,14 +11,14 @@ function FeedItem({ o, color, names, lang }: { o: Overlay; color: string; names:
   return (
     <article className="feed-item" dir={o.direction} data-testid="feed-item">
       <div className="feed-top">
-        <span className="minute">{o.minute}'</span>
+        <span className="minute">{localDigits(o.minute, lang)}'</span>
         <span className="chip" style={{ '--team': color } as React.CSSProperties}>{KIND_LABELS[lang][o.kind] ?? o.kind}</span>
-        <span className={`badge ${o.source}`}>{o.source === 'ai' ? `✦ ${t(lang, 'aiUpgraded')}` : t(lang, 'instant')}</span>
+        <span className={`badge ${o.source}`}>{o.source === 'ai' ? t(lang, 'aiUpgraded') : t(lang, 'instant')}</span>
         <span style={{ flex: 1 }} />
         <button className="link-btn" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(lang, 'why')}</button>
       </div>
-      <h4>{o.headline}</h4>
-      <p>{o.body}</p>
+      <h4>{localDigits(o.headline, lang)}</h4>
+      <p>{localDigits(o.body, lang)}</p>
       {open && <Evidence overlay={o} names={names} lang={lang} />}
     </article>
   )
@@ -36,14 +37,14 @@ export function Feed({ state, colors, names, lang }: {
   )
 }
 
-function StatRow({ label, home, away, fmt = String, colors }: {
-  label: string; home: number; away: number; fmt?: (v: number) => string; colors: [string, string]
+function StatRow({ label, home, away, fmt = String, colors, lang }: {
+  label: string; home: number; away: number; fmt?: (v: number) => string; colors: [string, string]; lang: Language
 }) {
   const total = home + away
   const share = total > 0 ? (100 * home) / total : 50
   return (
     <div className="stat-row">
-      <span className="val">{fmt(home)}</span>
+      <span className="val">{localDigits(fmt(home), lang)}</span>
       <div className="stat-mid">
         <span className="label">{label}</span>
         <div className="bars" aria-hidden>
@@ -51,7 +52,7 @@ function StatRow({ label, home, away, fmt = String, colors }: {
           <span style={{ width: `${100 - share}%`, background: colors[1] }} />
         </div>
       </div>
-      <span className="val away">{fmt(away)}</span>
+      <span className="val away">{localDigits(fmt(away), lang)}</span>
     </div>
   )
 }
@@ -106,17 +107,17 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
       </svg>
       <div className="attack-why" data-testid="attack-why">
         <div className="attack-why-head">
-          <b>{label(selected.window[0])}'–{label(selected.window[1])}'</b>
+          <b>{localDigits(`${label(selected.window[0])}'–${label(selected.window[1])}'`, lang)}</b>
           <span style={{ color: why.leader ? colors[why.leader] : undefined }} className="leader">{why.headline}</span>
         </div>
-        {why.reasons.length > 0 && <ul>{why.reasons.map(r => <li key={r}>{r}</li>)}</ul>}
+        {why.reasons.length > 0 && <ul>{why.reasons.map(r => <li key={r}>{localDigits(r, lang)}</li>)}</ul>}
         {why.leader && why.opponentReasons.length > 0 && (
-          <p className="opp">{names[why.leader === h.home.id ? h.away.id : h.home.id]}: {why.opponentReasons.join(' · ')}</p>
+          <p className="opp">{names[why.leader === h.home.id ? h.away.id : h.home.id]}: {localDigits(why.opponentReasons.join(' · '), lang)}</p>
         )}
         {moments.map(o => (
           <div key={o.id} className="attack-ai" dir={o.direction}>
-            {o.source === 'ai' && <span className="ai-tag" data-testid="attack-ai-tag">✦ AI</span>} <strong>{o.headline}</strong>
-            <p>{o.body}</p>
+            {o.source === 'ai' && <span className="ai-tag" data-testid="attack-ai-tag">AI</span>} <strong>{localDigits(o.headline, lang)}</strong>
+            <p>{localDigits(o.body, lang)}</p>
           </div>
         ))}
         {picked === null && <p className="hint">{t(lang, 'tapBar')}</p>}
@@ -161,11 +162,11 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
         <span data-testid="stats-right" style={{ color: c[1] }}>{(flip ? hello.home : hello.away).short_name}</span>
       </div>
       {rows.map(([k, get, fmt]) => (
-        <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} />
+        <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} lang={lang} />
       ))}
       <h3 className="section-title" style={{ marginTop: 14 }}>{t(lang, 'last10')}</h3>
       {windowRows.map(([k, get, fmt]) => (
-        <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} />
+        <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} lang={lang} />
       ))}
     </div>
   )
@@ -203,9 +204,9 @@ export function Recaps({ state, lang }: { state: State; lang: Language }) {
       {items.map(r => r && (
         <article className="recap-card" key={r.kind} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <span className="chip">{r.kind === 'full_time' ? t(lang, 'fullTime') : t(lang, 'halfTime')}</span>
-          <h3>{r.headline}</h3>
-          <p>{r.summary}</p>
-          {r.key_points.length > 0 && <ul>{r.key_points.map((p, i) => <li key={i}>{p}</li>)}</ul>}
+          <h3>{localDigits(r.headline, lang)}</h3>
+          <p>{localDigits(r.summary, lang)}</p>
+          {r.key_points.length > 0 && <ul>{r.key_points.map((p, i) => <li key={i}>{localDigits(p, lang)}</li>)}</ul>}
         </article>
       ))}
     </div>
@@ -237,7 +238,7 @@ export function Momentum({ state, hello, colors, lang }: {
         <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="var(--text-faint)" strokeWidth={0.2} />
       </svg>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-faint)' }} dir="ltr">
-        <span>0'</span><span>45'</span><span>90'</span>
+        <span>{localDigits(0, lang)}'</span><span>{localDigits(45, lang)}'</span><span>{localDigits(90, lang)}'</span>
       </div>
     </div>
   )
