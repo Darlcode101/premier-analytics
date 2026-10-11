@@ -409,3 +409,19 @@ def test_latest_moment_is_visible_without_scrolling(server, page: Page):
     box = card.bounding_box()
     tabbar = page.locator("nav.tabbar").bounding_box()
     assert box["y"] + 60 < tabbar["y"], (box, tabbar)  # the headline of the latest card is above the tab bar
+
+
+def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=400)}")
+    hero = page.get_by_test_id("hero")
+    expect(hero).to_be_visible()
+    style = page.evaluate("""(() => { const h = document.querySelector('[data-testid=hero]');
+      return [getComputedStyle(h).backgroundImage, getComputedStyle(h).backgroundColor, getComputedStyle(h, '::after').content] })()""")
+    assert style[0] == "none" and style[1] == "rgb(55, 0, 60)" and style[2] in ("none", "normal"), style
+    expect(page.get_by_test_id("clock")).to_have_text(re.compile(r"\d+'|FT|HT"), timeout=15_000)
+    assert page.get_by_test_id("clock").bounding_box()["y"] < page.get_by_test_id("score").bounding_box()["y"]  # above the score
+    added = page.get_by_test_id("added-time")
+    expect(added).to_have_text(re.compile(r"^\+\d+$"), timeout=40_000)  # stoppage time, e.g. 45' +2
+    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=added-time]')).backgroundColor") == "rgb(233, 0, 82)"
+    expect(hero.locator("[data-testid^=scorers-] li").first).to_be_visible(timeout=40_000)
+    expect(hero.locator("[data-testid^=scorers-] li").first).to_contain_text(re.compile(r"\w+ \d+'"))

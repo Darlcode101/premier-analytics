@@ -245,6 +245,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | Fan header restyled (user) after the Premier League match-centre layout: flat purple, no glow; minute directly above a white score box, plain (no green marker), stoppage time as a red "+n"; scorers with minutes under each team; light grey page with flat white cards |
 | 10-11 | R-7 changed (user): no whole-header possession wash; a ball marker beside the team in possession instead, the scorebug convention in other sports apps |
 | 10-11 | Fan polish (§3.11) checked live on a phone with real models: trend cards in a full match 10 → 5, latest moment above the fold, fan recap in whole numbers without xG, followed player marked on its cards |
 | 10-11 | N-2: spend to date £0.66 (Cost Management, 1–11 Oct). The user confirms budget alerts are set up (not at subscription scope, so presumably on the billing account) |

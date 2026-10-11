@@ -6,6 +6,7 @@ import { Recaps, Stats } from '../components/Panels'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import { kitColors } from '../colors'
 import { involves, scoreboardSides } from '../scoreboard'
+import { scorers } from '../desk'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
 import type { Language, Overlay, Profile } from '../types'
@@ -74,6 +75,8 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
     </svg>
   )
 
+  // Stoppage time is shown as the regular minute plus a red "+n", as on broadcast scorebugs.
+  const [base, added] = state.minute.split('+')
   const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${localDigits(state.minute, lang)}'` : t(lang, 'kickOffSoon')
 
   return (
@@ -82,7 +85,6 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
         <section className="hero" data-testid="hero" data-possession={state.possession ?? ''}>
           <div className="hero-top">
             <span className="wordmark small"><span className="mark" aria-hidden /> {t(lang, 'appTitle')}</span>
-            <span className={`clock-pill${state.status === 'live' ? ' live' : ''}`} data-testid="clock">{clock}</span>
           </div>
           {board && (
             <div className="hero-score" dir="ltr">
@@ -100,11 +102,31 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
                   )}
                 </span>
               </div>
-              <div className="big-score" data-testid="score">{localDigits(board.left.goals, lang)}<i>–</i>{localDigits(board.right.goals, lang)}</div>
+              <div className="score-col">
+                <span className="score-clock" data-testid="clock">
+                  {state.status === 'live' && added
+                    ? <>{localDigits(`${base}'`, lang)}<b className="added-time" data-testid="added-time">+{localDigits(added, lang)}</b></>
+                    : clock}
+                </span>
+                <div className="big-score" data-testid="score">{localDigits(board.left.goals, lang)}<i>–</i>{localDigits(board.right.goals, lang)}</div>
+              </div>
               <div className="side" data-testid="hero-right">
                 <Crest club={board.right.club} size={46} />
                 <span className="club-name">{board.right.club.short_name}{ballMark(board.right.club.id)}</span>
               </div>
+            </div>
+          )}
+          {board && (state.incidents.some(i => i.kind === 'goal')) && (
+            <div className="hero-scorers" dir="ltr">
+              {[board.left.club, board.right.club].map((c, i) => (
+                <ul key={c.id} className={i ? 'right' : 'left'} data-testid={`scorers-${i ? 'right' : 'left'}`}>
+                  {scorers(state.incidents, c.id).map(s => (
+                    <li key={s.player_id} dir="auto">
+                      {(names[s.player_id] ?? '').split(' ').slice(-1)[0]} {s.minutes.map(m => `${localDigits(m, lang)}'`).join(', ')}
+                    </li>
+                  ))}
+                </ul>
+              ))}
             </div>
           )}
           {possessionClub && (
