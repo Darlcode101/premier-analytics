@@ -128,6 +128,17 @@ def test_fan_settings_switch_language_to_arabic(server, page: Page):
     expect(page.get_by_test_id("clock")).not_to_contain_text(re.compile(r"[0-9]"))
 
 
+def test_language_choice_survives_a_reload(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server)}&lang=en")
+    page.get_by_role("button", name="Me").click()
+    page.get_by_role("button", name="Español").click()
+    expect(page).to_have_url(re.compile(r"lang=es"))
+    page.reload()
+    expect(page.get_by_role("button", name="Yo")).to_be_visible()
+    page.goto(f"{server}/fan?match={new_match(server)}&lang=en")  # a new match link from an English laptop
+    expect(page.get_by_role("button", name="Yo")).to_be_visible()
+
+
 def test_fan_moment_cards_explain_why(server, page: Page):
     page.goto(f"{server}/fan?match={new_match(server)}")
     item = page.get_by_test_id("feed-item").first

@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react'
 import { Desk } from './pages/Desk'
 import { FanApp } from './pages/FanApp'
 import { Landing } from './pages/Landing'
+import { initialLanguage, saveLanguage, withLanguage } from './prefs'
 import type { Language } from './types'
-
-function initialLanguage(): Language {
-  const l = new URLSearchParams(location.search).get('lang')
-  return l === 'es' || l === 'ar' ? l : 'en'
-}
 
 /** Three surfaces: landing (start a match), /fan (phone app), /desk (commentator laptop). */
 export default function App() {
-  const [lang, setLang] = useState<Language>(initialLanguage)
+  const [lang, setLanguage] = useState<Language>(() => initialLanguage(location.search))
+  const setLang = (l: Language) => {
+    setLanguage(l)
+    saveLanguage(l)
+    history.replaceState(history.state, '', withLanguage(location.pathname + location.search, l))
+  }
   const matchId = new URLSearchParams(location.search).get('match')
   const path = location.pathname.replace(/\/+$/, '')
 
