@@ -1,0 +1,167 @@
+# Premier Analytics
+
+**Live match intelligence that explains *why*, not just *what*, for every fan in their own language.**
+
+A team of AI agents watches a football match event by event and turns raw data into short on-screen
+explanations: why a goal matters, why momentum just swung, why a spell of pressure is dangerous. Fans get
+plain words on their phone; commentators get the numbers on a laptop desk. Every statement is checked
+against the data before it reaches a screen, and the match never waits for the AI: an instant template
+caption shows first and the AI version replaces it seconds later.
+
+Built for the Microsoft × Premier League *Inside the Game* hackathon, Best Multi-Agent System category.
+
+**Try it:** https://premier-analytics.salmondune-d779c5b4.switzerlandnorth.azurecontainerapps.io
+Open it on a laptop for the commentator desk and scan the QR code to follow the same match on your phone.
+
+| Fan app (phone) | Commentator desk (laptop) |
+|---|---|
+| Live score, a mini pitch showing where the ball is (tinted by who has it), animated goals, red cards and big chances, AI explanations in English, Spanish or Arabic, an attack-momentum chart that says *why* it leans one way, and your favourite club pinned. | A neutral broadcast console: both line-ups as a spotting board (bookings, subs, goals, each player's live numbers), a timeline of every goal, card and substitution, full-match vs last-10-minute stats, season form and table, and AI talking points with their evidence that you tick off as you use them. |
+
+## How it works
+
+```mermaid
+flowchart LR
+    S[Match event stream] --> E[Stats engine<br/>xG, momentum, field tilt, PPDA]
+    E --> M[Moment Scout<br/>finds moments that matter,<br/>attaches facts with IDs]
+    E -. MCP tools .-> R[Recap agent]
+    M --> O{Orchestrator}
+    O -->|fast path, &lt;100 ms| T[Template captions<br/>EN / ES / AR]
+    O -->|AI path| X[Explainer] --> C1[Critic] --> P[Personaliser<br/>fan or analyst,<br/>favourite club & player] --> C2[Critic] --> L[Translator] --> C3[Critic]
+    T --> V[Overlay Validator<br/>+ Scheduler]
+    C3 --> V
+    R --> V
+    V --> U[Fan app & commentator desk<br/>over WebSocket]
+```
+
+- **Stats engine**: running totals and rolling windows from each event: expected goals (xG), attack momentum, territory, pressing intensity.
+- **Moment Scout**: decides what is worth showing (goals, big chances, pressure spells, momentum swings, red cards, half-time, full-time) and how important each is. It hands the AI a numbered list of facts; the AI may only use those.
+- **Orchestrator**: runs two paths at once. The fast path puts a template caption on screen immediately. The AI path upgrades it in place when it's ready, and is simply skipped if the models are slow or down. Work is shared across viewers: one explanation per moment, one personalisation per audience type, one translation per language.
+- **Agents** (Microsoft Agent Framework on Microsoft Foundry models):
+  - *Explainer*: writes why the moment matters, citing fact IDs.
+  - *Personaliser*: rewrites it for a fan or an analyst, and for the viewer's club or player.
+  - *Translator*: Spanish and Arabic. Player and club names are masked so they are never translated or transliterated.
+  - *Critic*: a deterministic checker run after every AI step. It rejects any number, player or club not in the facts, wrong goal context (calling an equaliser a "lead"), jargon in fan text, and anything too long for the screen. A rejected rewrite falls back to the last good version.
+  - *Recap agent*: writes half-time and full-time summaries by querying match data through an **MCP server** (`get_score`, `get_team_stats`, `get_player_stats`, `get_top_players`, `get_key_moments`).
+- **Overlay Validator and Scheduler**: final checks (evidence present, length, freshness) and placement, so overlays never pile up on screen.
+
+### Microsoft and Azure services
+
+| Service | Used for |
+|---|---|
+| **Microsoft Foundry** | `gpt-4.1-mini` for live explanations, `gpt-5-mini` for recaps and as automatic fallback |
+| **Microsoft Agent Framework** | Agent definitions, structured outputs, model clients |
+| **Azure Container Apps** | Hosting (one container: FastAPI + React build) |
+| **Managed identity (Microsoft Entra ID)** | Keyless access to Foundry and the container registry; no API keys in the app |
+| **Azure Container Registry** | Images |
+| **Application Insights** (OpenTelemetry) | One trace per moment with a span per agent step, following the GenAI semantic conventions |
+| **Azure AI Evaluation SDK / Foundry evaluations** | Groundedness, relevance, coherence, fluency, plus a custom "explains why" judge |
+
+## Data
+
+All matches are **synthetic**: a simulator generates realistic event streams for 20 fictional clubs with
+fictional players, calibrated to published Premier League 2024/25 season averages (goals, shots, xG, cards,
+possession and more; see [docs/REALISM.md](docs/REALISM.md)). Every match is reproducible from its seed. No
+real player, club or Premier League data, logos or fonts are used.
+
+## Results
+
+Evaluated on 3 matches × 4 audiences (175 AI captions); full write-up in [docs/EVALS.md](docs/EVALS.md).
+
+| | |
+|---|---|
+| Published text that passes the Critic re-check | 100 % |
+| Groundedness (Azure AI Evaluation, 1–5) | 4.85 |
+| Output in the requested language | 100 % |
+| Analyst version carries more numbers than the fan version | 90 % |
+| Explains *why* (custom judge, 1–5) | 3.76: goals and big moments ≥ 4; momentum and pressure moments are the weak spot |
+
+## Run it locally
+
+Needs Python 3.12+ and Node 22. **No Azure account is needed**: `PA_AI=fake` uses scripted offline agents.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+```
+
+```bash
+pip install -e ".[dev,llm]"
+```
+
+```bash
+npm --prefix web ci && npm --prefix web run build
+```
+
+```bash
+PA_AI=fake uvicorn premier_analytics.server:app --port 8000
+```
+
+Then open http://localhost:8000. Other modes: `PA_AI=off` (templates only) and `PA_AI=down` (every model
+call fails, showing the fast path carrying on alone).
+
+### With Microsoft Foundry
+
+Create a `.env` (it is gitignored) with:
+
+```
+AZURE_OPENAI_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+LIVE_MODEL_DEPLOYMENT=gpt-4.1-mini
+RECAP_MODEL_DEPLOYMENT=gpt-5-mini
+```
+
+Sign in with `az login` (an identity with the *Azure AI User* or *OpenAI User* role on the resource), then run
+`uvicorn premier_analytics.server:app --port 8000`. Authentication is keyless via `DefaultAzureCredential`.
+Optional: `APPLICATIONINSIGHTS_CONNECTION_STRING` for tracing.
+
+Command-line demos: `python scripts/live_match.py har ngc 42` streams a match with live AI captions in the
+terminal; `python scripts/live_recap.py` produces recaps.
+
+## Tests
+
+Requirements come first: every requirement in [REQUIREMENTS.md](REQUIREMENTS.md) is traced to tests in
+[TEST_PLAN.md](TEST_PLAN.md).
+
+```bash
+pytest -m "not e2e"
+```
+
+```bash
+npm --prefix web test
+```
+
+```bash
+pytest tests/e2e
+```
+
+- **Python (272 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, tracing, evaluation metrics.
+- **Frontend (55 tests, Vitest)**: state, pitch zones, scoreboard, momentum explanations, line-up markers and formation, digits, translations, saved preferences.
+- **Browser (22 tests, Playwright)**: the real app with scripted agents: phone and desk flows, the desk staying neutral and fitting 1280×720 to 1920×1080, languages and right-to-left Arabic, favourite club, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
+- **Evaluations** against live models: `python scripts/run_evals.py` (≈ 15 min, under $1).
+
+CI (GitHub Actions) runs all three suites, builds the Docker image and checks the container starts, and scans for secrets.
+
+## Deploy
+
+`scripts/deploy.sh` builds the image in Azure Container Registry and rolls out a new Container Apps revision,
+then waits until `/api/health` reports the new version. Setup and the reasons behind each choice are in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## Repository
+
+```
+src/premier_analytics/   engine, scout, agents, orchestrator, MCP server, recaps, app, telemetry, evals
+web/                     React + TypeScript frontend (fan app, commentator desk)
+tests/                   pytest, Playwright (tests/e2e)
+scripts/                 demos, deploy, evaluations, calibration
+docs/                    realism targets, deployment, evaluation report
+schemas/                 match event JSON schema
+```
+
+## Responsible AI
+
+- **Grounded by construction**: agents see only numbered facts from the data, must cite them, and a deterministic Critic blocks anything unsupported before it is shown.
+- **Never blocked by AI**: if models are slow, wrong or down, viewers still get accurate template captions.
+- **Names are never translated**: they are masked during translation and restored afterwards.
+- **No personal data**: favourite club is stored only in the viewer's browser; prompts and completions are not recorded in telemetry.
+- **Known limits**: the Critic checks numbers, names and goal context but not comparative words such as "double"; see [docs/EVALS.md](docs/EVALS.md).
+
+*Not affiliated with or endorsed by the Premier League. All clubs, players and matches are fictional.*

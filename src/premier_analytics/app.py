@@ -3,13 +3,14 @@
 A MatchSession replays a generated match at a chosen speed through the Orchestrator.
 Each WebSocket viewer declares a profile (mode, language, club, player); viewers with the
 same profile share one audience, and the AI path only runs for audiences someone is
-watching. Messages per viewer: hello, backfill, event, stats, overlay, screen, trace,
-recap, end.
+watching. Messages per viewer: hello, backfill, event, incident, stats, overlay, screen,
+trace, recap, end.
 """
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -21,6 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
+from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
 from .league import League, load_league
 from .momentum import AttackMomentum
@@ -28,13 +30,23 @@ from .orchestrator import Orchestrator, TraceEvent
 from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, overlay_id
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
+from .season import Season, season_summary, simulate_season
 
 MIN = 60_000
 BACKFILL = 30
 STATS_FIELDS = (
-    "goals", "shots", "shots_on_target", "big_chances", "xg", "passes", "passes_completed", "pass_accuracy",
-    "possession_pct", "tackles_won", "interceptions", "fouls", "yellow_cards", "red_cards",
+    "goals", "shots", "shots_on_target", "big_chances", "xg", "passes", "passes_completed", "final_third_passes",
+    "pass_accuracy", "possession_pct", "tackles_won", "interceptions", "fouls", "yellow_cards", "red_cards",
 )
+PLAYER_FIELDS = ("passes", "passes_completed", "shots", "goals", "assists", "xg", "tackles_won", "interceptions",
+                 "fouls", "yellow_cards", "red_cards")
+LAST_WINDOW_MIN = 10
+
+
+@functools.cache
+def default_season() -> Season:
+    """The simulated season behind the desk's context (CD-14); the same on every start, so build it once."""
+    return simulate_season(load_league())
 
 
 def build_llm_from_env() -> LLM | None:
@@ -80,7 +92,7 @@ class Viewer:
 
 class MatchSession:
     def __init__(self, match_id: str, req: MatchRequest, league: League, llm: LLM | None, critic: CriticAgent,
-                 max_ai_audiences: int):
+                 max_ai_audiences: int, season: Season | None = None):
         self.id = match_id
         self.req = req
         self.league = league
@@ -93,6 +105,10 @@ class MatchSession:
         self.period, self.clock_ms = 1, 0
         self.momentum: list[dict] = []  # one point per elapsed minute, for late joiners
         self.attack = AttackMomentum(req.home, req.away)
+        self.incident_feed = Incidents()
+        self.incidents: list[dict] = []
+        self.totals: dict[int, tuple[int, dict]] = {}  # elapsed minute -> (elapsed_ms, team totals), for "last 10'"
+        self.season = season_summary(season, league, req.home, req.away) if season else None
         self.orch = Orchestrator(
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
@@ -120,6 +136,7 @@ class MatchSession:
             "referee": meta.referee, "kickoff": meta.kickoff_local, "weather": meta.weather.model_dump(),
             "score_home": self.score[0], "score_away": self.score[1], "momentum": list(self.momentum),
             "attack": self.attack.series(),
+            "incidents": list(self.incidents), "subs_allowed": SUBS_ALLOWED, "season": self.season,
         }
 
     def join(self, a: Audience) -> Viewer:
@@ -199,7 +216,14 @@ class MatchSession:
             return data
 
         minute = snap.elapsed_ms // MIN
-        return {"type": "stats", "home": team(self.names.home_id), "away": team(self.names.away_id),
+        home, away = team(self.names.home_id), team(self.names.away_id)
+        self.totals[minute] = (snap.elapsed_ms, {"home": home, "away": away})
+        then_ms, then = self.totals.get(minute - LAST_WINDOW_MIN, (0, None))
+        for side, data in (("home", home), ("away", away)):
+            data["last10"] = last_window(data, then[side] if then else None, snap.elapsed_ms, then_ms)
+        players = {pid: {k: round(getattr(p, k), 3) if isinstance(getattr(p, k), float) else getattr(p, k)
+                         for k in PLAYER_FIELDS} for pid, p in snap.players.items()}
+        return {"type": "stats", "home": home, "away": away, "players": players,
                 "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period,
                 "elapsed_ms": snap.elapsed_ms, "attack": self.attack.point(minute)}
 
@@ -227,7 +251,12 @@ class MatchSession:
             if e.type in ("goal", "period_end"):
                 self.score = (e.score_home, e.score_away)
             await self.orch.handle(e)
-            self.attack.observe(e, self.orch.scout.engine.metrics.get(e.id))
+            metric = self.orch.scout.engine.metrics.get(e.id)
+            self.attack.observe(e, metric)
+            incident = self.incident_feed.observe(e, metric)
+            if incident:
+                self.incidents.append(incident)
+                self._send({"type": "incident", "incident": incident})
             self._send({
                 "type": "event", "kind": e.type, "seq": e.seq, "period": e.period, "clock_ms": e.clock_ms,
                 "display_minute": display_minute(e), "team_id": e.team_id, "player_id": e.player_id,
@@ -249,7 +278,8 @@ class MatchSession:
 
 
 def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_sessions: int = 4,
-               max_ai_audiences: int = 8, static_dir: Path | str | None = None) -> FastAPI:
+               max_ai_audiences: int = 8, static_dir: Path | str | None = None,
+               season: Season | None | str = "default") -> FastAPI:
     if llm == "env":
         llm = build_llm_from_env()
 
@@ -267,6 +297,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
 
     app = FastAPI(title="Premier Analytics", lifespan=lifespan)
     league = load_league()
+    if season == "default":
+        season = default_season()
     critic = CriticAgent({p.name for c in league.clubs for p in league.squad(c.id)},
                          {c.short_name for c in league.clubs})
     sessions: dict[str, MatchSession] = {}
@@ -285,7 +317,7 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
         if len(sessions) >= max_sessions:
             raise HTTPException(429, "too many matches running; try again shortly")
         sid = uuid.uuid4().hex[:8]
-        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences)
+        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences, season)
         return sessions[sid]
 
     @app.get("/api/health")

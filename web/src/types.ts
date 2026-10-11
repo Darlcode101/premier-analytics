@@ -67,6 +67,7 @@ export interface TeamStats {
   xg: number
   passes: number
   passes_completed: number
+  final_third_passes: number
   pass_accuracy: number
   possession_pct: number
   tackles_won: number
@@ -75,6 +76,66 @@ export interface TeamStats {
   yellow_cards: number
   red_cards: number
   window: WindowStats
+  last10?: LastWindow
+}
+
+/** Team figures over the last 10 minutes of play (CD-11). */
+export type LastWindow = Pick<TeamStats, 'goals' | 'shots' | 'shots_on_target' | 'big_chances' | 'xg' | 'passes'
+  | 'passes_completed' | 'final_third_passes' | 'pass_accuracy' | 'possession_pct' | 'tackles_won' | 'interceptions' | 'fouls'
+  | 'yellow_cards' | 'red_cards'>
+
+export interface PlayerLine {
+  passes: number
+  passes_completed: number
+  shots: number
+  goals: number
+  assists: number
+  xg: number
+  tackles_won: number
+  interceptions: number
+  fouls: number
+  yellow_cards: number
+  red_cards: number
+}
+
+/** One line of the match timeline, built from events, never from AI (CD-8). */
+export interface Incident {
+  id: string
+  event_id: string
+  kind: 'goal' | 'yellow' | 'second_yellow' | 'red' | 'sub' | 'big_chance' | 'woodwork'
+  minute: string
+  elapsed_ms: number
+  period: number
+  team_id: string | null
+  player_id: string | null
+  assist_id?: string | null
+  score_home?: number
+  score_away?: number
+  player_in_id?: string
+  player_out_id?: string
+  xg?: number
+  outcome?: string
+}
+
+export interface ClubSeason {
+  position: number
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  goals_for: number
+  goals_against: number
+  points: number
+  form: ('W' | 'D' | 'L')[]
+  players: Record<string, { goals: number; assists: number }>
+  top_scorers: { player_id: string; goals: number }[]
+}
+
+export interface SeasonContext {
+  matches: number
+  table: { club_id: string; short_name: string; position: number; played: number; points: number; goal_difference: number }[]
+  home: ClubSeason
+  away: ClubSeason
 }
 
 export interface TraceEvent {
@@ -123,6 +184,9 @@ export type Message =
       score_away: number
       momentum?: { minute: number; value: number }[]
       attack?: AttackPoint[]
+      incidents?: Incident[]
+      subs_allowed?: number
+      season?: SeasonContext | null
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -143,7 +207,8 @@ export type Message =
       end_x: number | null
       end_y: number | null
     }
-  | { type: 'stats'; home: TeamStats; away: TeamStats; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
+  | { type: 'stats'; home: TeamStats; away: TeamStats; players?: Record<string, PlayerLine>; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
+  | { type: 'incident'; incident: Incident }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
   | { type: 'trace'; trace: TraceEvent }

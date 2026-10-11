@@ -84,7 +84,7 @@ Product name: **Premier Analytics**. Fictional league/clubs/players only. No PL 
 | R-2 | M | **Two surfaces for one live match** (replaces the single pitch view): **Fan app** (phone-first, fan audience) and **Commentator desk** (laptop, analyst audience). No pitch drawing: ball location is shown as one of **9 zones** (defensive/middle/final third × left/centre/right), described from the possessing team's point of view |
 | R-7 | M | **Fan app**: Premier League app-family look (deep purple, neon accents, match-centre header, card timeline, bottom tab bar). Screen colour **washes to the team in possession** and changes on every turnover. Tabs: Live (zones + moments), Stats, Recap, Me (language, club, followed player). "Fictional league · synthetic data" shown. No PL logo, wordmark or proprietary font |
 | R-8 | M | **Moment animations** in the fan app: goal takeover in the scorer's club colour (score flip, scorer), red-card flash, big-chance/woodwork near-miss, momentum-swing colour sweep, half-time/full-time whistle with the recap card. Each fires once per moment; respects reduced-motion |
-| R-9 | M | **Commentator desk**: analyst talking points (AI explanations with evidence), "on air" broadcast overlay preview, zone map, momentum chart, full stats, agent trace, recaps; language selectable |
+| R-9 | M | *(superseded by §3.9)* **Commentator desk**: analyst talking points (AI explanations with evidence), "on air" broadcast overlay preview, zone map, momentum chart, full stats, agent trace, recaps; language selectable |
 | R-10 | S | Landing page starts a match and links both surfaces, with a QR code to open the fan app on a phone |
 | R-3 | M | Automated recaps: half-time and full-time, as text |
 | R-4 | M | **Overlay Validator + Scheduler**: every overlay (fast or AI) passes through it. Rejects overlays that fail schema, have no evidence IDs, or are stale; assigns match-clock in/out times and duration; enforces max N on screen, priority pre-emption, and no collisions |
@@ -137,6 +137,38 @@ Live Broadcast / Fan Interface (overlays, Analyst mode, Fan mode)
 Off the live path: Recap Producer at HT/FT
 ```
 
+### 3.9 Commentator desk v2 (signed off 2026-10-11, replaces R-9)
+
+Sources: broadcast practice (a commentator works from a *spotting board*: both line-ups in formation with
+numbers, names, positions and notes, plus team stats, standings and form) and live data services built for
+commentators (live dashboard of player/team data, xG and momentum, automatic talking points, alerts). What a
+commentator needs live: who scored and when, who is on a booking, who has been subbed, what the numbers say
+right now and over the last few minutes, and short verified talking points to use in a pause.
+
+| ID | P | Requirement |
+|---|---|---|
+| CD-1 | M | **Neutral**: no favourite club, no celebrations or confetti, no possession colour wash. Home always left, away right, both treated identically. Club colour appears only as a small identifier (swatch or bar). Analyst wording only |
+| CD-2 | M | **Professional broadcast look**: dark graphite theme (low glare in a booth), one accent for "live" and alerts, tabular numerals, no fan-app purple branding. Readable at arm's length (body ≥ 14 px, score ≥ 32 px). Main view fits 1280×720 to 1920×1080 without page scroll |
+| CD-3 | M | Motion only to signal new information (brief highlight ≤ 1 s); respects reduced motion |
+| CD-4 | M | **Match header**, always visible: score, clock with period and stoppage time, goalscorers with minutes under each team, red cards; venue, referee, kick-off and weather in a details strip |
+| CD-5 | M | **Line-ups (spotting board)**: both XIs in formation order with shirt number, name, position, then the bench. Live markers per player: goals, assists, yellow, red, subbed off/on with minute. Players **on a yellow** stand out |
+| CD-6 | S | Select a player to see their live match line: passes (accuracy), shots, xG, goals, assists, tackles won, interceptions, fouls, cards |
+| CD-7 | M | Substitutions used per team (n of 5) |
+| CD-8 | M | **Timeline**: every key event (goals with assist, cards, substitutions, big chances, woodwork) for both teams, one line each, newest first. Built from match data, never from AI |
+| CD-9 | M | **Talking points** (AI, analyst mode) with evidence behind "Why?", marked AI or Instant, newest first. The commentator can tick a point as **used** (remembered in this browser) |
+| CD-10 | S | Filter talking points by team; the highest-severity open point is highlighted |
+| CD-11 | M | **Team stats**, full match and **last 10 minutes** side by side: goals, xG, shots, on target, big chances, possession, passes, pass accuracy, final-third passes, tackles won, interceptions, fouls, cards |
+| CD-12 | M | Attack momentum chart with its explanations (existing) |
+| CD-13 | S | Top performers: top 3 by xG, by passes completed, by defensive actions (tackles won + interceptions) |
+| CD-14 | S | **Season context** from a simulated season (every club home and away, 56 matches): table position and points, last-5 form, each player's season goals and assists, top scorers. Labelled "simulated season" |
+| CD-15 | M | On-air preview of the graphics currently on screen (smaller than today) |
+| CD-16 | S | Agent trace and recaps on secondary tabs, out of the main view |
+| CD-17 | M | EN / ES / AR with right-to-left Arabic; everything except talking points and recaps works with AI off or down |
+| CD-18 | C | Keyboard shortcuts: switch panels, mark the newest point used |
+
+Not included: pronunciation guides (fictional names), real head-to-head history, corners and offsides (not in
+the event data; shown as unavailable rather than invented).
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -185,6 +217,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 

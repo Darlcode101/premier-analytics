@@ -1,0 +1,104 @@
+// Commentator desk helpers (CD-4..CD-13). Pure functions over the deterministic incident feed and
+// live player lines, so everything here works with the AI off.
+import type { Incident, Overlay, PlayerInfo, PlayerLine } from './types'
+
+export interface Markers {
+  goals: string[]      // minutes
+  assists: number
+  yellow: string | null
+  red: string | null
+  booked: boolean      // on a yellow and still on the pitch: one more and they're off
+  off: string | null   // substituted off at
+  on: string | null    // came on at
+}
+
+const empty = (): Markers => ({ goals: [], assists: 0, yellow: null, red: null, booked: false, off: null, on: null })
+
+export function playerMarkers(incidents: Incident[]): Record<string, Markers> {
+  const out: Record<string, Markers> = {}
+  const get = (id: string) => (out[id] ??= empty())
+  for (const i of incidents) {
+    if (i.kind === 'goal' && i.player_id) {
+      get(i.player_id).goals.push(i.minute)
+      if (i.assist_id) get(i.assist_id).assists += 1
+    } else if (i.kind === 'yellow' && i.player_id) {
+      get(i.player_id).yellow = i.minute
+    } else if ((i.kind === 'second_yellow' || i.kind === 'red') && i.player_id) {
+      get(i.player_id).red = i.minute
+    } else if (i.kind === 'sub') {
+      if (i.player_out_id) get(i.player_out_id).off = i.minute
+      if (i.player_in_id) get(i.player_in_id).on = i.minute
+    }
+  }
+  for (const m of Object.values(out)) m.booked = m.yellow !== null && m.red === null && m.off === null
+  return out
+}
+
+export const subsUsed = (incidents: Incident[], teamId: string) =>
+  incidents.filter(i => i.kind === 'sub' && i.team_id === teamId).length
+
+const LINE: Record<string, number> = { GK: 0, FB: 1, CB: 1, DM: 2, CM: 2, AM: 2, W: 3, ST: 3 }
+
+/** The XI as goalkeeper, defence, midfield, attack, keeping the team-sheet order within each line. */
+export function formationLines(xi: PlayerInfo[]): PlayerInfo[][] {
+  const lines: PlayerInfo[][] = [[], [], [], []]
+  for (const p of xi) lines[LINE[p.position] ?? 2].push(p)
+  return lines.filter(l => l.length)
+}
+
+export const formation = (xi: PlayerInfo[]) => formationLines(xi).slice(1).map(l => l.length).join('-')
+
+export function scorers(incidents: Incident[], teamId: string): { player_id: string; minutes: string[] }[] {
+  const out: { player_id: string; minutes: string[] }[] = []
+  for (const i of incidents) {
+    if (i.kind !== 'goal' || i.team_id !== teamId || !i.player_id) continue
+    const row = out.find(r => r.player_id === i.player_id)
+    if (row) row.minutes.push(i.minute)
+    else out.push({ player_id: i.player_id, minutes: [i.minute] })
+  }
+  return out
+}
+
+/** Spotting-board style: "C. Wolstenholme". Single names and already-short names stay as they are. */
+export function boardName(name: string): string {
+  const space = name.indexOf(' ')
+  return space < 0 || name.length <= 14 ? name : `${name[0]}. ${name.slice(space + 1)}`
+}
+
+export const timeline = (incidents: Incident[]) => [...incidents].sort((a, b) => b.elapsed_ms - a.elapsed_ms)
+
+export type PerformerMetric = 'xg' | 'passes_completed' | 'defensive'
+
+export function topPerformers(players: Record<string, PlayerLine>, metric: PerformerMetric, n = 3) {
+  const value = (p: PlayerLine) => (metric === 'defensive' ? p.tackles_won + p.interceptions : p[metric])
+  return Object.entries(players)
+    .map(([player_id, p]) => ({ player_id, value: value(p) }))
+    .filter(p => p.value > 0)
+    .sort((a, b) => b.value - a.value || a.player_id.localeCompare(b.player_id))
+    .slice(0, n)
+}
+
+// ---------- talking points ----------
+
+const usedKey = (matchId: string) => `pa.used.${matchId}`
+
+export function loadUsed(matchId: string): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(usedKey(matchId)) ?? '[]') as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+export function saveUsed(matchId: string, used: Set<string>): void {
+  try {
+    localStorage.setItem(usedKey(matchId), JSON.stringify([...used]))
+  } catch { /* not remembered */ }
+}
+
+/** The point most worth saying next: highest priority among those not yet used. */
+export function topOpenPoint(feed: Overlay[], used: Set<string>): string | null {
+  let best: Overlay | null = null
+  for (const o of feed) if (!used.has(o.id) && (!best || o.priority > best.priority)) best = o
+  return best?.id ?? null
+}

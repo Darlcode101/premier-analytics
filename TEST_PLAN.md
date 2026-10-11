@@ -94,6 +94,22 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 - Commentator desk (e2e): talking points appear with evidence; on-air preview shows graphics; agent trace and stats visible; language switch works.
 - Landing (e2e): starting a match shows fan and desk links and a QR code for the fan link.
 
+### Commentator desk v2 (CD-*)
+| Test | Covers | Layer |
+|---|---|---|
+| No celebration element, no possession wash, no favourite star on the desk across a full match with goals and a red card | CD-1, CD-3 | e2e |
+| Theme tokens: graphite background, contrast ≥ 4.5:1 for text, tabular numerals on stat cells; no page scroll at 1280×720 and 1920×1080 | CD-2, N-7 | e2e |
+| Header lists scorers with minutes per team and the clock shows stoppage time (`45+2'`) | CD-4 | unit + e2e |
+| Line-up reducer: goal, assist, yellow, second yellow → red, substitution update the right player; yellow-carded players flagged | CD-5, CD-7 | unit |
+| Formation order matches GK, defence, midfield, attack for both teams; bench listed after | CD-5 | unit |
+| Server sends per-player live stats; values equal the engine's (passes, accuracy, shots, xG, …) | CD-6 | pytest |
+| Timeline contains every goal, card and substitution in the event stream exactly once, newest first, with AI disabled | CD-8, CD-17 | unit + e2e (`PA_AI=off`) |
+| Ticking a talking point marks it used and survives reload | CD-9 | unit + e2e |
+| Last-10-minutes column equals the engine's window values | CD-11 | pytest + unit |
+| Top performers ranking and ties | CD-13 | unit |
+| Simulated season: double round robin (56 matches, 3–4 home games per half-season), table points = 3W + D, form = last five results in date order, player season goals equal goal events; deterministic | CD-14 | pytest |
+| Arabic desk renders right-to-left with Eastern Arabic digits, line-ups mirrored | CD-17 | e2e |
+
 ## 8. Non-functional
 - Latency at 1× over a full match: fast path p95 ≤ 0.5 s, AI upgrade p95 ≤ 4 s (N-1).
 - Cost per full match logged; projected judging cost < budget (N-2).

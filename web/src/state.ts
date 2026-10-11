@@ -1,4 +1,4 @@
-import type { AttackPoint, Hello, MatchEvent, Message, Overlay, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, Hello, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -35,13 +35,15 @@ export interface State {
   possession: string | null
   animations: Animation[]
   animatedMoments: Set<string>
+  incidents: Incident[]
+  players: Record<string, PlayerLine>
 }
 
 export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
-  possession: null, animations: [], animatedMoments: new Set(),
+  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {},
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -67,6 +69,8 @@ export function reducer(s: State, m: Action): State {
         possession: s.hello?.match_id === m.match_id ? s.possession : null,
         // moments already celebrated stay celebrated when the viewer changes profile
         animatedMoments: s.hello?.match_id === m.match_id ? s.animatedMoments : new Set(),
+        incidents: m.incidents ?? [],
+        players: s.hello?.match_id === m.match_id ? s.players : {},
       }
     case 'backfill': {
       // history is shown but never animated
@@ -99,7 +103,7 @@ export function reducer(s: State, m: Action): State {
         const p = m.attack
         attack = [...s.attack.filter(a => a.minute !== p.minute), p].sort((a, b) => a.minute - b.minute)
       }
-      return { ...s, stats: { home: m.home, away: m.away }, momentum, attack }
+      return { ...s, stats: { home: m.home, away: m.away }, momentum, attack, players: m.players ?? s.players }
     }
     case 'overlay': {
       const o = m.overlay
@@ -122,6 +126,8 @@ export function reducer(s: State, m: Action): State {
       if (o === 'published' || o === 'rejected' || o === 'stale' || o === 'error') counts[o] += 1
       return { ...s, trace: [m.trace, ...s.trace].slice(0, TRACE), counts }
     }
+    case 'incident':
+      return s.incidents.some(i => i.id === m.incident.id) ? s : { ...s, incidents: [...s.incidents, m.incident] }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }
     case 'end':

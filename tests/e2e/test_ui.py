@@ -156,17 +156,105 @@ def test_fan_app_fits_a_phone(server, page: Page):
     assert page.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
 
 
-# ---------- commentator desk (R-9) ----------
+# ---------- commentator desk (CD-*) ----------
 
-def test_desk_shows_talking_points_on_air_and_agents(server, page: Page):
-    page.goto(f"{server}/desk?match={new_match(server)}")
+def _contrast(page: Page, selector: str) -> float:
+    return page.evaluate("""sel => {
+      const el = document.querySelector(sel), cs = getComputedStyle(el)
+      const rgb = c => c.match(/[\\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 })
+      const lum = c => { const [r, g, b] = rgb(c); return .2126 * r + .7152 * g + .0722 * b }
+      let bg = el; while (bg && getComputedStyle(bg).backgroundColor === 'rgba(0, 0, 0, 0)') bg = bg.parentElement
+      const [a, b] = [lum(cs.color), lum(getComputedStyle(bg).backgroundColor)].sort((x, y) => y - x)
+      return (a + .05) / (b + .05)
+    }""", selector)
+
+
+def test_desk_is_neutral_and_professional(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=400)}")
+    expect(page.get_by_test_id("goal-minute").first).to_be_visible(timeout=40_000)
+    expect(page.get_by_test_id("celebration")).to_have_count(0)
+    expect(page.get_by_test_id("fav-badge")).to_have_count(0)
+    expect(page.locator("[data-possession]")).to_have_count(0)  # no possession colour wash
+    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=desk]')).backgroundColor") == "rgb(21, 24, 29)"
+    assert _contrast(page, "[data-testid=desk]") >= 7
+    page.get_by_role("tab", name="Timeline").click()
+    assert _contrast(page, "[data-testid=timeline-item]") >= 4.5
+    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=score]')).fontVariantNumeric").startswith("tabular")
+
+
+@pytest.mark.parametrize("size", [(1280, 720), (1920, 1080)])
+def test_desk_fits_the_screen_without_page_scroll(server, page: Page, size):
+    page.set_viewport_size({"width": size[0], "height": size[1]})
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
+    expect(page.get_by_test_id("lineup-home")).to_be_visible(timeout=15_000)
     expect(page.get_by_test_id("feed-item").first).to_be_visible(timeout=20_000)
-    expect(page.get_by_test_id("on-air")).to_be_visible()
-    expect(page.get_by_test_id("zone-map")).to_be_visible()
-    page.get_by_role("tab", name=re.compile("Agents")).click()
-    expect(page.get_by_test_id("agents")).to_contain_text("explainer", timeout=20_000)
-    page.get_by_role("button", name="Español").click()
-    expect(page.get_by_role("heading", name="Claves para comentar")).to_be_visible()
+    over = page.evaluate("[document.scrollingElement.scrollHeight - innerHeight, document.scrollingElement.scrollWidth - innerWidth]")
+    assert over[0] <= 1 and over[1] <= 1, over
+
+
+def test_desk_header_lineups_and_timeline_agree(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=600)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    for side in ("home", "away"):
+        lineup = page.get_by_test_id(f"lineup-{side}")
+        expect(lineup.locator("[data-testid=starter]")).to_have_count(11)
+        expect(lineup.locator("[data-testid=bench-player]")).to_have_count(7)
+        expect(lineup.get_by_test_id("formation")).to_have_text("4-3-3")
+        expect(lineup.get_by_test_id("subs-used")).to_have_text(re.compile(r"[0-5]/5"))
+    page.get_by_role("tab", name="Timeline").click()
+    items = page.get_by_test_id("timeline-item")
+    goals = items.locator("xpath=self::*[@data-kind='goal']").count()
+    scorer_minutes = page.locator("[data-testid^=scorers-] [data-testid=goal-minute]").count()
+    assert goals == scorer_minutes
+    yellows = items.locator("xpath=self::*[@data-kind='yellow']").count()
+    assert page.locator("[data-testid^=lineup-] [data-testid=card-yellow]").count() == yellows
+    subs = items.locator("xpath=self::*[@data-kind='sub']").count()
+    assert page.locator("[data-testid^=lineup-] [data-testid=sub-off]").count() == subs
+    minutes = [int(re.match(r"\d+", t).group()) for t in items.locator(".tl-minute").all_inner_texts()]
+    assert minutes == sorted(minutes, reverse=True)  # newest first
+
+
+def test_selecting_a_player_shows_their_match_line(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
+    first = page.get_by_test_id("lineup-home").get_by_test_id("starter").nth(5)
+    expect(first).to_be_visible(timeout=15_000)
+    first.click()
+    line = page.get_by_test_id("player-line")
+    expect(line).to_contain_text("Passes")
+    expect(line).to_contain_text("Season")
+
+
+def test_desk_works_with_ai_off(page: Page):
+    proc, base = _serve("off")
+    try:
+        page.goto(f"{base}/desk?match={new_match(base, speed=600)}")
+        expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+        expect(page.get_by_test_id("feed-item").first).to_be_visible()
+        expect(page.locator(".ai-tag")).to_have_count(0)
+        page.get_by_role("tab", name="Timeline").click()
+        expect(page.locator("[data-testid=timeline-item][data-kind=sub]").first).to_be_visible()
+        page.get_by_role("tab", name="Season").click()
+        expect(page.get_by_test_id("season-home")).to_contain_text(re.compile(r"[WDL]"))
+    finally:
+        _stop(proc)
+
+
+def test_used_talking_points_survive_a_reload(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=120)}")
+    point = page.get_by_test_id("feed-item").first
+    expect(point).to_be_visible(timeout=20_000)
+    pid = point.get_attribute("data-id")
+    point.get_by_role("button", name="Mark as used").click()
+    expect(page.locator(f"[data-testid=feed-item][data-id='{pid}']")).to_have_attribute("data-used", "true")
+    page.reload()
+    expect(page.locator(f"[data-testid=feed-item][data-id='{pid}']")).to_have_attribute("data-used", "true", timeout=20_000)
+
+
+def test_desk_in_arabic_is_right_to_left(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server)}&lang=ar")
+    expect(page.locator("html")).to_have_attribute("dir", "rtl")
+    expect(page.get_by_test_id("score")).to_have_text(re.compile(r"^[٠-٩]+ – [٠-٩]+$"), timeout=15_000)
+    expect(page.get_by_role("tab", name="الإحصائيات")).to_be_visible()
 
 
 def test_fan_and_desk_on_the_same_match_differ(server, browser):
@@ -186,7 +274,8 @@ def test_model_outage_keeps_graphics_flowing(page: Page):
     try:
         page.goto(f"{base}/desk?match={new_match(base)}")
         expect(page.get_by_test_id("feed-item").first).to_be_visible(timeout=20_000)
-        page.get_by_role("tab", name=re.compile("Agents")).click()
+        page.get_by_role("tab", name="Production").click()
+        expect(page.get_by_test_id("on-air")).to_be_visible()
         expect(page.get_by_test_id("agents")).to_contain_text("error", timeout=20_000)
         expect(page.locator(".ai-tag")).to_have_count(0)
     finally:
