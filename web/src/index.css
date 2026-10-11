@@ -116,7 +116,12 @@ button, select, input { font: inherit; color: inherit; }
 .big-score { font-family: 'Barlow Condensed', var(--font-display); font-weight: 800; font-size: 54px; line-height: 1; letter-spacing: .02em; text-shadow: 0 2px 10px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; }
 .big-score i { font-style: normal; opacity: .6; margin: 0 6px; }
 .possession-line { position: relative; z-index: 1; margin: 12px 0 0; text-align: center; font-weight: 600; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.possession-line .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pl-green); margin-inline-end: 6px; box-shadow: 0 0 0 3px rgba(0,255,133,.3); }
+.possession-line .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pl-green); margin-inline-end: 6px; box-shadow: 0 0 0 2px rgba(255,255,255,.75); vertical-align: 0; }
+.hero-score .club-name { display: inline-flex; align-items: center; gap: 5px; }
+.poss-ball { flex: none; fill: #fff; stroke: #37003c; stroke-width: 1; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.poss-ball path { fill: none; stroke: #37003c; stroke-width: .9; }
+@media (prefers-reduced-motion: no-preference) { .poss-ball { animation: poss-in .25s ease-out; } }
+@keyframes poss-in { from { transform: scale(.4); opacity: 0; } }
 .sheet { flex: 1; overflow-y: auto; background: var(--sheet); border-radius: 22px 22px 0 0; margin-top: -14px; position: relative; z-index: 2; overflow-anchor: none; }
 .sheet-pad { padding: 16px; }
 .zone-card { margin: 14px 14px 6px; padding: 12px; border-radius: var(--radius); background: var(--sheet-2); }

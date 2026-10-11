@@ -65,16 +65,21 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
     setClubId(id)
     saveFavourite(id)
   }
-  // The wash uses the club's kit colour, the colour fans associate with them.
-  const wash = possessionClub && state.possession ? colors[state.possession] : '#37003c'
+  // Possession is shown the way other sports apps do it: a small ball beside the team that has it.
+  const ballMark = (clubId_: string) => state.possession === clubId_ && (
+    <svg className="poss-ball" data-testid="possession-ball" viewBox="0 0 16 16" width="14" height="14" role="img"
+      aria-label={t(lang, 'inPossession')}>
+      <circle cx="8" cy="8" r="7" />
+      <path d="M8 4.2l2.6 1.9-1 3H6.4l-1-3z M8 1v3.2 M10.6 6.1l3.6-1 M9.6 9.1l2 2.9 M6.4 9.1l-2 2.9 M5.4 6.1l-3.6-1" />
+    </svg>
+  )
 
   const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${localDigits(state.minute, lang)}'` : t(lang, 'kickOffSoon')
 
   return (
     <div className="phone-stage">
       <div className="phone" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="fan-app">
-        <section className="hero" style={{ '--wash': wash } as React.CSSProperties}
-          data-testid="hero" data-possession={state.possession ?? ''}>
+        <section className="hero" data-testid="hero" data-possession={state.possession ?? ''}>
           <div className="hero-top">
             <span className="wordmark small"><span className="mark" aria-hidden /> {t(lang, 'appTitle')}</span>
             <span className={`clock-pill${state.status === 'live' ? ' live' : ''}`} data-testid="clock">{clock}</span>
@@ -84,6 +89,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               <div className={`side${board.pinned ? ' pinned' : ''}`} data-testid="hero-left">
                 <Crest club={board.left.club} size={46} />
                 <span className="club-name">
+                  {ballMark(board.left.club.id)}
                   {board.left.club.short_name}
                   {board.pinned && (
                     <svg className="fav-star" data-testid="fav-badge" role="img" aria-label={t(lang, 'yourClub')}
@@ -96,12 +102,15 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               </div>
               <div className="big-score" data-testid="score">{localDigits(board.left.goals, lang)}<i>–</i>{localDigits(board.right.goals, lang)}</div>
               <div className="side" data-testid="hero-right">
-                <Crest club={board.right.club} size={46} /><span>{board.right.club.short_name}</span>
+                <Crest club={board.right.club} size={46} />
+                <span className="club-name">{board.right.club.short_name}{ballMark(board.right.club.id)}</span>
               </div>
             </div>
           )}
           {possessionClub && (
-            <p className="possession-line"><span className="dot" />{possessionClub.short_name} {t(lang, 'inPossession')}</p>
+            <p className="possession-line">
+              <span className="dot" style={{ background: colors[possessionClub.id] }} />{possessionClub.short_name} {t(lang, 'inPossession')}
+            </p>
           )}
           {playerId && names[playerId] && (
             <p className="following-chip" data-testid="following">

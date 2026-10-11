@@ -91,16 +91,22 @@ def test_landing_starts_a_match_and_offers_both_surfaces(server, page: Page):
 
 # ---------- fan app (R-2, R-7, R-8) ----------
 
-def test_fan_screen_washes_to_the_team_in_possession(server, page: Page):
+def test_possession_is_shown_low_key_with_a_ball_marker(server, page: Page):
     page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
     hero = page.get_by_test_id("hero")
     expect(hero).to_have_attribute("data-possession", re.compile(r"^(har|ngc)$"), timeout=15_000)
+    background = page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).backgroundImage")
     first = hero.get_attribute("data-possession")
-    wash = page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).getPropertyValue('--wash')").strip()
-    assert page.evaluate(f"(() => {{ const d = document.createElement('i'); d.style.color = '{wash}'; document.body.append(d); "
-                         f"const c = getComputedStyle(d).color; d.remove(); return c }})()") == KIT[first]
+    ball = page.get_by_test_id("possession-ball")
+    expect(ball).to_have_count(1)
+    side = "hero-left" if page.get_by_test_id("hero-left").get_by_test_id("possession-ball").count() else "hero-right"
+    expect(page.get_by_test_id(side)).to_contain_text("Harbourside" if first == "har" else "Northgate", ignore_case=True)
+    dot = page.evaluate("getComputedStyle(document.querySelector('.possession-line .dot')).backgroundColor")
+    assert dot == KIT[first]
     other = "ngc" if first == "har" else "har"
-    expect(hero).to_have_attribute("data-possession", other, timeout=15_000)  # a turnover changes the colour
+    expect(hero).to_have_attribute("data-possession", other, timeout=15_000)  # a turnover moves the marker...
+    expect(ball).to_have_count(1)
+    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).backgroundImage") == background  # ...not the colours
 
 
 def test_fan_zone_card_names_where_the_ball_is(server, page: Page):
