@@ -110,9 +110,10 @@ button, select, input { font: inherit; color: inherit; }
 .club-name { display: inline-flex; align-items: center; gap: 4px; }
 .fav-star { fill: var(--pl-green); flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
 .score-col { display: grid; justify-items: center; gap: 6px; }
-.big-score { font-family: 'Barlow Condensed', var(--font-display); font-weight: 700; font-size: 40px; line-height: 1; letter-spacing: .02em;
-  font-variant-numeric: tabular-nums; background: #fff; color: var(--pl-purple); border-radius: 6px; padding: 4px 12px 2px; }
-.big-score i { font-style: normal; opacity: .45; margin: 0 6px; }
+.big-score { font-family: 'Barlow Condensed', var(--font-display); font-weight: 700; font-size: 40px; line-height: 1;
+  font-variant-numeric: tabular-nums; background: #fff; color: var(--pl-purple); border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 14px; }
+.big-score i { font-style: normal; opacity: .45; }
 .score-clock { font-family: 'Barlow Condensed', var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: .04em; color: #fff; direction: ltr; display: inline-flex; align-items: center; gap: 4px; min-height: 20px; }
 .added-time { background: #e90052; color: #fff; border-radius: 3px; padding: 0 5px; font-size: 14px; line-height: 18px; }
 .hero-scorers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 76px; margin-top: 8px; font-size: 12px; color: rgba(255,255,255,.85); }
@@ -137,11 +138,9 @@ button, select, input { font: inherit; color: inherit; }
 .mini-pitch .attack-chevron { opacity: .9; filter: drop-shadow(0 0 1.5px rgba(0,0,0,.4)); }
 .zone-card.compact .mini-pitch { max-height: 170px; }
 .zone-text { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--ink); }
-/* F-2: ball map beside its sentence so the latest moment stays above the fold */
-.zone-card.row { display: grid; grid-template-columns: 58% 1fr; grid-template-rows: auto 1fr; column-gap: 12px; align-items: center; padding: 10px 12px; margin-block: 10px 4px; }
-.zone-card.row .mini-pitch { grid-row: 1 / 3; grid-column: 1; }
-.zone-card.row .zone-head { grid-column: 2; margin: 0; align-self: end; font-size: 11px; }
-.zone-card.row .zone-text { grid-column: 2; margin: 2px 0 0; text-align: start; align-self: start; font-size: 13px; line-height: 1.3; }
+/* F-2: just the pitch, centred and compact, so the latest moment stays above the fold */
+.zone-card.bare { display: flex; justify-content: center; padding: 10px; margin-block: 10px 4px; }
+.zone-card.bare .mini-pitch { width: 72%; max-width: 300px; border-radius: 6px; }
 .following-chip { display: inline-flex; align-items: center; gap: 6px; margin: 6px auto 0; padding: 3px 10px; border-radius: 999px;
   background: rgba(255,255,255,.16); font-size: 12px; color: #fff; }
 .following-chip svg { fill: currentColor; opacity: .85; }

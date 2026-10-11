@@ -109,10 +109,18 @@ def test_possession_is_shown_low_key_with_a_ball_marker(server, page: Page):
     assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).backgroundImage") == background  # ...not the colours
 
 
-def test_fan_zone_card_names_where_the_ball_is(server, page: Page):
+def test_fan_pitch_is_bare_and_centred_with_the_zone_as_its_label(server, page: Page):
     page.goto(f"{server}/fan?match={new_match(server)}")
-    expect(page.get_by_test_id("zone-text")).to_have_text(
-        re.compile(r"(Harbourside|Northgate) · (defensive third|midfield|final third) · (left|centre|right)"), timeout=15_000)
+    pitch = page.get_by_test_id("mini-pitch")
+    expect(pitch).to_have_attribute(
+        "aria-label", re.compile(r"(Harbourside|Northgate) · (defensive third|midfield|final third) · (left|centre|right)"),
+        timeout=15_000)
+    card = page.get_by_test_id("zone-map")
+    expect(card.locator(".zone-head")).to_have_count(0)
+    expect(card.get_by_test_id("zone-text")).to_have_count(0)
+    expect(card.locator(".attack-chevron")).to_have_count(0)
+    p, c = pitch.bounding_box(), card.bounding_box()
+    assert abs((p["x"] + p["width"] / 2) - (c["x"] + c["width"] / 2)) < 2  # centred
 
 
 def test_goal_takes_over_the_screen_in_the_scorers_colours(server, page: Page):
@@ -320,7 +328,7 @@ def test_favourite_flips_the_pitch_and_is_remembered(server, page: Page):
 
 def test_attack_momentum_bars_explain_themselves(server, page: Page):
     page.goto(f"{server}/fan?match={new_match(server, speed=300)}")
-    expect(page.get_by_test_id("zone-text")).not_to_have_text("Ball out of play", timeout=15_000)
+    expect(page.get_by_test_id("mini-pitch")).not_to_have_attribute("aria-label", "Ball out of play", timeout=15_000)
     page.wait_for_timeout(4000)  # let a few minutes of bars build up
     page.get_by_role("button", name="Stats").click()
     chart = page.get_by_test_id("attack-momentum")
@@ -419,6 +427,11 @@ def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
       return [getComputedStyle(h).backgroundImage, getComputedStyle(h).backgroundColor, getComputedStyle(h, '::after').content] })()""")
     assert style[0] == "none" and style[1] == "rgb(55, 0, 60)" and style[2] in ("none", "normal"), style
     expect(page.get_by_test_id("clock")).to_have_text(re.compile(r"\d+'|FT|HT"), timeout=15_000)
+    box, digits = page.get_by_test_id("score").bounding_box(), page.evaluate("""(() => {
+      const el = document.querySelector('[data-testid=score]'), r = document.createRange(); r.selectNodeContents(el);
+      const b = r.getBoundingClientRect(); return {x: b.x, y: b.y, width: b.width, height: b.height} })()""")
+    assert abs((box["x"] + box["width"] / 2) - (digits["x"] + digits["width"] / 2)) < 2  # scoreline centred in its box
+    assert abs((box["y"] + box["height"] / 2) - (digits["y"] + digits["height"] / 2)) < 3
     assert page.get_by_test_id("clock").bounding_box()["y"] < page.get_by_test_id("score").bounding_box()["y"]  # above the score
     added = page.get_by_test_id("added-time")
     expect(added).to_have_text(re.compile(r"^\+\d+$"), timeout=40_000)  # stoppage time, e.g. 45' +2

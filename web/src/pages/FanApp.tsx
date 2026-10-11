@@ -145,7 +145,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
         <section className="sheet">
           {tab === 'live' && (
             <>
-              <ZoneMap state={state} colors={colors} lang={lang} layout="row"
+              <ZoneMap state={state} colors={colors} lang={lang} layout="bare"
                 mirror={h ? mirrorFor(clubId, state.period, h.home.id) : false} />
               <div className="timeline">
                 {!state.feed.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
