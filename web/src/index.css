@@ -111,9 +111,8 @@ button, select, input { font: inherit; color: inherit; }
 .hero-top { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
 .hero-score { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 14px; }
 .hero-score .side { display: grid; justify-items: center; gap: 4px; font-family: var(--font-display); font-weight: 700; font-size: 17px; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.hero-score .side.pinned span { color: var(--pl-green); }
-.fav-badge { font-style: normal; font-family: var(--font-ui); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-  background: var(--pl-green); color: var(--pl-purple); padding: 2px 8px; border-radius: 999px; animation: rise .35s ease both; }
+.club-name { display: inline-flex; align-items: center; gap: 4px; }
+.fav-star { fill: var(--pl-green); flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
 .big-score { font-family: 'Barlow Condensed', var(--font-display); font-weight: 800; font-size: 54px; line-height: 1; letter-spacing: .02em; text-shadow: 0 2px 10px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; }
 .big-score i { font-style: normal; opacity: .6; margin: 0 6px; }
 .possession-line { position: relative; z-index: 1; margin: 12px 0 0; text-align: center; font-weight: 600; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.4); }

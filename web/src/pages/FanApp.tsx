@@ -79,8 +79,17 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
           {board && (
             <div className="hero-score" dir="ltr">
               <div className={`side${board.pinned ? ' pinned' : ''}`} data-testid="hero-left">
-                <Crest club={board.left.club} size={46} /><span>{board.left.club.short_name}</span>
-                {board.pinned && <em className="fav-badge" data-testid="fav-badge">★ {t(lang, 'yourClub')}</em>}
+                <Crest club={board.left.club} size={46} />
+                <span className="club-name">
+                  {board.left.club.short_name}
+                  {board.pinned && (
+                    <svg className="fav-star" data-testid="fav-badge" role="img" aria-label={t(lang, 'yourClub')}
+                      viewBox="0 0 24 24" width="13" height="13">
+                      <title>{t(lang, 'yourClub')}</title>
+                      <path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" />
+                    </svg>
+                  )}
+                </span>
               </div>
               <div className="big-score" data-testid="score">{board.left.goals}<i>–</i>{board.right.goals}</div>
               <div className="side" data-testid="hero-right">

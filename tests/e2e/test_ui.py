@@ -188,7 +188,11 @@ def test_favourite_club_is_pinned_left_with_a_badge(server, page: Page):
     page.get_by_role("button", name="Me").click()
     page.get_by_role("button", name="Northgate").click()  # away side
     expect(left).to_contain_text("Northgate")
-    expect(page.get_by_test_id("fav-badge")).to_have_text("★ Your club")
+    badge = page.get_by_test_id("fav-badge")
+    expect(badge).to_be_visible()
+    expect(badge).to_have_attribute("aria-label", "Your club")   # low-key star, but still announced
+    box = badge.bounding_box()
+    assert box and box["width"] <= 16 and box["height"] <= 16, box   # an icon, not a text pill
     expect(page.get_by_test_id("hero-right")).to_contain_text("Harbourside")
 
 
