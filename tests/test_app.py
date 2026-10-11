@@ -304,3 +304,9 @@ def test_user_assigned_identity_is_selected_by_client_id(monkeypatch):
     monkeypatch.setattr("azure.identity.aio.ManagedIdentityCredential", Spy)
     AgentFrameworkLLM("gpt-4.1-mini", "https://example.services.ai.azure.com/api/projects/p")
     assert seen.get("client_id") == "11111111-2222-3333-4444-555555555555"
+
+
+def test_health_reports_the_running_version(monkeypatch):
+    monkeypatch.setenv("PA_VERSION", "abc1234")
+    with TestClient(create_app(llm=None, live_session=False)) as c:
+        assert c.get("/api/health").json()["version"] == "abc1234"

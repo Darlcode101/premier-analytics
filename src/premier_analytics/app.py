@@ -285,7 +285,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
 
     @app.get("/api/health")
     def health() -> dict:
-        return {"status": "ok", "ai": llm is not None, "sessions": len(sessions)}
+        return {"status": "ok", "ai": llm is not None, "sessions": len(sessions),
+                "version": os.environ.get("PA_VERSION", "dev")}
 
     @app.get("/api/clubs")
     def clubs() -> list[dict]:

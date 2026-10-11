@@ -28,7 +28,7 @@ az account set --subscription "$SUBSCRIPTION"
 
 echo "==> build and push $IMAGE"
 az acr login -n "$ACR"
-docker build --platform linux/amd64 -t "$IMAGE" "$ROOT"
+docker build --platform linux/amd64 --build-arg GIT_SHA="$TAG" -t "$IMAGE" "$ROOT"
 docker push "$IMAGE"
 
 if ! az webapp show -n "$APP" -g "$RG" -o none 2>/dev/null; then

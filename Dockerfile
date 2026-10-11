@@ -17,7 +17,8 @@ COPY src/ src/
 RUN pip install ".[llm]" && useradd --create-home app
 COPY --from=web /web/dist web/dist
 USER app
-ENV PA_STATIC=/app/web/dist PORT=8000
+ARG GIT_SHA=dev
+ENV PA_STATIC=/app/web/dist PORT=8000 PA_VERSION=$GIT_SHA
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/api/health')"
 CMD ["sh", "-c", "uvicorn premier_analytics.server:app --host 0.0.0.0 --port ${PORT} --timeout-graceful-shutdown 5"]

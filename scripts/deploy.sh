@@ -24,7 +24,7 @@ URL="https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/provider
 
 echo "==> build and push $IMAGE"
 az acr login -n "$ACR"
-docker build --platform linux/amd64 -t "$IMAGE" "$ROOT"
+docker build --platform linux/amd64 --build-arg GIT_SHA="$TAG" -t "$IMAGE" "$ROOT"
 docker push "$IMAGE"
 
 echo "==> roll out"
@@ -34,14 +34,13 @@ CONTAINERS="$(az rest --method get --url "$URL" --query 'properties.template.con
 az rest --method patch --url "$URL" --body "{\"properties\": {\"template\": {\"containers\": $CONTAINERS}}}" -o none
 
 FQDN="$(az rest --method get --url "$URL" --query properties.configuration.ingress.fqdn -o tsv)"
-echo "==> waiting for https://$FQDN to serve $TAG"
+echo "==> waiting for https://$FQDN to report version $TAG"
+# Ask the app which build it is running (Express environments don't report ready revisions).
 for _ in $(seq 1 60); do
-  STATE="$(az rest --method get --url "$URL" --query 'properties.latestReadyRevisionName' -o tsv)"
-  if [[ "$STATE" == *"$(az rest --method get --url "$URL" --query 'properties.latestRevisionName' -o tsv)"* ]] \
-     && curl -sf -m 10 "https://$FQDN/api/health" >/dev/null; then
+  if curl -sf -m 10 "https://$FQDN/api/health" | grep -q "\"version\":\"$TAG\""; then
     curl -s "https://$FQDN/api/health"; echo; exit 0
   fi
   sleep 10
 done
-echo "not ready yet; check the revision in the portal or: az rest --method get --url '$URL'" >&2
+echo "not serving $TAG yet; check: az rest --method get --url '$URL'" >&2
 exit 1
