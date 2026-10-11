@@ -74,6 +74,7 @@ class ContextEntry(BaseModel):
     tags: list[str] = Field(default_factory=list)  # moment kinds (and "stat:<name>") it relates to
     translations: dict[str, str] = Field(default_factory=dict)  # language -> text (es, ar)
     origin: Literal["web search", "calibration sources"] = "web search"
+    requires: list[Literal["stoppage_time"]] = Field(default_factory=list)  # when the entry is relevant at all
 
     def text_in(self, language: str) -> str:
         return self.translations.get(language, self.text)
@@ -85,6 +86,7 @@ class TopicSpec(BaseModel):
     topic: str
     question: str
     tags: list[str]
+    requires: list[Literal["stoppage_time"]] = Field(default_factory=list)
 
 
 class WebAnswer(BaseModel):
@@ -216,7 +218,8 @@ class ResearcherAgent:
         answer = await self.search.search(spec.question, instructions)
         text = clean_answer(answer.text)
         e = ContextEntry(id=spec.id, kind=spec.kind, topic=spec.topic, text=text,
-                         numbers=numbers_in(text), sources=answer.sources, retrieved=retrieved, tags=spec.tags)
+                         numbers=numbers_in(text), sources=answer.sources, retrieved=retrieved, tags=spec.tags,
+                         requires=spec.requires)
         problems = (["no citations"] if not answer.sources else []) + \
             ([f"{len(text)} characters"] if len(text) > MAX_ENTRY else []) + entry_problems(e) + cross_check(e)
         self.last_rejection = f"{'; '.join(problems)} | {text[:200]}" if problems else ""
@@ -306,7 +309,9 @@ class ContextAgent:
         self.by_id = {e.id: e for e in library}
 
     def candidates(self, m: Moment, used: set[str], limit: int = 4) -> list[ContextEntry]:
-        return [e for e in self.library if m.kind in e.tags and e.id not in used][:limit]
+        stoppage = "+" in display_minute(m)
+        return [e for e in self.library if m.kind in e.tags and e.id not in used
+                and ("stoppage_time" not in e.requires or stoppage)][:limit]
 
     async def run_full(self, m: Moment, names: Names, used: set[str], feedback: str = "") -> LLMResult[ContextCard]:
         entries = "\n".join(f"[{e.id}] ({e.kind}) {e.text}" for e in self.candidates(m, used))

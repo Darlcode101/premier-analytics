@@ -59,7 +59,7 @@ TOPICS = [
               question="In the Premier League, what percentage of matches does the team that scores first go on to win?"),
     TopicSpec(id="comebacks", kind=B, topic="Comebacks", tags=["goal", "full_time"],
               question="How many points did Premier League teams win from losing positions in the 2024/25 season in total?"),
-    TopicSpec(id="late-goals", kind=B, topic="Late goals", tags=["goal"],
+    TopicSpec(id="late-goals", kind=B, topic="Late goals", tags=["goal"], requires=["stoppage_time"],
               question="How many goals were scored in stoppage time in the 2024/25 Premier League season?"),
     TopicSpec(id="added-time", kind=B, topic="Added time", tags=["half_time", "full_time"],
               question="What was the average added (stoppage) time per Premier League match in 2024/25?"),

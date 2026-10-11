@@ -121,7 +121,10 @@
     "translations": {
       "es": "En la temporada 2024/25 de la Premier League se marcaron 96 goles en tiempo añadido, de un total de 1,115, un 8.6% del total.",
       "ar": "في موسم 2024/25 من الدوري الإنجليزي الممتاز، سُجلت 96 هدفًا في الوقت بدل الضائع من أصل 1,115 هدفًا (8.6%)."
-    }
+    },
+    "requires": [
+      "stoppage_time"
+    ]
   },
   {
     "id": "explain-xg",

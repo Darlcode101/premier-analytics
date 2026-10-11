@@ -250,3 +250,13 @@ def test_overlong_answers_are_not_kept():
 def test_benchmarks_must_be_full_season_league_figures(text):
     e = entry(text=text, numbers=numbers_in(text))
     assert any("full-season" in p for p in entry_problems(e)), entry_problems(e)
+
+
+def test_stoppage_time_benchmarks_only_apply_in_stoppage_time():
+    late = entry(id="late-goals", text="96 goals came in stoppage time.", numbers=[96.0], tags=["goal"],
+                 requires=["stoppage_time"])
+    agent = ContextAgent(FakeLLM({}), [late])
+    in_88 = moment("goal").model_copy(update={"clock_ms": 88 * 60_000})
+    in_90_plus_3 = moment("goal").model_copy(update={"period": 2, "clock_ms": 93 * 60_000})
+    assert agent.candidates(in_88, used=set()) == []
+    assert agent.candidates(in_90_plus_3, used=set()) == [late]
