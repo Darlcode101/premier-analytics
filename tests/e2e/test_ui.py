@@ -426,7 +426,7 @@ def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
     style = page.evaluate("""(() => { const h = document.querySelector('[data-testid=hero]');
       return [getComputedStyle(h).backgroundImage, getComputedStyle(h).backgroundColor, getComputedStyle(h, '::after').content] })()""")
     assert style[0] == "none" and style[1] == "rgb(55, 0, 60)" and style[2] in ("none", "normal"), style
-    expect(page.get_by_test_id("clock")).to_have_text(re.compile(r"\d+'|FT|HT"), timeout=15_000)
+    expect(page.get_by_test_id("clock")).to_have_text(re.compile(r"^\d{1,2}:\d{2}"), timeout=15_000)  # minutes and seconds
     box, digits = page.get_by_test_id("score").bounding_box(), page.evaluate("""(() => {
       const el = document.querySelector('[data-testid=score]'), r = document.createRange(); r.selectNodeContents(el);
       const b = r.getBoundingClientRect(); return {x: b.x, y: b.y, width: b.width, height: b.height} })()""")
@@ -434,7 +434,8 @@ def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
     assert abs((box["y"] + box["height"] / 2) - (digits["y"] + digits["height"] / 2)) < 3
     assert page.get_by_test_id("clock").bounding_box()["y"] < page.get_by_test_id("score").bounding_box()["y"]  # above the score
     added = page.get_by_test_id("added-time")
-    expect(added).to_have_text(re.compile(r"^\+\d+$"), timeout=40_000)  # stoppage time, e.g. 45' +2
+    expect(added).to_have_text(re.compile(r"^\+\d+:\d{2}$"), timeout=40_000)  # stoppage time, e.g. 45:00 +2:13
+    expect(page.get_by_test_id("clock")).to_contain_text(re.compile(r"^(45|90):00"))
     assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=added-time]')).backgroundColor") == "rgb(233, 0, 82)"
     expect(hero.locator("[data-testid^=scorers-] li").first).to_be_visible(timeout=40_000)
     expect(hero.locator("[data-testid^=scorers-] li").first).to_contain_text(re.compile(r"\w+ \d+'"))

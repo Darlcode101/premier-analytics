@@ -245,6 +245,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | Fan clock shows seconds (user): "mm:ss" ticking smoothly between events at match speed (never more than 10 s ahead of the data, never backwards); stoppage time as "45:00" or "90:00" plus a red "+m:ss"; HT at half-time |
 | 10-11 | Fan pitch (user): just the pitch, centred, no attack arrow and no "Where's the ball" text; the zone sentence is kept as the pitch's accessible label. Scoreline centred in its box |
 | 10-11 | Fan header restyled (user) after the Premier League match-centre layout: flat purple, no glow; minute directly above a white score box, plain (no green marker), stoppage time as a red "+n"; scorers with minutes under each team; light grey page with flat white cards |
 | 10-11 | R-7 changed (user): no whole-header possession wash; a ball marker beside the team in possession instead, the scorebug convention in other sports apps |

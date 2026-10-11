@@ -38,13 +38,14 @@ export interface State {
   incidents: Incident[]
   players: Record<string, PlayerLine>
   contexts: ContextCard[]
+  clockMs: number  // match clock from the latest event or stats
 }
 
 export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
-  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [],
+  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0,
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -67,6 +68,8 @@ export function reducer(s: State, m: Action): State {
         momentum: m.momentum ?? (s.hello?.match_id === m.match_id ? s.momentum : []),
         attack: m.attack ?? (s.hello?.match_id === m.match_id ? s.attack : []),
         minute: s.hello?.match_id === m.match_id ? s.minute : '0',
+        clockMs: s.hello?.match_id === m.match_id ? s.clockMs : 0,
+        period: s.hello?.match_id === m.match_id ? s.period : 1,
         possession: s.hello?.match_id === m.match_id ? s.possession : null,
         // moments already celebrated stay celebrated when the viewer changes profile
         animatedMoments: s.hello?.match_id === m.match_id ? s.animatedMoments : new Set(),
@@ -83,7 +86,7 @@ export function reducer(s: State, m: Action): State {
     case 'event': {
       const next: State = {
         ...s, status: s.status === 'finished' ? 'finished' : 'live', lastEvent: m, period: m.period,
-        minute: m.display_minute, score: [m.score_home, m.score_away],
+        minute: m.display_minute, score: [m.score_home, m.score_away], clockMs: Math.max(s.period === m.period ? s.clockMs : 0, m.clock_ms),
         possession: POSSESSION_EVENTS.has(m.kind) && m.team_id ? m.team_id : s.possession,
       }
       if (m.x !== null && m.y !== null) {
@@ -105,7 +108,8 @@ export function reducer(s: State, m: Action): State {
         const p = m.attack
         attack = [...s.attack.filter(a => a.minute !== p.minute), p].sort((a, b) => a.minute - b.minute)
       }
-      return { ...s, stats: { home: m.home, away: m.away }, momentum, attack, players: m.players ?? s.players }
+      return { ...s, stats: { home: m.home, away: m.away }, momentum, attack, players: m.players ?? s.players,
+        clockMs: m.period === s.period ? Math.max(s.clockMs, m.clock_ms) : s.clockMs }
     }
     case 'overlay': {
       const o = m.overlay

@@ -7,6 +7,7 @@ import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import { kitColors } from '../colors'
 import { involves, scoreboardSides } from '../scoreboard'
 import { scorers } from '../desk'
+import { formatClock, useMatchClock } from '../clock'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
 import type { Language, Overlay, Profile } from '../types'
@@ -75,8 +76,10 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
     </svg>
   )
 
-  // Stoppage time is shown as the regular minute plus a red "+n", as on broadcast scorebugs.
-  const [base, added] = state.minute.split('+')
+  // Minutes and seconds, ticking between events; stoppage time as a red "+m:ss", as on broadcast scorebugs.
+  const inPlay = state.status === 'live' && state.lastEvent?.kind !== 'period_end'
+  const clockMs = useMatchClock(state.clockMs, h?.speed ?? 1, inPlay)
+  const { main: base, added } = formatClock(clockMs, state.period)
   const clock = state.status === 'finished' ? t(lang, 'fullTime') : state.status === 'live' ? `${localDigits(state.minute, lang)}'` : t(lang, 'kickOffSoon')
 
   return (
@@ -104,8 +107,10 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               </div>
               <div className="score-col">
                 <span className="score-clock" data-testid="clock">
-                  {state.status === 'live' && added
-                    ? <>{localDigits(`${base}'`, lang)}<b className="added-time" data-testid="added-time">+{localDigits(added, lang)}</b></>
+                  {state.status === 'live' && state.lastEvent?.kind === 'period_end' && state.period === 1
+                    ? t(lang, 'halfTime')
+                    : state.status === 'live' && state.lastEvent
+                    ? <>{localDigits(base, lang)}{added && <b className="added-time" data-testid="added-time">{localDigits(added, lang)}</b>}</>
                     : clock}
                 </span>
                 <div className="big-score" data-testid="score">{localDigits(board.left.goals, lang)}<i>–</i>{localDigits(board.right.goals, lang)}</div>
