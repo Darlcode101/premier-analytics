@@ -1,13 +1,15 @@
 """Offline model stand-ins for end-to-end tests and demos without Azure.
 
-scripted_llm(): deterministic, always passes the Critic (no numbers or names it can't back up).
-down_llm():     every call fails, to show the fast path carrying on during a model outage.
+scripted_llm():    deterministic, always passes the Critic (no numbers or names it can't back up).
+down_llm():        every call fails, to show the fast path carrying on during a model outage.
+scripted_search(): a stand-in web search for the desk's ask box, with a source.
 """
 from __future__ import annotations
 
 import re
 
 from .agents import Explanation, FakeLLM, Personalised
+from .context import ContextCard, Source, WebAnswer
 from .recap import RecapDraft
 
 _PHRASES = {
@@ -16,12 +18,14 @@ _PHRASES = {
         "Here is why it matters.": "Por esto es importante.",
         "Key moment": "Momento clave",
         "The evidence panel shows the numbers behind it.": "El panel de datos muestra las cifras.",
+        "How this compares with the real Premier League.": "Cómo se compara con la Premier League real.",
     },
     "ar": {
         "A moment that shifts the game": "لحظة تغير مجرى المباراة",
         "Here is why it matters.": "ولهذا هي مهمة.",
         "Key moment": "لحظة حاسمة",
         "The evidence panel shows the numbers behind it.": "لوحة الأدلة تعرض الأرقام.",
+        "How this compares with the real Premier League.": "مقارنة بالدوري الإنجليزي الحقيقي.",
     },
 }
 
@@ -45,11 +49,27 @@ def _translator(prompt: str) -> Personalised:
     return Personalised(headline=table.get(headline, headline), body=table.get(body, body))
 
 
+def _context(prompt: str) -> ContextCard:
+    entry = re.search(r"^\[([\w-]+)\] \(", prompt, re.M).group(1)
+    return ContextCard(entry_id=entry, text="How this compares with the real Premier League.")
+
+
+class _ScriptedSearch:
+    async def search(self, question: str, instructions: str) -> WebAnswer:
+        return WebAnswer(text="A scripted answer for offline demos; with Foundry it is a live web search.",
+                         sources=[Source(url="https://learn.microsoft.com/azure/ai-foundry/", title="Microsoft Foundry")])
+
+
+def scripted_search() -> _ScriptedSearch:
+    return _ScriptedSearch()
+
+
 def scripted_llm(delay: float = 0.3) -> FakeLLM:
     return FakeLLM({
         "explainer": _explainer,
         "personaliser": _personaliser,
         "translator": _translator,
+        "context": _context,
         "recap": lambda p: RecapDraft(headline="Match recap", summary="The key moments, explained.", key_points=[]),
     }, delay=delay, name="scripted")
 
@@ -58,4 +78,4 @@ def down_llm() -> FakeLLM:
     def fail(_prompt: str) -> Exception:
         return RuntimeError("model unavailable (simulated outage)")
 
-    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "recap")}, name="down")
+    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap")}, name="down")

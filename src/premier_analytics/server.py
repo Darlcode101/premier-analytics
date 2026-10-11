@@ -14,7 +14,8 @@ from dotenv import load_dotenv
 
 from . import telemetry
 from .app import create_app
-from .demo_llm import down_llm, scripted_llm
+from .context import ResearcherAgent
+from .demo_llm import down_llm, scripted_llm, scripted_search
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
@@ -23,8 +24,16 @@ telemetry.configure(os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"), os.
 
 mode = os.environ.get("PA_AI", "on")
 llm = {"off": None, "fake": scripted_llm(), "down": down_llm()}.get(mode, "env")
+
+
+class _Down:
+    async def search(self, question, instructions):
+        raise RuntimeError("web search unavailable (simulated outage)")
+
+
+researcher = {"off": None, "fake": ResearcherAgent(scripted_search()), "down": ResearcherAgent(_Down())}.get(mode, "env")
 static = os.environ.get("PA_STATIC") or (ROOT / "web" / "dist")
 app = create_app(
-    llm=llm, live_session=False, static_dir=static if Path(static).is_dir() else None,
+    llm=llm, researcher=researcher, live_session=False, static_dir=static if Path(static).is_dir() else None,
     max_sessions=int(os.environ.get("PA_MAX_SESSIONS", "4")),
 )

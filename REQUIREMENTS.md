@@ -169,6 +169,24 @@ right now and over the last few minutes, and short verified talking points to us
 Not included: pronunciation guides (fictional names), real head-to-head history, corners and offsides (not in
 the event data; shown as unavailable rather than invented).
 
+### 3.10 Real-world context for commentators (signed off 2026-10-11)
+
+The clubs and players are fictional, so outside context is **comparison and explanation**, never news about them:
+real Premier League benchmarks ("2.3 xG is well above the real PL average per team per match") and tactics
+explainers (what PPDA or field tilt means, with a well-known example). Proven feasible: Foundry `gpt-4.1-mini`
+with the web search tool returns sourced answers on this subscription (test 10-11).
+
+| ID | P | Requirement |
+|---|---|---|
+| CX-1 | M | **Researcher agent** (Agent Framework + Foundry web search) builds a **context library** offline with a script: real PL benchmark facts (2024/25 averages and published distributions: goals, shots, xG, conversion, possession, cards, home wins, comebacks…) and tactics explainers (xG, field tilt, PPDA, momentum, pressing, low block…). Every entry stores its numbers, a source URL and title, and the retrieval date. Committed to the repo and reviewed by a person |
+| CX-2 | M | **Automatic context cards** beside big moments on the desk: a **Context agent** picks at most one relevant library entry and writes one sentence linking the moment to it. Real-world numbers must come from that entry and match numbers from the moment's facts (checked by the Critic); the source link is shown. No live web call, so it is fast and costs nothing extra |
+| CX-3 | M | **Ask box**: the commentator types a question, the Researcher searches the web live and answers in 1–3 sentences with at least one source link. Limited to football benchmarks and tactics (other topics politely declined). Labelled "From the web, not checked against match data". Answers cached; at most 15 searches per match; 15 s timeout with a clear message |
+| CX-4 | M | Real and fictional never mix: real-world facts are only ever comparisons. Automatic cards use league-wide benchmarks only, with no real club or player names |
+| CX-5 | M | Cards and answers in the desk's language (EN / ES / AR); sources stay as links |
+| CX-6 | M | Everything else on the desk works if web search or the models are unavailable; context simply doesn't appear |
+| CX-7 | S | Traced like the other agents (searches counted); an evaluation spot-checks that card numbers match their sources |
+| CX-8 | S | Tactics explainers open from the stat labels on the desk (e.g. select "PPDA") |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -217,6 +235,7 @@ the event data; shown as unavailable rather than invented).
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | Real-world context (§3.10) built. Library: 16 entries (7 benchmarks, 9 tactics explainers) from the Researcher's web search. Every number had to appear on a cited page; benchmarks also had to agree with the independently sourced figures in docs/REALISM.md and be full-season league figures. The checks rejected wrong figures the search returned (home wins 39 % and 43 %, conversion 8.5 %), partial-season and projected numbers, and sums the model calculated itself. Two calibration figures of ours were also rejected because the sources don't state them directly (we had derived them). **For the user to review:** big-chance conversion "30–37 %" and stoppage-time goals "96" (an earlier run said 93) |
 | 10-11 | N-1 measured live (sto-iro seed 7, 50 AI captions): AI version arrives after the instant one at p95 3.1 s English fan, 4.3 s analyst, 4.0 s Spanish (targets 4 s / 6 s). Explainer ~1.5 s, Personaliser and Translator ~0.9 s each. Decided **not** to merge Personaliser and Translator: saves ~0.9 s only for translated viewers, who are already well inside 6 s, and would lose the name masking that stops names being transliterated. Simple moments (saves, cards, subs) were already template-only |
 | 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |

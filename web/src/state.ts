@@ -1,4 +1,4 @@
-import type { AttackPoint, Hello, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, ContextCard, Hello, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -37,13 +37,14 @@ export interface State {
   animatedMoments: Set<string>
   incidents: Incident[]
   players: Record<string, PlayerLine>
+  contexts: ContextCard[]
 }
 
 export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
-  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {},
+  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [],
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -70,6 +71,7 @@ export function reducer(s: State, m: Action): State {
         // moments already celebrated stay celebrated when the viewer changes profile
         animatedMoments: s.hello?.match_id === m.match_id ? s.animatedMoments : new Set(),
         incidents: m.incidents ?? [],
+        contexts: m.context ?? [],
         players: s.hello?.match_id === m.match_id ? s.players : {},
       }
     case 'backfill': {
@@ -128,6 +130,11 @@ export function reducer(s: State, m: Action): State {
     }
     case 'incident':
       return s.incidents.some(i => i.id === m.incident.id) ? s : { ...s, incidents: [...s.incidents, m.incident] }
+    case 'context': {
+      const c = m.context
+      const known = s.contexts.some(x => x.moment_id === c.moment_id && x.language === c.language)
+      return known ? s : { ...s, contexts: [...s.contexts, c] }
+    }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }
     case 'end':

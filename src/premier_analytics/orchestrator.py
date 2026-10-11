@@ -23,7 +23,10 @@ from .agents import (
     TranslatorAgent,
 )
 from .mcp_server import MatchState
-from .overlay import STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, fast_overlay, validate
+from .context import ContextAgent, ContextCard, ContextEntry, check_card
+from .overlay import (
+    STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, display_minute, fast_overlay, validate,
+)
 from .recap import Recap, RecapProducer
 from .telemetry import tracer
 from .schema import Event
@@ -60,7 +63,8 @@ class Orchestrator:
                  on_overlay: Callable[[Overlay], None] | None = None, max_on_screen: int = 2,
                  recaps: bool = False, recap_tools: list | None = None, recap_llm: LLM | None = None,
                  on_recap: Callable[[Recap], None] | None = None, max_ai_audiences: int | None = None,
-                 on_trace: Callable[[TraceEvent], None] | None = None):
+                 on_trace: Callable[[TraceEvent], None] | None = None,
+                 context_library: list[ContextEntry] | None = None, on_context: Callable[[dict], None] | None = None):
         self.names = names
         self.audiences: list[Audience] = []
         self.max_ai_audiences = max_ai_audiences
@@ -91,6 +95,12 @@ class Orchestrator:
         self._explanations: dict[str, asyncio.Task] = {}
         self._personas: dict[tuple, asyncio.Task] = {}
         self._translations: dict[tuple, asyncio.Task] = {}
+        # Real-world context cards for analyst audiences (CX-2): one card per moment, each entry once per match.
+        self.context_agent = ContextAgent(llm, context_library) if llm is not None and context_library else None
+        self.on_context = on_context
+        self.contexts: list[dict] = []
+        self._context_cards: dict[str, asyncio.Task] = {}
+        self._context_used: set[str] = set()
         if llm is not None:
             self.explainer = ExplainerAgent(llm)
             self.personaliser = PersonaliserAgent(llm)
@@ -115,6 +125,12 @@ class Orchestrator:
                 fast.append(o)
                 if m.kind in AI_KINDS and self.ai_enabled_for(a):
                     self._spawn(self._enrich(m, a, o, time.perf_counter()))
+            if self.context_agent is not None and m.kind in AI_KINDS:
+                languages = {a.language for a in self.audiences
+                             if a.mode == "analyst" and a.wants(m) and self.ai_enabled_for(a)}
+                if languages and self.context_agent.candidates(m, self._context_used):
+                    for language in sorted(languages):
+                        self._spawn(self._context(m, language))
         await asyncio.sleep(0)  # let background work start
         return fast
 
@@ -174,6 +190,51 @@ class Orchestrator:
             self.recaps.append(recap)
             if self.on_recap:
                 self.on_recap(recap)
+
+    async def _context_card(self, m: Moment) -> tuple[ContextCard, ContextEntry]:
+        feedback = ""
+        for _ in range(2):
+            card = await self._call(m, "*", "context",
+                                    self.context_agent.run_full(m, self.names, self._context_used, feedback))
+            entry = self.context_agent.by_id.get(card.entry_id)
+            start = time.perf_counter()
+            problems = check_card(card, entry, m, self.names)
+            if entry is not None and entry.id in self._context_used:  # another moment took it meanwhile
+                problems.append(f"entry {entry.id} already used in this match")
+            self._record(m, "*", "critic", "rejected" if problems else "ok", None,
+                         (time.perf_counter() - start) * 1000, "; ".join(problems))
+            if not problems:
+                self._context_used.add(entry.id)
+                return card, entry
+            feedback = "; ".join(problems)
+        raise _Stop()
+
+    async def _context(self, m: Moment, language: str) -> None:
+        """One context card for this moment in one language (CX-2, CX-5). Failures only lose the card."""
+        try:
+            card, entry = await self._shared(self._context_cards, m.id, lambda: self._context_card(m))
+            text = card.text
+            if language != "en":
+                out = await self._call(m, language, "translator",
+                                       self.translator.run_full(Personalised(headline="-", body=text), language))
+                text = out.body
+                problems = check_card(ContextCard(entry_id=entry.id, text=text), entry, m, self.names)
+                self._record(m, language, "critic", "rejected" if problems else "ok", detail="; ".join(problems))
+                if problems:
+                    return
+        except _Stop:
+            return
+        except Exception as err:  # never let context take anything else down
+            self._record(m, language, "context", "error", detail=repr(err)[:200])
+            return
+        card_out = {
+            "moment_id": m.id, "minute": display_minute(m), "language": language, "text": text,
+            "entry_id": entry.id, "topic": entry.topic, "kind": entry.kind,
+            "sources": [src.model_dump() for src in entry.sources], "origin": entry.origin,
+        }
+        self.contexts.append(card_out)
+        if self.on_context:
+            self.on_context(card_out)
 
     def _publish(self, o: Overlay) -> None:
         self.published.append(o)

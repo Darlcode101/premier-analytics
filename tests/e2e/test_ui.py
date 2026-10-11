@@ -333,3 +333,47 @@ def test_stats_follow_the_pinned_club(server, page: Page):
     page.get_by_role("button", name="Stats").click()
     expect(page.get_by_test_id("stats-left")).to_have_text("Northgate", timeout=15_000)
     expect(page.get_by_test_id("stats-right")).to_have_text("Harbourside")
+
+
+# ---------- real-world context (CX-*) ----------
+
+def test_desk_shows_sourced_context_beside_moments(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
+    card = page.get_by_test_id("context-card").first
+    expect(card).to_be_visible(timeout=40_000)
+    expect(card).to_contain_text("real Premier League")
+    link = card.locator("a").first
+    assert link.get_attribute("href").startswith("https://")
+    assert link.get_attribute("target") == "_blank" and "noopener" in link.get_attribute("rel")
+
+
+def test_ask_box_answers_with_a_source(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
+    page.get_by_role("tab", name="Research").click()
+    page.get_by_test_id("ask-input").fill("What is the average xG per team in the Premier League?")
+    page.get_by_role("button", name="Ask").click()
+    answer = page.get_by_test_id("ask-answer").first
+    expect(answer).to_contain_text("web search", timeout=15_000)
+    expect(answer).to_contain_text("From the web, not checked against match data")
+    assert answer.locator("a").first.get_attribute("href").startswith("https://")
+    expect(page.get_by_test_id("ask-remaining")).to_contain_text("14")
+
+
+def test_stat_labels_open_their_explainer(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
+    page.get_by_role("button", name=re.compile("^xG")).first.click(timeout=15_000)
+    expect(page.get_by_test_id("explainer")).to_contain_text("Expected")
+
+
+def test_search_outage_is_reported_and_nothing_else_breaks(page: Page):
+    proc, base = _serve("down")
+    try:
+        page.goto(f"{base}/desk?match={new_match(base, speed=300)}")
+        expect(page.get_by_test_id("feed-item").first).to_be_visible(timeout=20_000)
+        page.get_by_role("tab", name="Research").click()
+        page.get_by_test_id("ask-input").fill("Average xG?")
+        page.get_by_role("button", name="Ask").click()
+        expect(page.get_by_test_id("ask-answer").first).to_contain_text("couldn't", timeout=15_000)
+        expect(page.get_by_test_id("context-card")).to_have_count(0)
+    finally:
+        _stop(proc)

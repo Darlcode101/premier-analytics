@@ -136,3 +136,17 @@ describe('spotting-board names (CD-5)', () => {
     expect(boardName('Pelé')).toBe('Pelé')
   })
 })
+
+describe('context cards (CX-2, CX-5)', () => {
+  it('keeps one card per moment and language, from hello and live messages', () => {
+    const card = (moment_id: string, language: 'en' | 'es') => ({ moment_id, minute: '10', language, text: 't', entry_id: 'e',
+      topic: 'T', kind: 'benchmark' as const, sources: [{ url: 'https://x.org', title: 'x' }], origin: 'web search' })
+    const hello = { type: 'hello' as const, match_id: 'm', status: 'live' as const, speed: 1, audience: 'x', home: {} as never,
+      away: {} as never, venue: '', referee: '', kickoff: '', weather: { condition: 'clear', temp_c: 10 }, score_home: 0,
+      score_away: 0, context: [card('m1', 'en')] } satisfies Hello
+    let s = reducer(initialState, hello)
+    s = reducer(s, { type: 'context', context: card('m1', 'en') })
+    s = reducer(s, { type: 'context', context: card('m2', 'en') })
+    expect(s.contexts.map(c => c.moment_id)).toEqual(['m1', 'm2'])
+  })
+})

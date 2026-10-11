@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { initialState, reducer, type Action, type State } from './state'
-import type { Message, Profile } from './types'
+import type { AskResult, Language, Message, Profile } from './types'
 
 export interface ClubSummary {
   id: string
@@ -27,6 +27,21 @@ export async function createMatch(home: string, away: string, seed: number, spee
     throw new Error(detail.detail ?? `Could not start match (${r.status})`)
   }
   return (await r.json()).match_id
+}
+
+/** The desk's ask box (CX-3): a sourced web answer, capped per match. */
+export async function askQuestion(matchId: string, question: string, language: Language): Promise<AskResult> {
+  try {
+    const r = await fetch(`/api/matches/${matchId}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, language }),
+    })
+    if (!r.ok) return { status: 'error', text: '', sources: [], remaining: 0 }
+    return await r.json()
+  } catch {
+    return { status: 'error', text: '', sources: [], remaining: 0 }
+  }
 }
 
 function socketUrl(matchId: string, p: Profile): string {

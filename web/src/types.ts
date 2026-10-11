@@ -117,6 +117,30 @@ export interface Incident {
   outcome?: string
 }
 
+export interface SourceLink { url: string; title: string }
+
+/** Real-world context beside a moment (CX-2): a benchmark or tactics explainer with its sources. */
+export interface ContextCard {
+  moment_id: string
+  minute: string
+  language: Language
+  text: string
+  entry_id: string
+  topic: string
+  kind: 'benchmark' | 'tactic'
+  sources: SourceLink[]
+  origin: string
+}
+
+export interface Explainer { topic: string; text: string; sources: SourceLink[] }
+
+export interface AskResult {
+  status: 'ok' | 'cached' | 'limit' | 'timeout' | 'off_topic' | 'no_source' | 'error' | 'unavailable'
+  text: string
+  sources: SourceLink[]
+  remaining: number
+}
+
 export interface ClubSeason {
   position: number
   played: number
@@ -187,6 +211,8 @@ export type Message =
       incidents?: Incident[]
       subs_allowed?: number
       season?: SeasonContext | null
+      context?: ContextCard[]
+      explainers?: Record<string, Explainer>
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -209,6 +235,7 @@ export type Message =
     }
   | { type: 'stats'; home: TeamStats; away: TeamStats; players?: Record<string, PlayerLine>; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
   | { type: 'incident'; incident: Incident }
+  | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
   | { type: 'trace'; trace: TraceEvent }

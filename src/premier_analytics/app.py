@@ -15,13 +15,14 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
+from .context import AgentFrameworkWebSearch, AskDesk, ContextEntry, ResearcherAgent, load_library
 from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
 from .league import League, load_league
@@ -47,6 +48,17 @@ LAST_WINDOW_MIN = 10
 def default_season() -> Season:
     """The simulated season behind the desk's context (CD-14); the same on every start, so build it once."""
     return simulate_season(load_league())
+
+
+def build_researcher_from_env() -> ResearcherAgent | None:
+    """The ask box's Researcher (CX-3): Foundry web search on the live model, keyless."""
+    endpoint, live = os.environ.get("AZURE_OPENAI_ENDPOINT"), os.environ.get("LIVE_MODEL_DEPLOYMENT")
+    return ResearcherAgent(AgentFrameworkWebSearch(live, endpoint)) if endpoint and live else None
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=300)
+    language: Literal["en", "es", "ar"] = "en"
 
 
 def build_llm_from_env() -> LLM | None:
@@ -92,7 +104,8 @@ class Viewer:
 
 class MatchSession:
     def __init__(self, match_id: str, req: MatchRequest, league: League, llm: LLM | None, critic: CriticAgent,
-                 max_ai_audiences: int, season: Season | None = None):
+                 max_ai_audiences: int, season: Season | None = None, library: list[ContextEntry] | None = None,
+                 researcher: ResearcherAgent | None = None):
         self.id = match_id
         self.req = req
         self.league = league
@@ -113,7 +126,10 @@ class MatchSession:
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
             on_trace=self._on_trace, max_ai_audiences=max_ai_audiences,
+            context_library=library, on_context=self._on_context,
         )
+        self.library = library or []
+        self.ask_desk = AskDesk(researcher) if researcher else None
 
     # ---------- viewers ----------
 
@@ -137,7 +153,19 @@ class MatchSession:
             "score_home": self.score[0], "score_away": self.score[1], "momentum": list(self.momentum),
             "attack": self.attack.series(),
             "incidents": list(self.incidents), "subs_allowed": SUBS_ALLOWED, "season": self.season,
+            "context": [c for c in self.orch.contexts if a.mode == "analyst" and c["language"] == a.language],
+            "explainers": self._explainers(a.language),
         }
+
+    def _explainers(self, language: str) -> dict:
+        """Tactics explainers keyed by the stat they explain (CX-8)."""
+        out = {}
+        for e in self.library:
+            for tag in e.tags:
+                if tag.startswith("stat:"):
+                    out[tag[5:]] = {"topic": e.topic, "text": e.text_in(language),
+                                    "sources": [s.model_dump() for s in e.sources]}
+        return out
 
     def join(self, a: Audience) -> Viewer:
         v = Viewer(audience=a)
@@ -182,6 +210,11 @@ class MatchSession:
     def _on_overlay(self, o: Overlay) -> None:
         self._send({"type": "overlay", "overlay": o.model_dump(mode="json")}, audience=o.audience)
         self._push_screens()
+
+    def _on_context(self, card: dict) -> None:
+        for v in self.viewers:
+            if v.audience.mode == "analyst" and v.audience.language == card["language"]:
+                v.queue.put_nowait({"type": "context", "context": card})
 
     def _on_recap(self, r: Recap) -> None:
         self._send({"type": "recap", "recap": r.model_dump(mode="json")}, language=r.language)
@@ -279,7 +312,8 @@ class MatchSession:
 
 def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_sessions: int = 4,
                max_ai_audiences: int = 8, static_dir: Path | str | None = None,
-               season: Season | None | str = "default") -> FastAPI:
+               season: Season | None | str = "default", context_library: list[ContextEntry] | None | str = "default",
+               researcher: ResearcherAgent | None | str = "env") -> FastAPI:
     if llm == "env":
         llm = build_llm_from_env()
 
@@ -299,6 +333,10 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
     league = load_league()
     if season == "default":
         season = default_season()
+    if context_library == "default":
+        context_library = load_library()
+    if researcher == "env":
+        researcher = build_researcher_from_env() if llm is not None else None
     critic = CriticAgent({p.name for c in league.clubs for p in league.squad(c.id)},
                          {c.short_name for c in league.clubs})
     sessions: dict[str, MatchSession] = {}
@@ -317,7 +355,7 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
         if len(sessions) >= max_sessions:
             raise HTTPException(429, "too many matches running; try again shortly")
         sid = uuid.uuid4().hex[:8]
-        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences, season)
+        sessions[sid] = MatchSession(sid, req, league, llm, critic, max_ai_audiences, season, context_library, researcher)
         return sessions[sid]
 
     @app.get("/api/health")
@@ -346,6 +384,16 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
             raise HTTPException(404, "no such match")
         s.start()
         return {"match_id": s.id, "status": s.status}
+
+    @app.post("/api/matches/{match_id}/ask")
+    async def ask(match_id: str, req: AskRequest) -> dict:
+        """The desk's ask box (CX-3): a live, sourced web answer, capped per match."""
+        s = sessions.get(match_id)
+        if s is None:
+            raise HTTPException(404, "no such match")
+        if s.ask_desk is None:
+            return {"status": "unavailable", "text": "", "sources": [], "remaining": 0}
+        return await s.ask_desk.ask(req.question, req.language)
 
     @app.websocket("/ws/matches/{match_id}")
     async def watch(ws: WebSocket, match_id: str):

@@ -1,7 +1,7 @@
 // Commentator desk (CD-1..CD-18): a neutral broadcast console. Everything except talking points
 // and recaps is built from match data, so it keeps working with the AI off or down.
 import { useEffect, useMemo, useState } from 'react'
-import { useMatch } from '../api'
+import { askQuestion, useMatch } from '../api'
 import { teamColors } from '../colors'
 import { AttackMomentumChart, Agents, Recaps } from '../components/Panels'
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
@@ -13,9 +13,11 @@ import { dt, type DeskKey } from '../deskText'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
-import type { ClubInfo, ClubSeason, Hello, Incident, Language, Overlay, PlayerInfo, PlayerLine, Profile, TeamStats } from '../types'
+import type {
+  AskResult, ClubInfo, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PlayerInfo, PlayerLine, Profile, SourceLink, TeamStats,
+} from '../types'
 
-const TABS = ['stats', 'timeline', 'momentum', 'season', 'production', 'recap'] as const
+const TABS = ['stats', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
 type Tab = typeof TABS[number]
 type Side = 'home' | 'away'
 
@@ -28,6 +30,25 @@ interface Ctx {
 }
 
 const Bar = ({ color }: { color: string }) => <i className="cd-bar" style={{ background: color }} aria-hidden />
+function Sources({ sources }: { sources: SourceLink[] }) {
+  const host = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, '') } catch { return url } }
+  return (
+    <span className="cd-sources">
+      {sources.map(s => <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" title={s.title} dir="ltr">{host(s.url)}</a>)}
+    </span>
+  )
+}
+
+function ContextBlock({ c, lang }: { c: ContextCard; lang: Language }) {
+  return (
+    <div className="cd-context" data-testid="context-card" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <span className="cd-context-tag">{dt(lang, 'realWorld')} · {c.topic}</span>
+      <p>{localDigits(c.text, lang)}</p>
+      <Sources sources={c.sources} />
+    </div>
+  )
+}
+
 const Card = ({ kind }: { kind: 'yellow' | 'red' }) => <i className={`cd-card ${kind}`} data-testid={`card-${kind}`} aria-hidden />
 
 // ---------- header (CD-4) ----------
@@ -168,7 +189,9 @@ function Lineup({ club, side, state, ctx, season }: { club: ClubInfo; side: Side
 
 // ---------- talking points (CD-9, CD-10) ----------
 
-function TalkingPoint({ o, used, next, toggle, ctx }: { o: Overlay; used: boolean; next: boolean; toggle: () => void; ctx: Ctx }) {
+function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
+  o: Overlay; used: boolean; next: boolean; toggle: () => void; ctx: Ctx; contexts: ContextCard[]
+}) {
   const [open, setOpen] = useState(false)
   const team = o.team_id ? ctx.hello[o.team_id === ctx.hello.home.id ? 'home' : 'away'] : null
   return (
@@ -183,6 +206,7 @@ function TalkingPoint({ o, used, next, toggle, ctx }: { o: Overlay; used: boolea
       </header>
       <h3>{ctx.num(o.headline)}</h3>
       <p>{ctx.num(o.body)}</p>
+      {contexts.map(c => <ContextBlock key={c.entry_id} c={c} lang={ctx.lang} />)}
       <footer>
         <button className="cd-link" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(ctx.lang, 'why')}</button>
         <button className="cd-used" onClick={toggle} aria-pressed={used} aria-label={dt(ctx.lang, 'markUsed')}>
@@ -213,7 +237,10 @@ function TalkingPoints({ state, ctx, used, toggle }: { state: State; ctx: Ctx; u
       </header>
       <div className="cd-scroll">
         {!feed.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
-        {feed.map(o => <TalkingPoint key={o.id} o={o} used={used.has(o.id)} next={o.id === next} toggle={() => toggle(o.id)} ctx={ctx} />)}
+        {feed.map(o => (
+          <TalkingPoint key={o.id} o={o} used={used.has(o.id)} next={o.id === next} toggle={() => toggle(o.id)} ctx={ctx}
+            contexts={state.contexts.filter(c => c.moment_id === o.moment_id && c.language === ctx.lang)} />
+        ))}
       </div>
     </section>
   )
@@ -238,8 +265,14 @@ const STAT_ROWS: [DeskKey, (s: TeamStats | NonNullable<TeamStats['last10']>) => 
   ['stat_red', s => s.red_cards, 'int'],
 ]
 
+const EXPLAINED: Partial<Record<DeskKey, string>> = {
+  stat_xg: 'xg', stat_big_chances: 'big_chances', stat_pass_accuracy: 'pass_accuracy', stat_final_third: 'final_third',
+}
+
 function StatsTab({ state, ctx }: { state: State; ctx: Ctx }) {
+  const [open, setOpen] = useState<string | null>(null)
   if (!state.stats) return <p className="empty">{t(ctx.lang, 'waiting')}</p>
+  const explainers = ctx.hello.explainers ?? {}
   const { home, away } = state.stats
   const fmt = (v: number, kind: 'int' | 'xg' | 'pct') => ctx.num(kind === 'xg' ? v.toFixed(2) : kind === 'pct' ? `${Math.round(v)}%` : String(v))
   const performers: [PerformerMetric, DeskKey][] = [['xg', 'leadersXg'], ['passes_completed', 'leadersPasses'], ['defensive', 'leadersDefence']]
@@ -256,15 +289,26 @@ function StatsTab({ state, ctx }: { state: State; ctx: Ctx }) {
         <tbody>
           {STAT_ROWS.map(([k, get, kind]) => {
             const [h, a] = [get(home), get(away)]
-            return (
+            const ex = EXPLAINED[k] ? explainers[EXPLAINED[k]!] : undefined
+            return [
               <tr key={k}>
                 <td className={h > a ? 'lead' : ''}>{fmt(h, kind)}</td>
                 <td className="w">{home.last10 ? fmt(get(home.last10), kind) : '–'}</td>
-                <th scope="row" dir={ctx.lang === 'ar' ? 'rtl' : 'ltr'}>{dt(ctx.lang, k)}</th>
+                <th scope="row" dir={ctx.lang === 'ar' ? 'rtl' : 'ltr'}>
+                  {ex ? <button className="cd-explain" aria-expanded={open === k} title={dt(ctx.lang, 'explain')}
+                    onClick={() => setOpen(open === k ? null : k)}>{dt(ctx.lang, k)} <span aria-hidden>ⓘ</span></button> : dt(ctx.lang, k)}
+                </th>
                 <td className="w">{away.last10 ? fmt(get(away.last10), kind) : '–'}</td>
                 <td className={a > h ? 'lead' : ''}>{fmt(a, kind)}</td>
-              </tr>
-            )
+              </tr>,
+              ex && open === k && (
+                <tr key={`${k}-x`} className="cd-explainer-row">
+                  <td colSpan={5} data-testid="explainer" dir={ctx.lang === 'ar' ? 'rtl' : 'ltr'}>
+                    <b>{ex.topic}</b> {ex.text} <Sources sources={ex.sources} />
+                  </td>
+                </tr>
+              ),
+            ]
           })}
         </tbody>
       </table>
@@ -379,6 +423,50 @@ function SeasonTab({ ctx }: { ctx: Ctx }) {
   )
 }
 
+// ---------- research (CX-3, CX-8) ----------
+
+interface Asked { question: string; result: AskResult | null }
+
+function ResearchTab({ state, ctx, asked, onAsk }: { state: State; ctx: Ctx; asked: Asked[]; onAsk: (q: string) => void }) {
+  const [q, setQ] = useState('')
+  const remaining = [...asked].reverse().find(a => a.result)?.result?.remaining
+  const pending = asked.some(a => !a.result)
+  const cards = state.contexts.filter(c => c.language === ctx.lang)
+  const explainers = Object.values(ctx.hello.explainers ?? {})
+  return (
+    <div className="cd-research">
+      <form className="cd-ask" onSubmit={e => { e.preventDefault(); if (q.trim() && !pending) { onAsk(q.trim()); setQ('') } }}>
+        <input data-testid="ask-input" value={q} onChange={e => setQ(e.target.value)} maxLength={300}
+          placeholder={dt(ctx.lang, 'askPlaceholder')} aria-label={dt(ctx.lang, 'askPlaceholder')} />
+        <button type="submit" disabled={pending || !q.trim()}>{dt(ctx.lang, 'ask')}</button>
+      </form>
+      {remaining !== undefined && <p className="cd-note" data-testid="ask-remaining">{ctx.num(remaining)} {dt(ctx.lang, 'searchesLeft')}</p>}
+      {[...asked].reverse().map((a, i) => (
+        <article key={asked.length - i} className="cd-answer" data-testid="ask-answer">
+          <h4 dir="auto">{a.question}</h4>
+          {!a.result ? <p className="cd-note">{dt(ctx.lang, 'asking')}</p>
+            : a.result.status === 'ok' || a.result.status === 'cached' ? (
+              <>
+                <p dir="auto">{ctx.num(a.result.text)}</p>
+                <Sources sources={a.result.sources} />
+                <p className="cd-note">{dt(ctx.lang, 'fromWeb')}</p>
+              </>
+            ) : <p className="cd-note">{dt(ctx.lang, `ask_${a.result.status}` as DeskKey)}</p>}
+        </article>
+      ))}
+      <h3 className="cd-sub">{dt(ctx.lang, 'contextCards')}</h3>
+      {!cards.length && <p className="cd-note">{dt(ctx.lang, 'noContext')}</p>}
+      {[...cards].reverse().map(c => (
+        <div key={`${c.moment_id}-${c.entry_id}`} className="cd-research-card"><span className="cd-min">{ctx.num(c.minute)}'</span><ContextBlock c={c} lang={ctx.lang} /></div>
+      ))}
+      <h3 className="cd-sub">{dt(ctx.lang, 'explainers')}</h3>
+      {explainers.map(x => (
+        <div key={x.topic} className="cd-explainer"><b>{x.topic}</b> <span dir="auto">{x.text}</span> <Sources sources={x.sources} /></div>
+      ))}
+    </div>
+  )
+}
+
 // ---------- production (CD-15, CD-16) ----------
 
 function ProductionTab({ state, ctx }: { state: State; ctx: Ctx }) {
@@ -406,6 +494,12 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   const { state } = useMatch(matchId, profile)
   const [tab, setTab] = useState<Tab>('stats')
   const [used, setUsed] = useState<Set<string>>(() => loadUsed(matchId))
+  const [asked, setAsked] = useState<Asked[]>([])
+  const ask = (question: string) => {
+    setAsked(prev => [...prev, { question, result: null }])
+    askQuestion(matchId, question, lang).then(result =>
+      setAsked(prev => prev.map(a => (a.question === question && !a.result ? { ...a, result } : a))))
+  }
   const h = state.hello
   const colors = useMemo(() => (h ? teamColors(h.home, h.away) : {}), [h])
   const names = useMemo(() => {
@@ -443,7 +537,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   if (!h) return <div className="cd" data-testid="desk"><p className="empty">{t(lang, 'kickOffSoon')}</p></div>
   const ctx: Ctx = { lang, hello: h, colors, names, num: v => localDigits(v, lang) }
   const tabLabel = (id: Tab) => id === 'timeline' ? dt(lang, 'timeline') : id === 'season' ? dt(lang, 'season')
-    : id === 'production' ? dt(lang, 'production') : id === 'momentum' ? t(lang, 'momentumChart') : t(lang, id)
+    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'momentum' ? t(lang, 'momentumChart') : t(lang, id)
 
   return (
     <div className="cd" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="desk">
@@ -467,6 +561,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
               </div>
             )}
             {tab === 'season' && <SeasonTab ctx={ctx} />}
+            {tab === 'research' && <ResearchTab state={state} ctx={ctx} asked={asked} onAsk={ask} />}
             {tab === 'production' && <ProductionTab state={state} ctx={ctx} />}
             {tab === 'recap' && <Recaps state={state} lang={lang} />}
           </div>

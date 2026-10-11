@@ -1,0 +1,426 @@
+[
+  {
+    "id": "goals-per-match",
+    "kind": "benchmark",
+    "topic": "Goals per match",
+    "text": "The average number of goals per match in the 2024/25 Premier League season was 2.93 goals per game, with a total of 1,115 goals scored across 380 matches.",
+    "numbers": [
+      2.93,
+      1115.0,
+      380.0
+    ],
+    "sources": [
+      {
+        "url": "https://en.wikipedia.org/wiki/2024%E2%80%9325_Premier_League",
+        "title": "2024–25 Premier League - Wikipedia"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "goal",
+      "half_time",
+      "full_time"
+    ],
+    "translations": {
+      "es": "La temporada 2024/25 de la Premier League tuvo un promedio de 2,93 goles por partido, con 1,115 goles en 380 encuentros.",
+      "ar": "بلغ متوسط الأهداف لكل مباراة في موسم 2024/25 للدوري الإنجليزي 2.93 هدفًا، بإجمالي 1,115 هدفًا في 380 مباراة."
+    }
+  },
+  {
+    "id": "draws",
+    "kind": "benchmark",
+    "topic": "Draws",
+    "text": "In the completed 2024/25 Premier League season, 93 of the 380 matches ended in a draw.",
+    "numbers": [
+      93.0,
+      380.0
+    ],
+    "sources": [
+      {
+        "url": "https://fcstats.com/statistics,premier-league-england,1,1,4751.php",
+        "title": "Statistics - Premier League 2024/2025 - England - Football stats ..."
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "full_time"
+    ],
+    "translations": {
+      "es": "En la temporada 2024/25 de la Premier League, 93 de los 380 partidos finalizaron en empate.",
+      "ar": "في موسم 2024/25 من الدوري الإنجليزي الممتاز، انتهت 93 من أصل 380 مباراة بالتعادل."
+    }
+  },
+  {
+    "id": "big-chance-conversion",
+    "kind": "benchmark",
+    "topic": "Big chance conversion",
+    "text": "The average big chance conversion rate in the Premier League typically falls between 30% and 37% across all players and teams.",
+    "numbers": [
+      30.0,
+      37.0
+    ],
+    "sources": [
+      {
+        "url": "https://www.thestandardengine.com/sports/soccer-big-chance-conversion-calculator",
+        "title": "Soccer Big Chance Conversion Calculator — Rate & Efficiency | The ..."
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "big_chance",
+      "goal"
+    ],
+    "translations": {
+      "es": "En la Premier League, la conversión media de grandes ocasiones suele oscilar entre el 30% y el 37% para todos jugadores y equipos.",
+      "ar": "يتراوح معدل تحويل الفرص الكبيرة平均 في الدوري الممتاز بين 30% و37% لجميع اللاعبين والفرق."
+    }
+  },
+  {
+    "id": "red-cards",
+    "kind": "benchmark",
+    "topic": "Red cards",
+    "text": "There were 52 red cards shown in the 2024/25 Premier League season across all teams.",
+    "numbers": [
+      52.0
+    ],
+    "sources": [
+      {
+        "url": "https://www.myfootballfacts.com/premier-league/all-time-premier-league/cards/premier-league-red-and-yellow-cards-2024-25/",
+        "title": "Premier League Red & Yellow Cards 2024-25 | MyFootballFacts"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "red_card"
+    ],
+    "translations": {
+      "es": "Se mostraron 52 tarjetas rojas en total durante la temporada 2024/25 de la Premier League entre todos los equipos.",
+      "ar": "تم إظهار 52 بطاقة حمراء في موسم 2024/25 من الدوري الإنجليزي الممتاز عبر جميع الفرق."
+    }
+  },
+  {
+    "id": "late-goals",
+    "kind": "benchmark",
+    "topic": "Late goals",
+    "text": "In the 2024/25 Premier League season, there were 96 goals scored in stoppage time out of a total of 1,115 goals (8.6%).",
+    "numbers": [
+      96.0,
+      1115.0,
+      8.6
+    ],
+    "sources": [
+      {
+        "url": "https://www.espn.com/soccer/story/_/id/46729959/stoppage-goals-premier-league-control/",
+        "title": "Stoppage-time goals in the Premier League are out of control"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "goal"
+    ],
+    "translations": {
+      "es": "En la temporada 2024/25 de la Premier League se marcaron 96 goles en tiempo añadido, de un total de 1,115, un 8.6% del total.",
+      "ar": "في موسم 2024/25 من الدوري الإنجليزي الممتاز، سُجلت 96 هدفًا في الوقت بدل الضائع من أصل 1,115 هدفًا (8.6%)."
+    }
+  },
+  {
+    "id": "explain-xg",
+    "kind": "tactic",
+    "topic": "Expected goals (xG)",
+    "text": "Expected Goals (xG) in football is a statistical metric that assigns a probability to each shot representing how likely it is to result in a goal, based on historical data of similar shots. It is calculated using models that consider factors like shot location, angle, body part used, and defensive pressure, producing a value between 0 and 1 to estimate the quality of chances created.",
+    "numbers": [
+      0.0,
+      1.0
+    ],
+    "sources": [
+      {
+        "url": "https://en.wikipedia.org/wiki/Expected_goals",
+        "title": "Expected goals - Wikipedia"
+      },
+      {
+        "url": "https://the-footballanalyst.com/expected-goals-xg-football-statistics-explained/",
+        "title": "Expected Goals (xG) – Football Statistics Explained"
+      },
+      {
+        "url": "https://theanalyst.com/articles/what-is-expected-goals-xg",
+        "title": "What Is Expected Goals (xG)? | Opta Analyst"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "goal",
+      "big_chance",
+      "stat:xg"
+    ],
+    "translations": {
+      "es": "Los goles esperados (xG) asignan a cada remate una probabilidad de gol, según datos históricos. Consideran ubicación, ángulo, parte del cuerpo y presión defensiva, y van de 0 a 1.",
+      "ar": "الأهداف المتوقعة (xG) تعطي احتمال تسجيل كل تسديدة استنادًا إلى بيانات تاريخية، وتشمل عوامل مثل مكان التسديدة وزاويتها وضغط الدفاع لتقييم جودة الفرص."
+    }
+  },
+  {
+    "id": "explain-big-chance",
+    "kind": "tactic",
+    "topic": "Big chance",
+    "text": "A \"big chance\" in Opta football data is a situation where a player is reasonably expected to score, typically occurring in one-on-one scenarios with the goalkeeper or very close-range shots with a clear path to goal and low to moderate pressure. Every penalty counts as a big chance. It is a human-judged tag, not a formula-based measure.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://www.footymetrics.com/learn/what-is-a-big-chance",
+        "title": "Big chance in football: created vs missed | FootyMetrics"
+      },
+      {
+        "url": "https://theanalyst.com/articles/opta-football-stats-definitions",
+        "title": "Opta Football Stats Definitions - The Analyst"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "big_chance",
+      "stat:big_chances"
+    ],
+    "translations": {
+      "es": "Una \"gran oportunidad\" es cuando un jugador tiene alta probabilidad de marcar, como duelos uno a uno, tiros cercanos y penales, evaluada por expertos.",
+      "ar": "الفرصة الكبيرة هي موقف يتوقع فيه تسجيل الهدف بسهولة، غالباً في مواجهة واحدة مع الحارس أو تسديد قريب وواضح، ويشمل كل ركلات الجزاء. تقييم بشري، ليس حساباً."
+    }
+  },
+  {
+    "id": "explain-field-tilt",
+    "kind": "tactic",
+    "topic": "Field tilt",
+    "text": "Field tilt is a football analytics metric that measures which team controls the attacking third of the pitch by calculating the share of passes or touches a team makes in that final third relative to the total final-third actions by both teams. It reveals which side is more dominant in dangerous attacking areas, unlike traditional possession which counts all ball control regardless of location.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://the-footballanalyst.com/field-tilt-football-statistics-explained/",
+        "title": "Field Tilt – Football Statistics Explained - The Football Analyst"
+      },
+      {
+        "url": "https://www.footymetrics.com/learn/what-is-field-tilt",
+        "title": "What is field tilt in football? - FootyMetrics"
+      },
+      {
+        "url": "https://touchlinelabs.co.uk/analysis/field-tilt-explained",
+        "title": "What Is Field Tilt? Football’s Territory Metric Explained"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "momentum_shift",
+      "pressure_spell",
+      "stat:field_tilt"
+    ],
+    "translations": {
+      "es": "El Field Tilt mide qué equipo domina el último tercio del campo, calculando el porcentaje de pases o toques respecto al total de ambos equipos en esa zona.",
+      "ar": "ميل الميدان هو مقياس تحليلي في كرة القدم يقيس سيطرة الفريق على الثلث الهجومي عبر نسبة التمريرات أو اللمسات في هذا الجزء مقارنةً بالمجموع. يبيّن الفريق الأكثر هيمنة في المناطق الهجومية الخطرة، على عكس الاستحواذ التقليدي."
+    }
+  },
+  {
+    "id": "explain-ppda",
+    "kind": "tactic",
+    "topic": "PPDA",
+    "text": "PPDA (Passes Per Defensive Action) measures how many passes a team allows the opposition to complete before making a defensive action like a tackle or interception in the opponent’s build-up area. A low PPDA means the team pressures aggressively, forcing turnovers quickly. A high PPDA means less intense pressing, allowing opponents more passing time.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://www.matchstatslab.com/2026/09/what-is-ppda-in-football.html",
+        "title": "What Is PPDA in Football? Passes Per Defensive Action Explained"
+      },
+      {
+        "url": "https://www.premierleague.com/en/news/4250153/passes-per-defensive-action-explained",
+        "title": "Passes per defensive action: explained - Premier League"
+      },
+      {
+        "url": "https://www.footymetrics.com/learn/what-is-ppda",
+        "title": "PPDA: passes allowed per defensive action | FootyMetrics"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "pressure_spell",
+      "stat:ppda"
+    ],
+    "translations": {
+      "es": "PPDA indica cuántos pases permite un equipo antes de actuar. Un PPDA bajo significa presión agresiva; uno alto, menos presión y más tiempo para el rival.",
+      "ar": "يقيس PPDA عدد التمريرات التي يسمح بها الفريق للخصم قبل اتخاذ إجراء دفاعي مثل التكتل أو القطع في منطقة بناء الخصم. PPDA منخفض يدل على ضغط عالي، ومرتفع يدل على ضغط أقل."
+    }
+  },
+  {
+    "id": "explain-low-block",
+    "kind": "tactic",
+    "topic": "Low block",
+    "text": "A low block in football defending is a strategy where most players position themselves deep in their own defensive third, close to their goal, to protect space and remain compact. It’s used to minimize scoring chances by crowding central areas and forcing opponents wide, often inviting possession but limiting dangerous attacks near the goal.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://learning.coachesvoice.com/cv/low-block-football-tactics-explained-simeone-dyche-mourinho/",
+        "title": "The low block: football tactics explained - Coaches' Voice"
+      },
+      {
+        "url": "https://the-footballanalyst.com/low-block-football-tactics-explained/",
+        "title": "Low-Block – Football Tactics Explained - The Football Analyst"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "pressure_spell"
+    ],
+    "translations": {
+      "es": "El bloque bajo sitúa a casi todos los jugadores en el tercio defensivo cerca del arco, protegiendo el espacio y limitando ataques peligrosos cerca del gol.",
+      "ar": "في التكتل الدفاعي المنخفض، يتمركز معظم اللاعبين في الثلث الدفاعي القريب من المرمى لحماية المساحات وتقليل فرص التسجيل بضغط على الوسط ودفع الخصم للأجناب."
+    }
+  },
+  {
+    "id": "explain-final-third",
+    "kind": "tactic",
+    "topic": "Final third entries",
+    "text": "Final third entries in football analytics refer to the moments when a team successfully moves the ball into the attacking third, the part of the field closest to the opponent's goal. These entries matter because they indicate attacking territorial control and the potential to create goal-scoring opportunities by advancing play into dangerous positions near the goal.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://the-footballanalyst.com/final-third-entries-quantity-vs-quality/",
+        "title": "Final Third Entries – Quantity vs. Quality - The Football Analyst"
+      },
+      {
+        "url": "https://www.sportmonks.com/glossary/final-third-entries/",
+        "title": "Final Third Entries in Football: Definition and API Access"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "pressure_spell",
+      "stat:final_third"
+    ],
+    "translations": {
+      "es": "Las entradas en el último tercio son cuando un equipo lleva el balón a la zona de ataque, cerca del gol rival, mostrando control y creando oportunidades de gol.",
+      "ar": "تشير دخول الثلث الأخير إلى الوقت الذي تصل فيه الكرة إلى منطقة الهجوم، وهي أقرب مناطق للمرمى الخصم، مما يزيد فرص التسجيل ويظهر السيطرة الهجومية."
+    }
+  },
+  {
+    "id": "explain-pass-accuracy",
+    "kind": "tactic",
+    "topic": "Pass accuracy",
+    "text": "Pass completion percentage in football shows the ratio of completed passes to total attempted passes, indicating passing accuracy. However, it doesn't measure pass difficulty or tactical impact, as safe short passes and risky forward passes count equally, so context is needed for a full performance view.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://www.footymetrics.com/learn/pass-completion-explained",
+        "title": "Why pass completion percentage can mislead | FootyMetrics"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "stat:pass_accuracy"
+    ],
+    "translations": {
+      "es": "El % de pases completados refleja precisión al comparar pases buenos vs intentados, pero no mide dificultad ni táctica, por lo que se requiere contexto para evaluar.",
+      "ar": "نسبة إكمال التمريرات تعبر عن دقة التمرير لكنها لا تعكس صعوبته أو تأثيره التكتيكي، فالتمريرات الآمنة والخطرة تُحسب بنفس القيمة."
+    }
+  },
+  {
+    "id": "explain-red-card-impact",
+    "kind": "tactic",
+    "topic": "Playing with ten men",
+    "text": "A red card usually decreases a football team's chances of winning because the penalized team scores less and concedes more, with the impact being stronger when the red card is early in the game. However, home teams often perform better after a red card compared to away teams, and timing of the card is crucial to the effect.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://thisweekinsoccer.org/blog/2026/07/20/one-red-card-what-the-world-cup-final-revealed-about-playing-short-handed/",
+        "title": "One Red Card: What the World Cup Final Revealed About Playing Short ..."
+      },
+      {
+        "url": "https://runrepeat.com/red-card-study",
+        "title": "Home teams win 208% more often with red card (Study of 19,985 games)"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "red_card"
+    ],
+    "translations": {
+      "es": "Una roja reduce chances de ganar; el equipo sancionado anota menos y recibe más. El efecto es mayor si la roja es temprana. Los locales suelen rendir mejor tras una roja que los visitantes.",
+      "ar": "البطاقة الحمراء تقلل عادة فرص الفوز بسبب قلة التسجيل وزيادة الأهداف المستقبلة، خاصة إذا جاءت مبكراً. الفرق المضيفة تتحسن بعد البطاقة مقارنة بالزوار، وتوقيتها مهم."
+    }
+  },
+  {
+    "id": "explain-pressing",
+    "kind": "tactic",
+    "topic": "High press and counter-press",
+    "text": "High press is a tactic where a team aggressively pressures the opponent high up the pitch, near their goal, to force mistakes and win the ball back quickly. Counter-pressing (or gegenpressing) is when a team immediately tries to regain possession right after losing the ball, pressing the opponent intensely to disrupt their transition before they settle into attack.",
+    "numbers": [],
+    "sources": [
+      {
+        "url": "https://learning.coachesvoice.com/cv/counter-pressing-gegenpressing-football-tactics-explained-klopp-guardiola-bielsa-hasenhuttl/",
+        "title": "Counter-pressing and the gegenpress: football tactics explained"
+      },
+      {
+        "url": "https://www.fifplay.com/gegenpressing-vs-high-pressing/",
+        "title": "Gegenpressing vs High Pressing - FIFPlay"
+      },
+      {
+        "url": "https://guidetofootball.com/tactics/pressing/",
+        "title": "Pressing in football - Guide to Football"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "pressure_spell",
+      "momentum_shift"
+    ],
+    "translations": {
+      "es": "La presión alta exige que el equipo presione al rival cerca de su área para recuperar rápido el balón. El contraataque busca recuperarlo tras perderlo, presionando fuerte para impedir ataques.",
+      "ar": "الضغط العالي يعني الضغط القوي على الخصم قرب مرماه لإجباره على الخطأ. أما المضاد للضغط فهو محاولة استرجاع الكرة فور خسارتها بضغط مكثف على المنافس."
+    }
+  },
+  {
+    "id": "home-wins",
+    "kind": "benchmark",
+    "topic": "Home wins",
+    "text": "In the full 2024/25 Premier League season (380 matches), 155 matches were won by the home team, which is 40.8% of the matches.",
+    "numbers": [
+      380.0,
+      155.0,
+      40.8
+    ],
+    "sources": [
+      {
+        "url": "https://www.fiso.co.uk/premier-league-scoring-trends-2024-25-season-vs-2025-26-gw25-whats-changed/",
+        "title": "Premier League Scoring Trends: 2024/25 Season vs 2025/26 (GW25) – What ..."
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "full_time",
+      "half_time"
+    ],
+    "translations": {
+      "es": "En la temporada completa 2024/25 de la Premier League (380 partidos), los locales ganaron 155 partidos, un 40.8% del total.",
+      "ar": "في موسم الدوري الإنجليزي الممتاز 2024/25 كاملًا (380 مباراة)، فاز الفريق المضيف في 155 مباراة، ما يمثل 40.8% من مجموع المباريات."
+    },
+    "origin": "web search"
+  },
+  {
+    "id": "outside-box-shots",
+    "kind": "benchmark",
+    "topic": "Shots from outside the box",
+    "text": "In 2024/25, 31.7% of Premier League shots came from outside the box, and only 4.2% of those were scored.",
+    "numbers": [
+      31.7,
+      4.2
+    ],
+    "sources": [
+      {
+        "url": "https://theanalyst.com/articles/premier-league-2024-25-shot-data",
+        "title": "Premier League 2024-25 shot data (The Analyst)"
+      }
+    ],
+    "retrieved": "2026-10-11",
+    "tags": [
+      "rocket_shot"
+    ],
+    "translations": {
+      "es": "En 2024/25, el 31,7% de los disparos en la Premier League fueron fuera del área y solo el 4,2% de esos terminaron en gol.",
+      "ar": "في موسم 2024/25، جاءت 31.7% من تسديدات الدوري الممتاز من خارج منطقة الجزاء، وسُجل 4.2% منها فقط."
+    },
+    "origin": "calibration sources"
+  }
+]

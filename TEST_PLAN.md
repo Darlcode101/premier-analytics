@@ -110,6 +110,17 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Simulated season: double round robin (56 matches, 3–4 home games per half-season), table points = 3W + D, form = last five results in date order, player season goals equal goal events; deterministic | CD-14 | pytest |
 | Arabic desk renders right-to-left with Eastern Arabic digits, line-ups mirrored | CD-17 | e2e |
 
+### Real-world context (CX-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Library schema: every entry has text, ≥1 source URL (https), title, retrieval date; every number in the text appears in the entry's numbers | CX-1 | pytest |
+| Library build script with a fake search tool: entries created only from results that carry citations; uncited results dropped | CX-1 | pytest |
+| Context agent (fake model): picks an entry relevant to the moment kind; rejects a card whose real-world number isn't in the entry or whose match number isn't in the facts; rejects real club/player names | CX-2, CX-4 | pytest |
+| Ask box: cached answer reused for the same question; 16th search in a match refused; timeout returns a message; off-topic declined; answer without a source rejected | CX-3 | pytest |
+| Desk shows a context card with a working source link beside a goal; ask box returns an answer with a link (scripted search) | CX-2, CX-3 | e2e |
+| Context cards translated; links unchanged | CX-5 | pytest + e2e |
+| With search down, desk otherwise unchanged and no context errors shown | CX-6 | e2e |
+
 ## 8. Non-functional
 - Latency at 1× over a full match: fast path p95 ≤ 0.5 s, AI upgrade p95 ≤ 4 s (N-1).
 - Cost per full match logged; projected judging cost < budget (N-2).
