@@ -63,6 +63,12 @@ class _Sim:
         self.elapsed = 0
         self.score = {home.id: 0, away.id: 0}
         self.on_pitch = {c.id: list(c.starting_xi) for c in (home, away)}
+        # Style (PA-1): each club's playmaker, its best-passing central midfielder, sees more of the ball in midfield.
+        self.playmaker = {
+            c.id: max((p for p in c.starting_xi if league.player(p).position in ("CM", "AM")),
+                      key=lambda p: league.player(p).passing)
+            for c in (home, away)
+        }
         self.bench = {c.id: list(c.bench) for c in (home, away)}
         self.subs_made = {home.id: 0, away.id: 0}
         self.booked: set[str] = set()
@@ -96,7 +102,10 @@ class _Sim:
         home_adv = 0.007 if team == self.home.id else -0.007  # tuned with the PA-1 styles: 42 % home wins vs 40.8 % real
         return math.exp(0.22 * m + home_adv) * (len(self.on_pitch[team]) / 11) ** 1.5
 
-    def pick(self, team: str, x: float, exclude: str | None = None) -> str:
+    def pick(self, team: str, x: float, exclude: str | None = None, receiving: bool = False) -> str:
+        pm = self.playmaker.get(team)
+        if receiving and 35 < x < 72 and pm in self.on_pitch[team] and pm != exclude and self.rng.random() < 0.32:
+            return pm
         z = _zone(x)
         cands = [p for p in self.on_pitch[team] if p != exclude]
         weights = [_ZONE_WEIGHTS[self.player(p).position][z] + 0.01 for p in cands]
@@ -204,13 +213,15 @@ class _Sim:
             c = self.player(carrier)
 
             # Pressing: more in the opponent's attacking zones and by pressing teams.
-            pressed = rng.random() < (0.12 + 0.35 * opp_club.pressing) * (0.6 + 0.5 * x / L)
+            # Style (PA-1): high-pressing sides also harass the ball deep in its own half.
+            high_press = max(0.0, opp_club.pressing - 0.55) if x < 35 else 0.0
+            pressed = rng.random() < (0.12 + 0.35 * opp_club.pressing) * (0.6 + 0.5 * x / L) + 0.75 * high_press
             if pressed:
                 presser = self.pick(opp, L - x)
                 self.emit("pressure", team_id=opp, player_id=presser, x=L - x, y=W - y)
 
             # Defensive duel: tackle, or a foul.
-            duel = rng.random() < 0.085 * (1.4 if pressed else 1.0)
+            duel = rng.random() < 0.085 * (1.4 if pressed else 1.0) * (1.0 + 2.5 * high_press)
             if duel:
                 defender = self.pick(opp, L - x)
                 dplayer = self.player(defender)
@@ -235,9 +246,9 @@ class _Sim:
             if x >= SHOOTING_RANGE_X:
                 centrality = 1 - min(abs(y - W / 2) / (W / 2), 1)
                 depth = (x - SHOOTING_RANGE_X) / (L - SHOOTING_RANGE_X)
-                p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 1.08 * s ** 0.5
+                p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 1.03 * s ** 0.5
                 # Style (PA-1): some sides shoot from distance more readily (0.5 = league norm).
-                p_shot *= (0.45 + 1.1 * club.long_shots) if x < BOX_X else (1.12 - 0.24 * club.long_shots)
+                p_shot *= (0.3 + 1.4 * club.long_shots) if x < BOX_X else (1.15 - 0.3 * club.long_shots)
                 if rng.random() < p_shot:
                     return self.shoot(team, x, y, carrier, last_pass, pressed)
 
@@ -270,7 +281,7 @@ class _Sim:
                 0.92
                 - 0.0045 * max(0.0, length - 12)
                 - 0.10 * progress * (1.5 - club.attack)
-                - (0.08 if pressed else 0.0)
+                - (0.08 + 0.35 * high_press if pressed else 0.0)  # a high press forces errors deep in their half
                 - (0.10 if ex > 88 else 0.0)
                 - (0.025 if self.wet else 0.0)
                 + 0.10 * (c.passing - 0.65)
@@ -279,7 +290,7 @@ class _Sim:
             ) * s ** 0.25
             self.tick((1.9 + length / 11 + rng.uniform(0, 1.6)) * SEC)
             if rng.random() < _clamp(p_ok, 0.25, 0.985):
-                receiver = self.pick(team, ex, exclude=carrier)
+                receiver = self.pick(team, ex, exclude=carrier, receiving=True)
                 last_pass = self.emit(
                     "pass", team_id=team, player_id=carrier, x=x, y=y, end_x=ex, end_y=ey,
                     outcome="complete", receiver_id=receiver, under_pressure=pressed,

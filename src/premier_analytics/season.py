@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 
 from .generator import generate_match
 from .league import League
+from .patterns import BOX_X, FINAL_THIRD_X, binomial_tail, channel_of
+
+SEASON_ALPHA = 0.001
 
 SEASON_SEED = 2025
 
@@ -46,6 +49,51 @@ class Season:
     results: list[Result]
     goals: Counter = field(default_factory=Counter)
     assists: Counter = field(default_factory=Counter)
+    entries: dict = field(default_factory=dict)  # club -> Counter of final-third entries by channel (PA-3)
+    passers: dict = field(default_factory=dict)  # club -> Counter of final-third entries by passer
+    regains: dict = field(default_factory=dict)  # club -> [won in the attacking third, all ball wins]
+    shots: dict = field(default_factory=dict)    # club -> [outside the box, all shots]
+
+    def profiles(self) -> dict:
+        """Each club's style over the season, measured from its matches (not read from its settings), plus
+        the styles that stand out from the league (PA-3: significant over the season and by a clear margin)."""
+        clubs = sorted(self.entries)
+        league = {
+            "high_regain_share": sum(self.regains[c][0] for c in clubs) / sum(self.regains[c][1] for c in clubs),
+            "long_shot_share": sum(self.shots[c][0] for c in clubs) / sum(self.shots[c][1] for c in clubs),
+        }
+        out: dict = {"_league": league}
+        for club in clubs:
+            counts = self.entries[club]
+            n = sum(counts.values()) or 1
+            flank = {c: counts[c] / n for c in ("left", "centre", "right")}
+            playmaker, pm_count = self.passers[club].most_common(1)[0]
+            reg_k, reg_n = self.regains[club]
+            sh_k, sh_n = self.shots[club]
+            p = {
+                "flank_shares": flank,
+                "high_regain_share": reg_k / reg_n,
+                "long_shot_share": sh_k / sh_n,
+                "playmaker": playmaker,
+                "playmaker_share": pm_count / n,
+            }
+            styles = []
+            side = max(("left", "right"), key=flank.get)
+            k = counts[side]
+            if flank[side] >= 0.42 and 3 * binomial_tail(k, n, 1 / 3) < SEASON_ALPHA:
+                styles.append({"kind": "flank", "value": side, "share": flank[side], "league": 1 / 3})
+            if p["high_regain_share"] >= league["high_regain_share"] + 0.04 and \
+                    binomial_tail(reg_k, reg_n, league["high_regain_share"]) < SEASON_ALPHA:
+                styles.append({"kind": "high_regains", "value": "attacking", "share": p["high_regain_share"],
+                               "league": league["high_regain_share"]})
+            if p["long_shot_share"] >= league["long_shot_share"] + 0.05 and \
+                    binomial_tail(sh_k, sh_n, league["long_shot_share"]) < SEASON_ALPHA:
+                styles.append({"kind": "long_shots", "value": "outside_box", "share": p["long_shot_share"],
+                               "league": league["long_shot_share"]})
+            styles.append({"kind": "playmaker", "value": playmaker, "share": p["playmaker_share"], "league": None})
+            p["styles"] = styles
+            out[club] = p
+        return out
 
     def table(self) -> list[TableRow]:
         rows: dict[str, TableRow] = {}
@@ -105,6 +153,17 @@ def simulate_season(league: League, seed: int = SEASON_SEED) -> Season:
             m = generate_match(home, away, match_seed, league)
             hg = ag = 0
             for e in m.events:
+                if e.type == "pass" and e.outcome == "complete" and e.x < FINAL_THIRD_X <= e.end_x:
+                    season.entries.setdefault(e.team_id, Counter())[channel_of(e.end_y)] += 1
+                    season.passers.setdefault(e.team_id, Counter())[e.player_id] += 1
+                elif e.type == "interception" or (e.type == "tackle" and e.outcome == "won"):
+                    r = season.regains.setdefault(e.team_id, [0, 0])
+                    r[0] += e.x >= FINAL_THIRD_X
+                    r[1] += 1
+                elif e.type == "shot":
+                    sh = season.shots.setdefault(e.team_id, [0, 0])
+                    sh[0] += e.x < BOX_X
+                    sh[1] += 1
                 if e.type == "goal":
                     hg, ag = e.score_home, e.score_away
                     season.goals[e.player_id] += 1
