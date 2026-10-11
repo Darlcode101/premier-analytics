@@ -1,0 +1,21 @@
+{
+  "metrics": {
+    "groundedness.groundedness": 4.837078651685394,
+    "groundedness.groundedness_score": 4.837078651685394,
+    "groundedness.groundedness_passed": 0.9719101123595506,
+    "relevance.relevance": 4.146067415730337,
+    "relevance.relevance_score": 4.146067415730337,
+    "relevance.relevance_passed": 1.0,
+    "coherence.coherence": 3.977272727272727,
+    "coherence.coherence_score": 3.977272727272727,
+    "fluency.fluency": 3.348314606741573,
+    "fluency.fluency_score": 3.348314606741573,
+    "fluency.fluency_passed": 1.0,
+    "why.explains_why": 3.449438202247191,
+    "groundedness.binary_aggregate": 0.97,
+    "relevance.binary_aggregate": 1.0,
+    "coherence.binary_aggregate": 0.99,
+    "fluency.binary_aggregate": 1.0
+  },
+  "studio_url": "https://ai.azure.com/resource/build/evaluation/f75d0989-80bc-4c85-9220-9bb9b4d1712e?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a"
+}

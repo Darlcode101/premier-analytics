@@ -185,6 +185,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones

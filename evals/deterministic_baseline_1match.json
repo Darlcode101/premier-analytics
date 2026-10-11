@@ -1,0 +1,18 @@
+{
+  "overlays": 61,
+  "matches": 1,
+  "critic_recheck_pass": 1.0,
+  "language_correct": 1,
+  "within_length": 1,
+  "pairs": 15,
+  "analyst_more_numbers": 1,
+  "fan_plain": 0.13333333333333333,
+  "numbers_per_100_chars": {
+    "fan": 1.4638184012566802,
+    "analyst": 2.5750147961767245
+  },
+  "flesch": {
+    "fan": 61.03125817573233,
+    "analyst": 60.600467708384286
+  }
+}
