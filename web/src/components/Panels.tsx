@@ -130,7 +130,7 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
 }) {
   const hello = state.hello
   if (!state.stats || !hello) return <p className="empty">{t(lang, 'waiting')}</p>
-  const { home, away, chaos } = state.stats
+  const { home, away } = state.stats
   const c: [string, string] = [colors[hello.home.id], colors[hello.away.id]]
   const pct = (v: number) => `${Math.round(v)}%`
   const rows: [StringKey, (s: TeamStats) => number, ((v: number) => string)?][] = [
@@ -160,17 +160,6 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
       {windowRows.map(([k, get, fmt]) => (
         <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} />
       ))}
-      <div className="stat-row">
-        <span className="val">{t(lang, 'control')}</span>
-        <div className="stat-mid">
-          <span className="label">{t(lang, 'chaos')}</span>
-          <div className="bars" aria-label={`${Math.round(chaos * 100)}%`}>
-            <span style={{ width: `${100 - chaos * 100}%`, background: 'var(--accent)' }} />
-            <span style={{ width: `${chaos * 100}%`, background: 'var(--danger)' }} />
-          </div>
-        </div>
-        <span className="val away">{t(lang, 'chaosLabel')}</span>
-      </div>
     </div>
   )
 }

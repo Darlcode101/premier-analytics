@@ -26,7 +26,7 @@ export interface State {
   feed: Overlay[]
   upgraded: Set<string>
   screen: Overlay[]
-  stats: { home: TeamStats; away: TeamStats; chaos: number } | null
+  stats: { home: TeamStats; away: TeamStats } | null
   momentum: { minute: number; value: number }[]
   attack: AttackPoint[]
   trace: TraceEvent[]
@@ -99,7 +99,7 @@ export function reducer(s: State, m: Action): State {
         const p = m.attack
         attack = [...s.attack.filter(a => a.minute !== p.minute), p].sort((a, b) => a.minute - b.minute)
       }
-      return { ...s, stats: { home: m.home, away: m.away, chaos: m.chaos }, momentum, attack }
+      return { ...s, stats: { home: m.home, away: m.away }, momentum, attack }
     }
     case 'overlay': {
       const o = m.overlay
