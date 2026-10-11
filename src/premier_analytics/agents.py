@@ -220,6 +220,9 @@ FACT_TEXT = {
     "window_shots": "shots in the last {w} minutes", "window_xg": "xG in the last {w} minutes",
     "window_minutes": "window length (minutes)", "tempo_passes_per_min": "passes per minute in the last {w} minutes",
     "ppda": "opponent passes per defensive action in the last {w} minutes",
+    "stakes": "what this spell means for them", "spell_rank": "how this spell ranks for them",
+    "window_shots_before": "their shots in the {w} minutes before that", "shots_trend": "compared with before",
+    "opponent_window_shots": "opponent shots in the last {w} minutes", "goals_in_spell": "their goals in the last {w} minutes",
 }
 GOAL_CONTEXT_TEXT = {
     "equaliser": "equaliser: makes the scores level", "takes_lead": "takes the lead",
@@ -233,6 +236,37 @@ CONTRADICTIONS = {
     "extends_lead": (r"\bequali[sz]", r"\blevel", r"\bdeadlock\b", r"\btakes? the lead\b"),
     "pulls_one_back": (r"\blead\b", r"\bahead\b", r"\bin front\b", r"\bequali[sz]", r"\blevel", r"\bdeadlock\b"),
 }
+
+# E-5: ratio words need two facts in that ratio; spell superlatives need the scout's spell fact.
+RATIO_PAIRS = (
+    ("team_shots", "opponent_shots"), ("window_shots", "window_shots_before"), ("window_shots", "opponent_window_shots"),
+    ("shots_home", "shots_away"), ("xg_home", "xg_away"),
+)
+RATIO_WORDS = (
+    (re.compile(r"\b(double[ds]?|twice|two times)\b", re.I), "double", (1.75, 2.4)),
+    (re.compile(r"\b(triple[ds]?|treble[ds]?|three times)\b", re.I), "three times", (2.6, 3.5)),
+)
+STRONGEST = re.compile(r"\b(strongest|most dominant|best (spell|period))\b", re.I)
+FIRST_TIME = re.compile(r"\bfirst time\b", re.I)
+
+
+def comparison_problems(text: str, m: Moment) -> list[str]:
+    values = {f.label: f.value for f in m.facts if isinstance(f.value, (int, float)) and not isinstance(f.value, bool)}
+    ratios = []
+    for a, b in RATIO_PAIRS:
+        if a in values and b in values and values[a] and values[b]:
+            ratios += [values[a] / values[b], values[b] / values[a]]
+    problems = []
+    for pattern, word, (low, high) in RATIO_WORDS:
+        if pattern.search(text) and not any(low <= r <= high for r in ratios):
+            problems.append(f"'{word}' is not supported by the facts")
+    rank = next((f.value for f in m.facts if f.label == "spell_rank"), None)
+    if rank is not None:
+        if STRONGEST.search(text) and rank != "strongest spell so far":
+            problems.append(f"'strongest' contradicts the spell fact ({rank})")
+        if FIRST_TIME.search(text) and rank != "first spell on top":
+            problems.append(f"'first time' contradicts the spell fact ({rank})")
+    return problems
 
 
 def describe_facts(m: Moment, names: Names) -> str:
@@ -271,7 +305,10 @@ class ExplainerAgent:
         "it changes (the scoreline, who is on top, the pressure on the other side) or what pattern it continues "
         "(e.g. pressure that still hasn't produced a goal, a first chance after a quiet spell). Lead with the "
         "consequence, not the description. Use only numbers, players and teams that appear in the facts; never invent "
-        "statistics, describe quality the facts don't support, or predict what will happen next. Treat club "
+        "statistics, describe quality the facts don't support, or predict what will happen next. For momentum and "
+        "pressure moments, build the story from 'what this spell means for them', 'how this spell ranks' and their "
+        "goals in the spell (pressure without a goal yet is the point), not from a list of counts; make "
+        "comparisons only as the facts state them. Treat club "
         "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
     )
@@ -415,6 +452,7 @@ class CriticAgent:
         involved |= {names.player(f.value) for f in m.facts if isinstance(f.value, str) and f.value in names.players}
         context = next((f.value for f in m.facts if f.label == "goal_context"), None)
         problems += self.check_text(headline, body, self.allowed_numbers(m), involved, names, audience, context)
+        problems += comparison_problems(f"{headline}\n{body}", m)
         return Verdict(ok=not problems, problems=problems)
 
     def check_text(self, headline: str, body: str, allowed: set[str], involved: set[str], names: Names,

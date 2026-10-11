@@ -75,7 +75,7 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Language: output language detected == requested (EN/ES/AR) | P-4 | 100 % |
 | Explains *why* (contains causal reasoning, not just restating) — LLM-judge rubric | E-1 | mean ≥ 4/5 |
 
-**Status (2026-10-11, 3 matches × 4 audiences, 175 AI overlays; details in docs/EVALS.md):** grounding 100 % after critic, groundedness 4.85 ✅; language 100 % ✅; analyst more numbers 90 %, fan text plain 91 % ✅ (moment selection differs by design via thresholds, covered by unit tests); explains why 3.76 ❌ (event moments ≥ 4, momentum/pressure ≈ 3.4); favourite-club bias not yet measured live (unit-tested only).
+**Status (2026-10-11, round 4: 3 matches × 4 audiences, 151 AI overlays; details in docs/EVALS.md):** grounding 100 % after critic, groundedness 4.83 ✅; language 100 % ✅; analyst more numbers 97 %, fan text plain 97 % ✅; explains why 3.92 (momentum 4.14, pressure 3.94, goals 3.8–4.0 depending on the scoring run, woodwork 2.9) ≈ just under 4; favourite-club bias not yet measured live (unit-tested only).
 
 ## 7. E2E tests (Playwright)
 - Load app → pick match → start → first overlay within 5 s.
@@ -120,6 +120,12 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Desk shows a context card with a working source link beside a goal; ask box returns an answer with a link (scripted search) | CX-2, CX-3 | e2e |
 | Context cards translated; links unchanged | CX-5 | pytest + e2e |
 | With search down, desk otherwise unchanged and no context errors shown | CX-6 | e2e |
+
+### Trend meaning (E-4, E-5)
+| Test | Covers | Layer |
+|---|---|---|
+| Every trend moment has stakes, spell rank, previous-window shots, shots trend, opponent window shots and goals in the spell; each consistent with the numbers (3 seeds) | E-4 | pytest |
+| "double"/"twice"/"three times" rejected unless two facts have that ratio; "strongest"/"first time" only with the matching spell fact; "first half" untouched | E-5 | pytest |
 
 ### Fan app polish (F-*)
 | Test | Covers | Layer |

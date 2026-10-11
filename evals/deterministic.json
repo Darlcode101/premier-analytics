@@ -1,18 +1,18 @@
 {
-  "overlays": 175,
+  "overlays": 151,
   "matches": 3,
   "critic_recheck_pass": 1.0,
   "language_correct": 1,
   "within_length": 1,
-  "pairs": 42,
-  "analyst_more_numbers": 0.9047619047619048,
-  "fan_plain": 0.9111111111111111,
+  "pairs": 34,
+  "analyst_more_numbers": 0.9705882352941176,
+  "fan_plain": 0.9722222222222222,
   "numbers_per_100_chars": {
-    "fan": 2.008563857738286,
-    "analyst": 3.3866898572811897
+    "fan": 1.7647872386840742,
+    "analyst": 3.1453303070919816
   },
   "flesch": {
-    "fan": 66.86979155364463,
-    "analyst": 67.73703592934488
+    "fan": 69.31287308436852,
+    "analyst": 64.57720795486462
   }
 }

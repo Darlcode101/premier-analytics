@@ -76,6 +76,8 @@ Product name: **Premier Analytics**. Fictional league/clubs/players only. No PL 
 | E-1 | M | For every key moment, produce an explanation of **why it matters**, citing the stats that support it |
 | E-2 | M | **Grounded**: every number/player/team in an explanation exists in the facts supplied to the agent (no hallucinated stats) |
 | E-3 | S | Each explanation carries its evidence (list of fact IDs) so the UI can show "why we think this" |
+| E-4 | M | **Trend moments come with their meaning** (momentum and pressure scored 3.4 for "explains why"; target ≥ 4): the Moment Scout computes the conclusions as facts, so the AI only phrases them: what the spell means for the score (looking for an opener, chasing an equaliser, protecting a lead…), where it ranks (first spell on top, strongest so far, back on top), how it compares with the previous 10 minutes (shots up, down or the same), whether the opponent has been shut out, and that it hasn't produced a goal yet |
+| E-5 | M | **Comparisons are checked**: "double", "twice", "three times" and similar are rejected unless two facts in the moment support that ratio; "strongest/best spell" and "first time on top" only when the spell fact says so |
 
 ### 3.5 Render (Stage 4)
 | ID | P | Requirement |
@@ -245,6 +247,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-11 | E-4/E-5 (evaluation round 4, kept): explains why 3.76 → 3.92; momentum and pressure 3.39 → 4.09 (3.27 → 4.04 when both rounds were re-scored by the same judge); other moments within noise; Critic 100 %, analyst more numbers 97 %, fan plain 97 %. Woodwork (2.9) is now the weakest type |
 | 10-11 | Fan clock shows seconds (user): "mm:ss" ticking smoothly between events at match speed (never more than 10 s ahead of the data, never backwards); stoppage time as "45:00" or "90:00" plus a red "+m:ss"; HT at half-time |
 | 10-11 | Fan pitch (user): just the pitch, centred, no attack arrow and no "Where's the ball" text; the zone sentence is kept as the pitch's accessible label. Scoreline centred in its box |
 | 10-11 | Fan header restyled (user) after the Premier League match-centre layout: flat purple, no glow; minute directly above a white score box, plain (no green marker), stoppage time as a red "+n"; scorers with minutes under each team; light grey page with flat white cards |

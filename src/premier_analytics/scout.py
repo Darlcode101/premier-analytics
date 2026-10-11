@@ -23,6 +23,16 @@ PRESSURE_COOLDOWN = 10 * MIN
 TREND_WARMUP = 5 * MIN
 TREND_EVERY = 15_000
 
+# E-4: what a spell means for the team on top, by goal difference (no digits: nothing for the Critic to misread).
+STAKES = {
+    "opener": "goalless, pushing for the opening goal",
+    "level": "level, pushing to go ahead",
+    "one_down": "one goal down, chasing an equaliser",
+    "behind": "two or more goals down, chasing the game",
+    "one_up": "one goal up, looking for a second to make it safer",
+    "ahead": "two or more goals up, in control",
+}
+
 
 class Fact(BaseModel):
     id: str
@@ -55,6 +65,8 @@ class MomentScout:
         self._last_dominant: str | None = None
         self._last_shift = -MOMENTUM_COOLDOWN
         self._last_spell = {home_id: -PRESSURE_COOLDOWN, away_id: -PRESSURE_COOLDOWN}
+        self._goal_times: dict[str, list[int]] = {home_id: [], away_id: []}
+        self._spells: list[tuple[str, float]] = []  # (team, window xG) of each trend moment so far
 
     # ---------- construction helpers ----------
 
@@ -73,7 +85,7 @@ class MomentScout:
             context += [
                 ("team_shots", self.engine.teams[team].shots, team, [e.id]),
                 ("opponent_shots", self.engine.teams[self.other(team)].shots, self.other(team), [e.id]),
-            ]
+            ] + self._meaning(team, e)
         facts = list(facts) + [c for c in context if c[0] not in have]
         return Moment(
             id=mid, kind=kind, severity=round(min(1.0, severity), 3), event_id=e.id,
@@ -84,6 +96,33 @@ class MomentScout:
                 for i, (label, value, subject, sources) in enumerate(facts)
             ],
         )
+
+    def _meaning(self, team: str, e: Event) -> list[tuple]:
+        """E-4: the conclusions about a spell, computed here so the AI only has to phrase them."""
+        eng = self.engine
+        window = eng.window_ms
+        now = eng.snapshot()
+        before = eng.snapshot(at_ms=max(0, e.elapsed_ms - window)).teams[team].window.shots
+        shots, xg = now.teams[team].window.shots, now.teams[team].window.xg
+        mine, theirs = (eng.score[0], eng.score[1]) if team == self.home_id else (eng.score[1], eng.score[0])
+        diff = mine - theirs
+        stakes = ("opener" if mine == theirs == 0 else "level" if diff == 0 else "one_down" if diff == -1
+                  else "behind" if diff < -1 else "one_up" if diff == 1 else "ahead")
+        mine_before = [x for t, x in self._spells if t == team]
+        rank = ("first spell on top" if not mine_before else "strongest spell so far" if xg >= max(mine_before)
+                else "back on top" if self._spells[-1][0] != team else "another spell on top")
+        self._spells.append((team, xg))
+        trend = "more" if shots > before else "fewer" if shots < before else "as many"
+        goals = sum(1 for t in self._goal_times[team] if e.elapsed_ms - t < window)
+        return [
+            ("stakes", STAKES[stakes], team, [e.id]),
+            ("spell_rank", rank, team, [e.id]),
+            ("window_shots_before", before, team, [e.id]),
+            ("shots_trend", f"{trend} shots than the 10 minutes before" if trend != "as many"
+             else "as many shots as the 10 minutes before", team, [e.id]),
+            ("opponent_window_shots", now.teams[self.other(team)].window.shots, self.other(team), [e.id]),
+            ("goals_in_spell", goals, team, [e.id]),
+        ]
 
     def other(self, team: str) -> str:
         return self.away_id if team == self.home_id else self.home_id
@@ -103,6 +142,7 @@ class MomentScout:
 
     def _on_goal(self, e: Event, _) -> list[Moment]:
         eng = self.engine
+        self._goal_times[e.team_id].append(e.elapsed_ms)
         shot = eng.metrics.get(e.related_event_id)
         team = eng.teams[e.team_id]
         scorer_goals = eng.players[e.player_id].goals
