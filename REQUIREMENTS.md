@@ -179,6 +179,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-09 | N-1 split after live runs: English upgrades p95 3.5 s, translated ~5.0 s (third sequential call). Kept a separate Translator agent (multi-agent roles) and relaxed the translated target to 6 s; fast overlay covers the gap |
 | 10-10 | Hosting: Container Apps provider registration stuck in 'Registering' for 2h+ (reset didn't help). Deployed to **App Service B1 Linux** (switzerlandnorth, ~$13/mo from credit, WebSockets + Always On, 1 instance) at https://premier-analytics-0931.azurewebsites.net. Same image; move to Container Apps when the provider registers |
 | 10-10 | UI redesign (Alex): phone fan app + laptop commentator desk, PL-app look "as close as possible" without logo/wordmark/font, 9-zone ball location instead of a pitch, possession colour wash, animations for goals, red cards, big chances, momentum, HT/FT |
+| 10-11 | **Production moved to Azure Container Apps**: the CLI was blocked by a provider stuck in 'Registering', but the ARM API accepted the environment and app directly (`az rest`). Keyless via managed identity; verified 13 AI overlays, 0 errors. App Service kept as fallback for now |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones
