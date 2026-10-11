@@ -14,7 +14,7 @@ SUBSCRIPTION="Azure for Students"
 RG="rg-premier-analytics"
 ACR="premieranalytics0931ac23"
 APP="premier-analytics"
-API="2024-03-01"
+API="2026-07-01"
 TAG="$(git -C "$ROOT" rev-parse --short HEAD)"
 IMAGE="$ACR.azurecr.io/premier-analytics:$TAG"
 
