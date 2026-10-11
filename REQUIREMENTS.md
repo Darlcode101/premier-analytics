@@ -184,6 +184,7 @@ Off the live path: Recap Producer at HT/FT
 | 10-11 | App Service fallback deleted (saves ~$13/month); Container Apps is the only production host |
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
+| 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
 
 ## 8. Milestones

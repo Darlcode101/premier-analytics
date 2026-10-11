@@ -32,3 +32,20 @@ requests, so the environment, the app and every rollout go through `az rest`.
 ## Fallback
 App Service (B1 Linux) ran the same image before Container Apps worked; it was deleted on 2026-10-11 to save
 credit. `scripts/deploy_appservice.sh` can recreate it from the same image if ever needed.
+
+## Tracing (A-7)
+Every AI moment is one OpenTelemetry trace: `moment <kind>` (attributes: moment, audience, language,
+outcome) with child spans `invoke_agent explainer|personaliser|translator`, `critic` (verdict and reasons)
+and `recap <kind>`. Agent Framework adds `chat <model>` spans for the model calls; FastAPI and HTTP spans
+come from Azure Monitor's auto-instrumentation. No prompts or completions are recorded.
+
+Exported to `premieranalytics-resource-appinsights` (the Application Insights attached to the Foundry
+project), via the `APPLICATIONINSIGHTS_CONNECTION_STRING` Container Apps secret. View them in the Foundry
+portal (project → Tracing) or in Application Insights (Transaction search / Logs). Example query:
+
+```kusto
+dependencies
+| where timestamp > ago(1h) and cloud_RoleName == "premier-analytics"
+| summarize spans = count(), avg_ms = avg(duration) by name
+| order by spans desc
+```
