@@ -514,6 +514,9 @@ def test_overlay_lower_third_pops_up_with_the_current_graphic(server, page: Page
     third = page.get_by_test_id("lower-third")
     expect(third).to_have_attribute("data-state", "in", timeout=30_000)
     expect(third.locator("strong")).not_to_be_empty()
+    fits = page.evaluate("""[...document.querySelectorAll('[data-testid=lower-third] strong, [data-testid=lower-third-body]')]
+      .map(el => el.scrollHeight <= el.clientHeight + 1)""")
+    assert fits == [True, True]  # capped to what the box holds: nothing clipped
     expect(third).to_have_attribute("data-state", "out", timeout=30_000)  # slides away again
 
 

@@ -6,7 +6,7 @@ import { formatClock, useMatchClock } from '../clock'
 import { kitColors } from '../colors'
 import { localDigits } from '../digits'
 import { KIND_LABELS, t } from '../i18n'
-import { emptyThird, stepThird } from '../overlayQueue'
+import { capFor, emptyThird, fitText, stepThird } from '../overlayQueue'
 import type { Language, Mode, Profile } from '../types'
 
 export function Overlay({ matchId, lang }: { matchId: string; lang: Language }) {
@@ -37,6 +37,17 @@ export function Overlay({ matchId, lang }: { matchId: string; lang: Language }) 
   const { main, added } = formatClock(clockMs, state.period)
   const o = third.current
 
+  // The pop-up's text is capped to what fits its box: two lines each, measured from the screen width.
+  const [width, setWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const textWidth = Math.min(760, 0.7 * width) - 42  // box max width minus padding and team stripe
+  const headline = o ? fitText(o.headline, capFor(textWidth, 30, 2, 0.45)) : ''
+  const body = o ? fitText(o.body, capFor(textWidth, 16, 2)) : ''
+
   return (
     <div className="ov" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="overlay">
       {showBug && h && (
@@ -57,8 +68,8 @@ export function Overlay({ matchId, lang }: { matchId: string; lang: Language }) 
         {o && (
           <>
             <span className="ov-kind">{KIND_LABELS[lang][o.kind] ?? o.kind}{o.minute && <> · {localDigits(`${o.minute}'`, lang)}</>}</span>
-            <strong dir={o.direction}>{localDigits(o.headline, lang)}</strong>
-            <span className="ov-body" dir={o.direction}>{localDigits(o.body, lang)}</span>
+            <strong dir={o.direction} data-testid="lower-third-headline">{localDigits(headline, lang)}</strong>
+            <span className="ov-body" dir={o.direction} data-testid="lower-third-body">{localDigits(body, lang)}</span>
           </>
         )}
       </div>

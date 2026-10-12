@@ -27,3 +27,26 @@ export function stepThird(s: ThirdState, feed: Overlay[], now: number): ThirdSta
   for (const o of feed) seen.add(o.id)  // everything older than the newest counts as passed
   return { current: next, since: now, seen }
 }
+
+// ---------- fitting text to the box ----------
+
+/** Characters that fit: lines × (box width ÷ average character width), for a font of `fontPx`. */
+export function capFor(widthPx: number, fontPx: number, lines: number, charEm = 0.52): number {
+  return Math.max(20, Math.floor(widthPx / (fontPx * charEm)) * lines)
+}
+
+/** Text within `max` characters: whole sentences if possible, else a word boundary with an ellipsis. */
+export function fitText(text: string, max: number): string {
+  const s = text.trim()
+  if (s.length <= max) return s
+  const sentences = s.match(/[^.!?]+[.!?]+(\s|$)/g) ?? []
+  let out = ''
+  for (const sentence of sentences) {
+    if ((out + sentence).trimEnd().length > max) break
+    out += sentence
+  }
+  if (out.trim()) return out.trim()
+  const cut = s.slice(0, max - 1)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > max * 0.5 ? cut.slice(0, space) : cut).replace(/[\s,;:–-]+$/, '')}…`
+}
