@@ -25,7 +25,7 @@ T = TypeVar("T", bound=BaseModel)
 
 LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "ar": "Arabic"}
 FOUNDRY_SCOPE = "https://ai.azure.com/.default"  # project endpoints reject the cognitiveservices audience
-FAN_JARGON = ("xg", "ppda", "field tilt", "progressive", "expected goals", "tempo")
+FAN_JARGON = ("xg", "ppda", "field tilt", "progressive", "expected goals", "tempo", "final third", "final-third")
 
 
 # ---------- typed agent outputs ----------
@@ -278,6 +278,11 @@ RUN_OF_PLAY_CONTRADICTIONS = {
     "rewards their pressure": (r"\bagainst the run of play\b", r"\bout of nothing\b", r"\bsmash and grab\b"),
 }
 DOUBLE_THE_LEAD = re.compile(r"\bdoubl\w* (the|their|its|his|her|a) (lead|advantage|cushion)\b", re.I)
+# E-8: judgements about how the match is going mean nothing in the opening minutes.
+OPENING_MS = 15 * 60_000
+OPENING_JUDGEMENTS = re.compile(
+    r"\b(tight|scoreless|goalless|deadlock\w*|stalemate|cagey|still (level|0-0|nil-nil)|evenly matched|"
+    r"neither side|no breakthrough|yet to break)\b", re.I)
 STRONGEST = re.compile(r"\b(strongest|most dominant|best (spell|period))\b", re.I)
 FIRST_TIME = re.compile(r"\bfirst time\b", re.I)
 
@@ -293,6 +298,9 @@ def comparison_problems(text: str, m: Moment) -> list[str]:
     for pattern, word, (low, high) in RATIO_WORDS:
         if pattern.search(plain) and not any(low <= r <= high for r in ratios):
             problems.append(f"'{word}' is not supported by the facts")
+    # A goal "breaks the deadlock" at any minute; the rule is about judging the match state early on.
+    if m.kind not in ("goal", "milestone") and m.elapsed_ms < OPENING_MS and (hit := OPENING_JUDGEMENTS.search(text)):
+        problems.append(f"'{hit.group()}' says nothing in the opening minutes")
     if_scored = next((f.value for f in m.facts if f.label == "if_scored"), None)
     for pattern in IF_SCORED_CONTRADICTIONS.get(if_scored, ()):
         if hit := re.search(pattern, text, re.I):
@@ -354,7 +362,8 @@ class ExplainerAgent:
         "statistics, describe quality the facts don't support, or predict what will happen next. For momentum and "
         "pressure moments, build the story from 'what this spell means for them', 'how this spell ranks' and their "
         "goals in the spell (pressure without a goal yet is the point), not from a list of counts; make "
-        "comparisons only as the facts state them. For chances that didn't go in, the point is what they would have "
+        "comparisons only as the facts state them. In the opening 15 minutes don't judge the match (no 'tight', "
+        "'goalless', 'still 0-0'): say what the moment shows. For chances that didn't go in, the point is what they would have "
         "meant ('if it had gone in, it …'). For goals, say how the goal fits the game (run of play, how long it took) "
         "rather than retelling the goal. Treat club "
         "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "

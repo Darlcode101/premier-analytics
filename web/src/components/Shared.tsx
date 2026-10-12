@@ -98,7 +98,7 @@ export function PitchMarkings() {
   )
 }
 
-/** A pitch with a glowing hue in the possessing team's colour over the ball's area (one of 9 zones). */
+/** A pitch with a football at the ball's area (one of 9 zones). */
 export function ZoneMap({ state, colors, lang, compact = false, mirror = false, layout = 'stack' }: {
   state: State; colors: Record<string, string>; lang: Language; compact?: boolean
   /** 'bare': just the pitch, centred and compact (fan app); the zone sentence becomes its accessible label. */
@@ -120,12 +120,6 @@ export function ZoneMap({ state, colors, lang, compact = false, mirror = false, 
       <svg className="mini-pitch" viewBox={`0 0 ${PITCH_L} ${PITCH_W}`} role="img" aria-label={sentence ?? t(lang, 'offBall')}
         data-testid="mini-pitch" data-mirrored={mirror}>
         <defs>
-          <radialGradient id="hue" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={color} stopOpacity={1} />
-            <stop offset="35%" stopColor={color} stopOpacity={0.85} />
-            <stop offset="70%" stopColor={color} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </radialGradient>
           <clipPath id="pitch-clip"><rect x={0} y={0} width={PITCH_L} height={PITCH_W} rx={2} /></clipPath>
         </defs>
         <g clipPath="url(#pitch-clip)">
@@ -133,9 +127,11 @@ export function ZoneMap({ state, colors, lang, compact = false, mirror = false, 
             <rect key={i} x={(i * PITCH_L) / 12} y={0} width={PITCH_L / 12} height={PITCH_W} className={i % 2 ? 'stripe-b' : 'stripe-a'} />
           ))}
           {cell && (
-            <g className="hue" style={{ transform: `translate(${cx}px, ${cy}px)` }} data-testid="pitch-hue" data-color={color}>
-              <ellipse rx={26} ry={19} fill="url(#hue)" className="hue-glow" />
-              <circle r={1.6} fill="#fff" stroke={color} strokeWidth={0.8} />
+            <g className="ball-marker" style={{ transform: `translate(${cx}px, ${cy}px)` }} data-testid="ball">
+              <circle r={2.6} fill="#fff" stroke="#1a1a1a" strokeWidth={0.35} />
+              <path d="M 0 -1.1 L 1.05 -0.35 L 0.65 0.9 L -0.65 0.9 L -1.05 -0.35 Z" fill="#1a1a1a" />
+              <path d="M 0 -1.1 L 0 -2.6 M 1.05 -0.35 L 2.45 -0.85 M 0.65 0.9 L 1.5 2.1 M -0.65 0.9 L -1.5 2.1 M -1.05 -0.35 L -2.45 -0.85"
+                stroke="#1a1a1a" strokeWidth={0.35} />
             </g>
           )}
           <PitchMarkings />

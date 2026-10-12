@@ -133,15 +133,19 @@ class MomentScout:
         self._spells.append((team, xg))
         trend = "more" if shots > before else "fewer" if shots < before else "as many"
         goals = sum(1 for t in self._goal_times[team] if e.elapsed_ms - t < window)
-        return [
+        facts = [
             ("stakes", STAKES[stakes], team, [e.id]),
             ("spell_rank", rank, team, [e.id]),
-            ("window_shots_before", before, team, [e.id]),
-            ("shots_trend", f"{trend} shots than the 10 minutes before" if trend != "as many"
-             else "as many shots as the 10 minutes before", team, [e.id]),
             ("opponent_window_shots", now.teams[self.other(team)].window.shots, self.other(team), [e.id]),
             ("goals_in_spell", goals, team, [e.id]),
         ]
+        if e.elapsed_ms >= 2 * window:  # E-8: "the 10 minutes before" only means something once there were two
+            facts[2:2] = [
+                ("window_shots_before", before, team, [e.id]),
+                ("shots_trend", f"{trend} shots than the 10 minutes before" if trend != "as many"
+                 else "as many shots as the 10 minutes before", team, [e.id]),
+            ]
+        return facts
 
     def other(self, team: str) -> str:
         return self.away_id if team == self.home_id else self.home_id

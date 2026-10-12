@@ -36,9 +36,11 @@ def test_every_trend_moment_has_its_meaning(seed):
         f = facts(mo)
         assert f["stakes"] in STAKES.values()
         assert f["spell_rank"] in ("first spell on top", "strongest spell so far", "back on top", "another spell on top")
-        assert isinstance(f["window_shots_before"], int) and isinstance(f["opponent_window_shots"], int)
-        assert f["shots_trend"] in ("more shots than the 10 minutes before", "fewer shots than the 10 minutes before",
-                                    "as many shots as the 10 minutes before")
+        assert isinstance(f["opponent_window_shots"], int)
+        if mo.elapsed_ms >= 20 * MIN:  # E-8: the comparison only exists once there are two full windows
+            assert isinstance(f["window_shots_before"], int)
+            assert f["shots_trend"] in ("more shots than the 10 minutes before", "fewer shots than the 10 minutes before",
+                                        "as many shots as the 10 minutes before")
         assert isinstance(f["goals_in_spell"], int)
 
 
@@ -52,9 +54,10 @@ def test_meaning_is_consistent_with_the_numbers(seed):
         expected = ("opener" if mine == theirs == 0 else "level" if diff == 0 else
                     "one_down" if diff == -1 else "behind" if diff < -1 else "one_up" if diff == 1 else "ahead")
         assert f["stakes"] == STAKES[expected]
-        before, now = f["window_shots_before"], f["window_shots"]
-        trend = "more" if now > before else "fewer" if now < before else "as many"
-        assert f["shots_trend"].startswith(trend)
+        if "window_shots_before" in f:
+            before, now = f["window_shots_before"], f["window_shots"]
+            trend = "more" if now > before else "fewer" if now < before else "as many"
+            assert f["shots_trend"].startswith(trend)
         recent = [g for g in goals if g.team_id == mo.team_id and mo.elapsed_ms - g.elapsed_ms < 10 * MIN]
         assert f["goals_in_spell"] == len(recent)
         if mo.team_id not in seen_teams:
@@ -228,3 +231,46 @@ def test_cutting_the_lead_is_not_taking_it():
                                         Fact(id="g-f2", label="score_away", value=1, source_event_ids=["e"])])
     assert problems("Northgate cut the lead to 2-1, Harbourside still ahead.", goal) == []
     assert any("take" in p.lower() or "lead" in p for p in problems("Northgate take the lead!", goal))
+
+
+# ---------- E-8: nothing meaningless early on ----------
+
+def test_no_comparison_with_the_window_before_until_there_are_two_windows():
+    early_seen = late_seen = False
+    for seed in (42, 7, 9):
+        for mo, _ in trend_moments(seed):
+            f = facts(mo)
+            if mo.elapsed_ms < 20 * MIN:
+                early_seen = True
+                assert "window_shots_before" not in f and "shots_trend" not in f, (mo.elapsed_ms, f)
+            else:
+                late_seen = True
+                assert "window_shots_before" in f and "shots_trend" in f
+    assert early_seen and late_seen
+
+
+def early(minute, **values):
+    m = trend(**values)
+    return m.model_copy(update={"clock_ms": (minute - 1) * MIN + 30_000, "elapsed_ms": (minute - 1) * MIN + 30_000})
+
+
+@pytest.mark.parametrize("text", ["A tight, scoreless game so far.", "Still deadlocked.", "A cagey opening.",
+                                  "It's still 0-0.", "The stalemate goes on."])
+def test_no_judgements_about_the_match_in_the_opening_minutes(text):
+    m = early(8, spell_rank="first spell on top", score_home=0, score_away=0)
+    assert any("opening minutes" in p for p in problems(text, m)), problems(text, m)
+    later = early(60, spell_rank="first spell on top", score_home=0, score_away=0)
+    assert not any("opening minutes" in p for p in problems(text, later))
+
+
+def test_an_early_goal_may_still_break_the_deadlock():
+    goal = early(5, score_home=1, score_away=0).model_copy(update={"kind": "goal"})
+    assert not any("opening minutes" in p for p in problems("Greaves breaks the deadlock.", goal))
+
+
+def test_fans_never_get_final_third():
+    from premier_analytics.overlay import Audience
+    m = early(30, spell_rank="first spell on top")
+    fan = CRITIC.review("Harbourside on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="fan")).problems
+    analyst = CRITIC.review("Harbourside on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="analyst")).problems
+    assert any("final third" in p for p in fan) and not any("final third" in p for p in analyst)

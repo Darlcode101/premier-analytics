@@ -132,9 +132,7 @@ button, select, input { font: inherit; color: inherit; }
 .mini-pitch { display: block; width: 100%; height: auto; border-radius: 12px; }
 .mini-pitch .stripe-a { fill: #2f8a47; }
 .mini-pitch .stripe-b { fill: #349a4f; }
-.mini-pitch .hue { transition: transform .45s cubic-bezier(.3,.8,.3,1); }
-.mini-pitch .hue-glow { animation: hue-breathe 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes hue-breathe { 50% { transform: scale(1.12); opacity: .85; } }
+.mini-pitch .ball-marker { transition: transform .45s cubic-bezier(.3,.8,.3,1); filter: drop-shadow(0 .4px .6px rgba(0,0,0,.45)); }
 .mini-pitch .attack-chevron { opacity: .9; filter: drop-shadow(0 0 1.5px rgba(0,0,0,.4)); }
 .zone-card.compact .mini-pitch { max-height: 170px; }
 .zone-text { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--ink); }

@@ -119,6 +119,8 @@ def test_fan_pitch_is_bare_and_centred_with_the_zone_as_its_label(server, page: 
     expect(card.locator(".zone-head")).to_have_count(0)
     expect(card.get_by_test_id("zone-text")).to_have_count(0)
     expect(card.locator(".attack-chevron")).to_have_count(0)
+    expect(card.get_by_test_id("ball")).to_be_visible()          # a football marks where the ball is…
+    expect(card.get_by_test_id("pitch-hue")).to_have_count(0)    # …instead of a coloured glow
     p, c = pitch.bounding_box(), card.bounding_box()
     assert abs((p["x"] + p["width"] / 2) - (c["x"] + c["width"] / 2)) < 2  # centred
 
