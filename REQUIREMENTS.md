@@ -221,6 +221,15 @@ about a third each down the left, centre and right, so styles must exist before 
 | PA-8 | M | EN / ES / AR; everything except the AI wording works with the AI off |
 | PA-9 | S | **Detector check over the simulated season**: it finds each club's configured favoured flank in most matches, and reports a flank pattern for a balanced club in no more than 5 % of matches (false alarms) |
 
+### 3.13 On-screen overlay (user request 10-12)
+
+| ID | P | Requirement |
+|---|---|---|
+| OV-1 | M | A broadcast overlay page (`/overlay?match=…`) with a **transparent background**, usable as a browser source over video (e.g. OBS) |
+| OV-2 | M | **Lower third**: the latest new graphic slides up at the bottom: moment type, headline, one line of body, team colour stripe; it upgrades in place when the AI version arrives, stays 7 s of real time (readable at any replay speed), then slides away; if several arrive meanwhile it skips to the newest |
+| OV-3 | S | **Scorebug** top-left: club codes, score, clock with seconds and red stoppage time; `?bug=0` hides it. Language and fan/analyst wording from the URL |
+| OV-4 | S | Opened from the landing page and from the desk's Production tab |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -269,6 +278,7 @@ about a third each down the left, centre and right, so styles must exist before 
 | 10-11 | Removed the 'control vs chaos' indicator from the UI (Alex: doesn't read clearly); T-6 stays as an internal engine metric only |
 | 10-11 | Arabic UI shows Eastern Arabic digits (٠-٩, ٫, ٪) at display time only; data, AI text and the Critic keep Western digits. AI tag shows just 'AI' |
 | 10-11 | A-7 done: OpenTelemetry trace per AI moment (agent steps, critic verdicts, recaps, outcomes) exported to the Foundry project's Application Insights; verified live |
+| 10-12 | OV-1..OV-4 built: transparent /overlay page with scorebug and lower third (latest graphic for 7 s, skips to the newest). Pattern pitch arrows redrawn (user: "blobby"): fixed-length arrows that stop before the final third, the most-used flank solid, labels in pills |
 | 10-11 | PA-4..PA-8 built: Pattern Analyst agent (notes checked by the Critic; plain wording in EN/ES/AR if the AI is off or a note fails); checks every 5 match minutes, notes every 10 and at half-time/full-time; alerts once a pattern holds at two checks; desk Patterns tab with flank arrows, ball-winning thirds and shot maps; fan "How they're playing" card. Live check (har v kin, seed 42): alerts at 61' (Harbourside down the left, 16 of 26), 76' (Kingsmere down the right), 81' (Zielinski 12 of 24). A note that called a playmaker "remains key" on 2 of 12 today led to a check: known styles that today's numbers contradict can't be worded as confirmed |
 | 10-11 | PA-2/3 detectors tuned on 380 matches: flank at α 0.01 finds strong styles 56 % and flags balanced clubs 3.8 % (α 0.001: 37 % / 0.7 %; α 0.02: 66 % / 4.8 %). Other single-match tendencies are rarely detectable (press ≈ 19 %, long shots < 10 %), which led to PA-3b. The simulation gained a high press (pressing sides harass deep and force errors), a stronger long-shot style and a playmaker per club; realism re-checked (goals, results, xG calibration) after rebalancing |
 | 10-11 | PA-1 club styles: favoured flank (har left 0.7, kin right 0.7, sto right 0.5, oak left 0.5, elm left 0.4; ngc/sil/iro balanced) and long-shot tendency. Tuned to realistic levels (favoured flank 44–57 % of entries over a season, like strongly one-sided real teams) after a first version gave 69 %. Finding: balanced clubs reach 51–54 % down one side in single matches (entries come in correlated chains), so the detector's test must be strict. Home advantage retuned 0.012 → 0.007 (home wins 42 % on two seasons vs 40.8 % real) after the styles reshuffled results |

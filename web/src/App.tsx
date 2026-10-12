@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Desk } from './pages/Desk'
 import { FanApp } from './pages/FanApp'
 import { Landing } from './pages/Landing'
+import { Overlay } from './pages/Overlay'
 import { initialLanguage, saveLanguage, withLanguage } from './prefs'
 import type { Language } from './types'
 
@@ -23,5 +24,6 @@ export default function App() {
 
   if (path === '/fan' && matchId) return <FanApp matchId={matchId} lang={lang} setLang={setLang} />
   if (path === '/desk' && matchId) return <Desk matchId={matchId} lang={lang} setLang={setLang} />
+  if (path === '/overlay' && matchId) return <Overlay matchId={matchId} lang={lang} />
   return <Landing lang={lang} setLang={setLang} />
 }

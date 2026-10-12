@@ -25,21 +25,29 @@ export function PatternPitch({ note, shape, color, lang }: { note: PatternNote; 
       aria-label={note.text}>
       <rect width={PITCH_L} height={PITCH_W} rx={2} className="pp-grass" />
       <PitchMarkings />
-      {view === 'flank' && CHANNELS.map((c, i) => {
-        const share = pct(shape.entries[c], entries)
-        const y = (i + 0.5) * (PITCH_W / 3)
-        const strong = c === note.value
-        return (
-          <g key={c} data-testid="channel-share" data-channel={c} opacity={strong ? 1 : 0.55}>
-            <rect x={70} y={i * (PITCH_W / 3) + 1} width={PITCH_L - 71} height={PITCH_W / 3 - 2} rx={1.5}
-              fill={color} opacity={0.12 + (0.6 * share) / 100} />
-            <path d={`M 40 ${y} L ${62 + share / 4} ${y}`} stroke={color} strokeWidth={1.2 + share / 14} strokeLinecap="round" />
-            <path d={`M ${58 + share / 4} ${y - 3} L ${64 + share / 4} ${y} L ${58 + share / 4} ${y + 3}`} fill="none"
-              stroke={color} strokeWidth={1.4} strokeLinejoin="round" />
-            <text x={87.5} y={y + 2.4} className="pp-label" textAnchor="middle">{localDigits(`${share}%`, lang)}</text>
-          </g>
-        )
-      })}
+      {view === 'flank' && (() => {
+        const top = CHANNELS.reduce((a, c) => (shape.entries[c] > shape.entries[a] ? c : a), CHANNELS[0])
+        return CHANNELS.map((c, i) => {
+          const share = pct(shape.entries[c], entries)
+          const y = (i + 0.5) * (PITCH_W / 3)
+          const strong = c === top
+          return (
+            <g key={c} data-testid="channel-share" data-channel={c} data-top={strong}>
+              <rect x={70} y={i * (PITCH_W / 3) + 1.5} width={PITCH_L - 71.5} height={PITCH_W / 3 - 3} rx={1.5}
+                fill={color} opacity={0.05 + (0.3 * share) / 100} />
+              {/* fixed-length arrows that stop short of the final third, so nothing overlaps */}
+              <line x1={34} y1={y} x2={61} y2={y} stroke={color} strokeWidth={strong ? 2.2 : 1.1}
+                strokeLinecap="round" opacity={strong ? 1 : 0.5} />
+              <path d={`M 60 ${y - (strong ? 3.2 : 2.2)} L ${strong ? 66 : 64.5} ${y} L 60 ${y + (strong ? 3.2 : 2.2)} Z`}
+                fill={color} opacity={strong ? 1 : 0.5} />
+              <rect x={79.5} y={y - 4} width={16} height={8} rx={4} className="pp-pill" opacity={strong ? 0.85 : 0.6} />
+              <text x={87.5} y={y + 1.9} className={`pp-label${strong ? ' strong' : ''}`} textAnchor="middle">
+                {localDigits(`${share}%`, lang)}
+              </text>
+            </g>
+          )
+        })
+      })()}
       {view === 'regains' && THIRDS.map((t, i) => {
         const share = pct(shape.regains[t], regains)
         return (

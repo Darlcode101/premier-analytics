@@ -115,6 +115,9 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
                 <small>{t(lang, 'deskTitle')}</small>
               </a>
             </div>
+            <a className="overlay-link" href={`/overlay?match=${matchId}&lang=${lang}`} target="_blank" rel="noopener" data-testid="overlay-link">
+              {t(lang, 'openOverlay')} ↗
+            </a>
             <button className="pill-btn" onClick={() => { setMatchId(null); history.replaceState(null, '', '/') }}>{t(lang, 'newMatch')}</button>
           </section>
         )}

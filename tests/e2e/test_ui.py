@@ -494,3 +494,31 @@ def test_desk_opened_after_full_time_still_has_recaps_and_agent_activity(server,
     expect(late.get_by_test_id("agents").locator(".trace-item").first).to_be_visible()
     watcher.close()
     late.close()
+
+
+# ---------- on-screen overlay (OV-*) ----------
+
+def test_overlay_page_is_transparent_with_a_scorebug(server, page: Page):
+    page.goto(f"{server}/overlay?match={new_match(server, speed=60)}")
+    bug = page.get_by_test_id("scorebug")
+    expect(bug).to_be_visible(timeout=15_000)
+    expect(bug).to_contain_text(re.compile(r"HAR\s*0\s*–\s*0\s*NGC"))
+    expect(bug.get_by_test_id("clock")).to_have_text(re.compile(r"^\d{2}:\d{2}"))
+    backgrounds = page.evaluate("[getComputedStyle(document.documentElement).backgroundColor, getComputedStyle(document.body).backgroundColor]")
+    assert backgrounds == ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0)"], backgrounds
+
+
+def test_overlay_lower_third_pops_up_with_the_current_graphic(server, page: Page):
+    page.goto(f"{server}/overlay?match={new_match(server, speed=120)}&bug=0")
+    expect(page.get_by_test_id("scorebug")).to_have_count(0)
+    third = page.get_by_test_id("lower-third")
+    expect(third).to_have_attribute("data-state", "in", timeout=30_000)
+    expect(third.locator("strong")).not_to_be_empty()
+    expect(third).to_have_attribute("data-state", "out", timeout=30_000)  # slides away again
+
+
+def test_overlay_is_linked_from_the_desk(server, page: Page):
+    mid = new_match(server, speed=60)
+    page.goto(f"{server}/desk?match={mid}")
+    page.get_by_role("tab", name="Production").click()
+    expect(page.get_by_role("link", name=re.compile("overlay", re.I))).to_have_attribute("href", re.compile(rf"/overlay\?match={mid}"))

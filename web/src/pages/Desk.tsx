@@ -537,6 +537,9 @@ function ResearchTab({ state, ctx, asked, onAsk }: { state: State; ctx: Ctx; ask
 function ProductionTab({ state, ctx }: { state: State; ctx: Ctx }) {
   return (
     <div className="cd-production">
+      <a className="cd-overlay-link" href={`/overlay?match=${ctx.hello.match_id}&lang=${ctx.lang}`} target="_blank" rel="noopener">
+        {dt(ctx.lang, 'openOverlay')} ↗
+      </a>
       <div className="cd-onair" data-testid="on-air">
         <span className="cd-onair-tag">● {t(ctx.lang, 'onAir')}</span>
         {state.screen.map(o => (
