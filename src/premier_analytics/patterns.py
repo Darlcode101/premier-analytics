@@ -68,7 +68,7 @@ class _Team:
     def __init__(self):
         self.entries: list[tuple[int, int, str, str]] = []  # (elapsed_ms, period, channel, passer)
         self.regains: list[tuple[int, str]] = []           # (elapsed_ms, third)
-        self.shots: list[tuple[int, float, float, bool]] = []  # (elapsed_ms, x, y, counter)
+        self.shots: list[tuple[int, float, float, bool, bool]] = []  # (elapsed_ms, x, y, counter, open_play)
         self.last_regain_ms: int | None = None
 
 
@@ -89,7 +89,7 @@ class PatternTracker:
             t.last_regain_ms = e.elapsed_ms
         elif e.type == "shot":
             counter = t.last_regain_ms is not None and e.elapsed_ms - t.last_regain_ms <= COUNTER_MS
-            t.shots.append((e.elapsed_ms, e.x, e.y, counter))
+            t.shots.append((e.elapsed_ms, e.x, e.y, counter, e.set_piece is None))
 
     # ---------- raw counts (heatmaps, fan card) ----------
 
@@ -98,7 +98,7 @@ class PatternTracker:
         return {
             "entries": {c: sum(ch == c for _, _, ch, _ in t.entries) for c in CHANNELS},
             "regains": {th: sum(x == th for _, x in t.regains) for th in ("defensive", "middle", "attacking")},
-            "shots": [{"x": round(x, 1), "y": round(y, 1), "counter": c} for _, x, y, c in t.shots],
+            "shots": [{"x": round(x, 1), "y": round(y, 1), "counter": c} for _, x, y, c, _ in t.shots],
         }
 
     # ---------- detectors ----------
@@ -140,9 +140,10 @@ class PatternTracker:
         if n >= REGAIN_MIN and k / n >= REGAIN_SHARE and (p := binomial_tail(k, n, REGAIN_BASE)) < REGAIN_ALPHA:
             out.append(make("high_regains", "match", "attacking", k, n, p))
 
-        # Shooting from distance.
-        n = len(t.shots)
-        k = sum(x < BOX_X for _, x, _, _ in t.shots)
+        # Shooting from distance (open play: set pieces are taken where they're taken).
+        open_play = [s for s in t.shots if s[4]]
+        n = len(open_play)
+        k = sum(x < BOX_X for _, x, _, _, _ in open_play)
         if n >= LONG_MIN and k / n >= LONG_SHARE and (p := binomial_tail(k, n, LONG_BASE)) < LONG_ALPHA:
             out.append(make("long_shots", "match", "outside_box", k, n, p))
 
@@ -155,7 +156,7 @@ class PatternTracker:
 
         # Counter-attacks.
         n = len(t.shots)
-        k = sum(c for _, _, _, c in t.shots)
+        k = sum(c for _, _, _, c, _ in t.shots)
         if k >= COUNTER_MIN and k / n >= COUNTER_SHARE and (p := binomial_tail(k, n, COUNTER_BASE)) < COUNTER_ALPHA:
             out.append(make("counters", "match", "counter", k, n, p, seconds=COUNTER_MS // 1000))
 
@@ -187,7 +188,8 @@ class PatternTracker:
                 elif kind == "high_regains":
                     k, n = sum(th == "attacking" for _, th in t.regains), len(t.regains)
                 elif kind == "long_shots":
-                    k, n = sum(x < BOX_X for _, x, _, _ in t.shots), len(t.shots)
+                    open_play = [s for s in t.shots if s[4]]
+                    k, n = sum(x < BOX_X for _, x, _, _, _ in open_play), len(open_play)
                 else:  # playmaker
                     k, n = sum(passer == value for _, _, _, passer in t.entries), len(t.entries)
                 numbers = {"season_share_pct": round(100 * style["share"]), "today_count": k, "today_total": n}

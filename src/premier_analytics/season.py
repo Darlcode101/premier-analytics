@@ -13,7 +13,7 @@ from .generator import generate_match
 from .league import League
 from .patterns import BOX_X, FINAL_THIRD_X, binomial_tail, channel_of
 
-SEASON_ALPHA = 0.001
+SEASON_ALPHA = 0.005  # with a clear margin over the league too; open-play shot samples are small
 
 SEASON_SEED = 2025
 
@@ -160,7 +160,7 @@ def simulate_season(league: League, seed: int = SEASON_SEED) -> Season:
                     r = season.regains.setdefault(e.team_id, [0, 0])
                     r[0] += e.x >= FINAL_THIRD_X
                     r[1] += 1
-                elif e.type == "shot":
+                elif e.type == "shot" and e.set_piece is None:  # long-shot habit: open play only
                     sh = season.shots.setdefault(e.team_id, [0, 0])
                     sh[0] += e.x < BOX_X
                     sh[1] += 1

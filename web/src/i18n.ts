@@ -42,6 +42,7 @@ const en = {
   passAccuracy: 'Pass accuracy',
   tacklesWon: 'Tackles won',
   fouls: 'Fouls',
+  corners: 'Corners',
   cards: 'Cards',
   last10: 'Last 10 minutes',
   momentum: 'Momentum',
@@ -143,6 +144,7 @@ const es: Dict = {
   passAccuracy: 'Precisión de pase',
   tacklesWon: 'Entradas ganadas',
   fouls: 'Faltas',
+  corners: 'Córners',
   cards: 'Tarjetas',
   last10: 'Últimos 10 minutos',
   momentum: 'Dominio',
@@ -241,6 +243,7 @@ const ar: Dict = {
   passAccuracy: 'دقة التمرير',
   tacklesWon: 'افتكاك ناجح',
   fouls: 'الأخطاء',
+  corners: 'الركنيات',
   cards: 'البطاقات',
   last10: 'آخر 10 دقائق',
   momentum: 'الأفضلية',
@@ -342,19 +345,19 @@ export const FACT_LABELS: Record<Language, Record<string, string>> = {
 
 export const KIND_LABELS: Record<Language, Record<string, string>> = {
   en: {
-    goal: 'Goal', milestone: 'Milestone', big_chance: 'Big chance', woodwork: 'Woodwork', shot_on_target: 'Save',
+    goal: 'Goal', milestone: 'Milestone', big_chance: 'Big chance', woodwork: 'Woodwork', shot_on_target: 'Save', penalty: 'Penalty',
     rocket_shot: 'Rocket', yellow_card: 'Yellow card', red_card: 'Red card', great_pass: 'Key pass',
     substitution: 'Substitution', half_time: 'Half-time', full_time: 'Full-time', momentum_shift: 'Momentum',
     pressure_spell: 'Pressure',
   },
   es: {
-    goal: 'Gol', milestone: 'Hito', big_chance: 'Ocasión', woodwork: 'Palo', shot_on_target: 'Parada',
+    goal: 'Gol', milestone: 'Hito', big_chance: 'Ocasión', woodwork: 'Palo', shot_on_target: 'Parada', penalty: 'Penalti',
     rocket_shot: 'Zapatazo', yellow_card: 'Amarilla', red_card: 'Roja', great_pass: 'Pase clave',
     substitution: 'Cambio', half_time: 'Descanso', full_time: 'Final', momentum_shift: 'Dominio',
     pressure_spell: 'Presión',
   },
   ar: {
-    goal: 'هدف', milestone: 'إنجاز', big_chance: 'فرصة', woodwork: 'القائم', shot_on_target: 'تصدٍّ',
+    goal: 'هدف', milestone: 'إنجاز', big_chance: 'فرصة', woodwork: 'القائم', shot_on_target: 'تصدٍّ', penalty: 'ركلة جزاء',
     rocket_shot: 'قذيفة', yellow_card: 'صفراء', red_card: 'حمراء', great_pass: 'تمريرة حاسمة',
     substitution: 'تبديل', half_time: 'استراحة', full_time: 'النهاية', momentum_shift: 'أفضلية',
     pressure_spell: 'ضغط',

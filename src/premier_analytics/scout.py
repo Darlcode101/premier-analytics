@@ -84,6 +84,7 @@ class MomentScout:
         self._last_spell = {home_id: -PRESSURE_COOLDOWN, away_id: -PRESSURE_COOLDOWN}
         self._goal_times: dict[str, list[int]] = {home_id: [], away_id: []}
         self._shots_at_goal = {home_id: 0, away_id: 0}
+        self._shots: dict[str, Event] = {}
         self._last_goal_ms = 0
         self._spells: list[tuple[str, float]] = []  # (team, window xG) of each trend moment so far
 
@@ -167,6 +168,7 @@ class MomentScout:
         eng = self.engine
         self._goal_times[e.team_id].append(e.elapsed_ms)
         shot = eng.metrics.get(e.related_event_id)
+        shot_event = self._shots.get(e.related_event_id)
         team = eng.teams[e.team_id]
         scorer_goals = eng.players[e.player_id].goals
         diff = (e.score_home - e.score_away) * (1 if e.team_id == self.home_id else -1)
@@ -185,6 +187,7 @@ class MomentScout:
             ("goal_context", context, e.team_id, [e.id]),
             ("team_shots", team.shots, e.team_id, src),
             ("team_xg", round(team.xg, 2), e.team_id, src),
+            *([("set_piece", shot_event.set_piece, e.team_id, src)] if shot_event is not None and shot_event.set_piece else []),
         ]
         if isinstance(shot, ShotMetrics):
             facts += [
@@ -215,6 +218,7 @@ class MomentScout:
         return out
 
     def _on_shot(self, e: Event, m: ShotMetrics) -> list[Moment]:
+        self._shots[e.id] = e
         if e.outcome == "goal":
             return []  # the goal event that follows carries this
         mine, theirs = self.engine.score if e.team_id == self.home_id else self.engine.score[::-1]
@@ -226,6 +230,7 @@ class MomentScout:
             ("shot_distance_m", round(m.distance_m, 1), e.player_id, [e.id]),
             ("outcome", e.outcome, e.player_id, [e.id]),
             ("if_scored", IF_SCORED[if_scored], e.team_id, [e.id]),
+            *([("set_piece", e.set_piece, e.team_id, [e.id])] if e.set_piece else []),
             # the score it would have made, so "would have made it 2-1" can be said and checked
             ("score_home_if_scored", self.engine.score[0] + (e.team_id == self.home_id), e.team_id, [e.id]),
             ("score_away_if_scored", self.engine.score[1] + (e.team_id != self.home_id), e.team_id, [e.id]),
@@ -244,6 +249,10 @@ class MomentScout:
                 [("shot_speed_kmh", e.shot_speed_kmh, e.player_id, [e.id])] + base, e.team_id, e.player_id,
             ))
         return out
+
+    def _on_penalty(self, e: Event, _) -> list[Moment]:
+        """D-10: a penalty is awarded; the kick follows as a shot (and maybe a goal)."""
+        return [self._moment("penalty", 0.8, e, [("taker", e.player_id, e.team_id, [e.id])], e.team_id, e.player_id)]
 
     def _on_card(self, e: Event, _) -> list[Moment]:
         facts = [("card", e.card, e.player_id, [e.id])]

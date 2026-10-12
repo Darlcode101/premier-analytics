@@ -224,6 +224,7 @@ FACT_TEXT = {
     "window_shots_before": "their shots in the {w} minutes before that", "shots_trend": "compared with before",
     "opponent_window_shots": "opponent shots in the last {w} minutes", "goals_in_spell": "their goals in the last {w} minutes",
     "if_scored": "if it had gone in, it",
+    "set_piece": "from a set piece", "taker": "penalty taker",
     "opponent_xg": "opponent xG in the match so far", "run_of_play": "how the goal fits the game",
     "shots_since_their_last_goal": "their shots it took (since their last goal, including this one)",
     "minutes_since_last_goal": "minutes since the last goal in the match (or kick-off)",

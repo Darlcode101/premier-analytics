@@ -38,7 +38,7 @@ BACKFILL = 30
 TRACE_HISTORY = 200
 STATS_FIELDS = (
     "goals", "shots", "shots_on_target", "big_chances", "xg", "passes", "passes_completed", "final_third_passes",
-    "pass_accuracy", "possession_pct", "tackles_won", "interceptions", "fouls", "yellow_cards", "red_cards",
+    "pass_accuracy", "possession_pct", "tackles_won", "interceptions", "fouls", "yellow_cards", "red_cards", "corners",
 )
 PLAYER_FIELDS = ("passes", "passes_completed", "shots", "goals", "assists", "xg", "tackles_won", "interceptions",
                  "fouls", "yellow_cards", "red_cards")

@@ -85,7 +85,7 @@ def match_samples(league):
             if e.type == "interception" or (e.type == "tackle" and e.outcome == "won"):
                 t["reg"][1] += 1
                 t["reg"][0] += e.x >= 70
-            if e.type == "shot":
+            if e.type == "shot" and e.set_piece is None:  # open play: set pieces are taken where they're taken
                 t["sh"][1] += 1
                 t["sh"][0] += e.x < BOX_X
             if e.type == "pass" and e.outcome == "complete" and e.x < 70 <= e.end_x:

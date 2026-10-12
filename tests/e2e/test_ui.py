@@ -130,7 +130,8 @@ def test_goal_takes_over_the_screen_in_the_scorers_colours(server, page: Page):
     goal = page.locator("[data-testid=celebration][data-kind=goal]")
     expect(goal).to_be_visible(timeout=40_000)
     expect(goal).to_contain_text("GOAL!")
-    expect(goal.get_by_test_id("celebration-scorer")).to_have_text(re.compile(r"\w+ \w+ · [\d+]+'"))
+    # names can be hyphenated or have apostrophes (Pablo Wakefield-Ames)
+    expect(goal.get_by_test_id("celebration-scorer")).to_have_text(re.compile(r"[\w'-]+ [\w'-]+ · [\d+]+'"))
 
 
 def test_fan_settings_switch_language_to_arabic(server, page: Page):
@@ -527,3 +528,15 @@ def test_overlay_is_linked_from_the_desk(server, page: Page):
     page.goto(f"{server}/desk?match={mid}")
     page.get_by_role("tab", name="Production").click()
     expect(page.get_by_role("link", name=re.compile("overlay", re.I))).to_have_attribute("href", re.compile(rf"/overlay\?match={mid}"))
+
+
+# ---------- corners and penalties (D-10) ----------
+
+def test_desk_shows_corners_and_penalties(server, page: Page):
+    r = httpx.post(f"{server}/api/matches", json={"home": "har", "away": "kin", "seed": 7, "speed": 600})
+    page.goto(f"{server}/desk?match={r.json()['match_id']}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    stats = page.get_by_test_id("desk-stats")
+    expect(stats).to_contain_text("Corners")
+    page.get_by_role("tab", name="Timeline").click()
+    expect(page.locator("[data-testid=timeline-item][data-kind=penalty]").first).to_contain_text("Penalty awarded")

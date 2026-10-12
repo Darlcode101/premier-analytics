@@ -24,11 +24,11 @@ Slot = Literal["lower_third", "corner", "ticker"]
 
 KINDS = (
     "goal", "milestone", "big_chance", "woodwork", "shot_on_target", "rocket_shot", "yellow_card",
-    "red_card", "great_pass", "substitution", "half_time", "full_time", "momentum_shift", "pressure_spell",
+    "red_card", "penalty", "great_pass", "substitution", "half_time", "full_time", "momentum_shift", "pressure_spell",
 )
 
 SLOTS: dict[str, Slot] = {
-    "goal": "lower_third", "milestone": "lower_third", "red_card": "lower_third",
+    "goal": "lower_third", "milestone": "lower_third", "red_card": "lower_third", "penalty": "lower_third",
     "half_time": "lower_third", "full_time": "lower_third", "big_chance": "lower_third",
     "woodwork": "lower_third", "rocket_shot": "corner", "momentum_shift": "corner",
     "pressure_spell": "corner", "shot_on_target": "ticker", "yellow_card": "ticker",
@@ -139,6 +139,7 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
         "rocket_shot": ("{speed} KM/H STRIKE", "What a hit from {player}!",
                         "{player} · {speed} km/h from {dist} m · xG {xg}"),
         "yellow_card": ("YELLOW CARD · {team}", "{player} is booked ({minute}')", "{player} booked {minute}' · {team}"),
+        "penalty": ("PENALTY · {team}", "Penalty to {team}! {player} steps up", "Penalty to {team}: {player} to take it ({minute}')"),
         "red_card": ("RED CARD · {team}", "{player} is sent off! {team} down to {remaining}",
                      "{player} off {minute}' · {team} down to {remaining} players"),
         "great_pass": ("KEY PASS · {player}", "Brilliant pass from {player}",
@@ -168,6 +169,7 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
                         "{player} · {speed} km/h a {dist} m · xG {xg}"),
         "yellow_card": ("TARJETA AMARILLA · {team}", "{player} ve la amarilla ({minute}')",
                         "{player} amonestado {minute}' · {team}"),
+        "penalty": ("PENALTI · {team}", "¡Penalti para el {team}! Lo tira {player}", "Penalti para el {team}: lanza {player} ({minute}')"),
         "red_card": ("TARJETA ROJA · {team}", "¡Expulsado {player}! El {team} se queda con {remaining}",
                      "{player} expulsado {minute}' · {team} con {remaining} jugadores"),
         "great_pass": ("PASE CLAVE · {player}", "Pase brillante de {player}",
@@ -197,6 +199,7 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
                         "{player} · {speed} كم/س من {dist} م · xG {xg}"),
         "yellow_card": ("بطاقة صفراء · {team}", "إنذار لـ{player} (الدقيقة {minute})",
                         "إنذار {player} الدقيقة {minute} · {team}"),
+        "penalty": ("ركلة جزاء · {team}", "ركلة جزاء لـ{team}! {player} يتقدم للتسديد", "ركلة جزاء لـ{team}: {player} يسددها ({minute}')"),
         "red_card": ("بطاقة حمراء · {team}", "طرد {player}! {team} يكمل بـ{remaining} لاعبين",
                      "طرد {player} الدقيقة {minute} · {team} بـ{remaining} لاعبين"),
         "great_pass": ("تمريرة حاسمة · {player}", "تمريرة رائعة من {player}",

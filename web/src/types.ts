@@ -76,6 +76,7 @@ export interface TeamStats {
   fouls: number
   yellow_cards: number
   red_cards: number
+  corners?: number
   window: WindowStats
   last10?: LastWindow
 }
@@ -83,7 +84,7 @@ export interface TeamStats {
 /** Team figures over the last 10 minutes of play (CD-11). */
 export type LastWindow = Pick<TeamStats, 'goals' | 'shots' | 'shots_on_target' | 'big_chances' | 'xg' | 'passes'
   | 'passes_completed' | 'final_third_passes' | 'pass_accuracy' | 'possession_pct' | 'tackles_won' | 'interceptions' | 'fouls'
-  | 'yellow_cards' | 'red_cards'>
+  | 'yellow_cards' | 'red_cards' | 'corners'>
 
 export interface PlayerLine {
   passes: number
@@ -103,7 +104,7 @@ export interface PlayerLine {
 export interface Incident {
   id: string
   event_id: string
-  kind: 'goal' | 'yellow' | 'second_yellow' | 'red' | 'sub' | 'big_chance' | 'woodwork'
+  kind: 'goal' | 'yellow' | 'second_yellow' | 'red' | 'sub' | 'big_chance' | 'woodwork' | 'penalty'
   minute: string
   elapsed_ms: number
   period: number
@@ -116,6 +117,7 @@ export interface Incident {
   player_out_id?: string
   xg?: number
   outcome?: string
+  set_piece?: 'corner' | 'penalty' | null
 }
 
 export interface SourceLink { url: string; title: string }

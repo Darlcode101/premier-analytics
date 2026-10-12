@@ -110,6 +110,8 @@ class TeamStats(BaseModel):
     fouls: int = 0
     yellow_cards: int = 0
     red_cards: int = 0
+    corners: int = 0
+    penalties: int = 0
     possession_pct: float = 0.0
     pass_accuracy: float = 0.0
     window: WindowStats | None = None
@@ -141,6 +143,7 @@ class Snapshot(BaseModel):
 
 
 BIG_CHANCE_XG = 0.3
+PENALTY_XG = 0.78  # D-10: a penalty's value in public xG models (~0.76-0.79)
 ON_TARGET = frozenset({"goal", "saved"})
 
 
@@ -215,7 +218,8 @@ class MatchEngine:
         elif e.type == "shot":
             p = self._player(e.player_id, t)
             dist, angle = shot_geometry(e.x, e.y)
-            value = xg(e.x, e.y, header=e.body_part == "head", under_pressure=bool(e.under_pressure))
+            value = PENALTY_XG if e.set_piece == "penalty" else \
+                xg(e.x, e.y, header=e.body_part == "head", under_pressure=bool(e.under_pressure))
             on_target = e.outcome in ON_TARGET
             result = ShotMetrics(distance_m=dist, angle_rad=angle, xg=value, on_target=on_target)
             team.shots += 1
@@ -258,6 +262,12 @@ class MatchEngine:
             self._player(e.player_id, t).fouls += 1
             if e.x >= OPP_60_X:
                 self._remember(e.elapsed_ms, t, "def_action_high")
+
+        elif e.type == "corner":
+            team.corners += 1
+
+        elif e.type == "penalty":
+            team.penalties += 1
 
         elif e.type == "card":
             p = self._player(e.player_id, t)

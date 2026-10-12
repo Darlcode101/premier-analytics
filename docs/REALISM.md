@@ -25,6 +25,10 @@ built on it. Both conflict with a prize entry that must be solely our work (hack
 | Yellow cards per team per match | 2.04 (1,549 / 380 / 2) | ± 0.3 | [MyFootballFacts cards 2024–25](https://www.myfootballfacts.com/premier-league/all-time-premier-league/cards/premier-league-red-and-yellow-cards-2024-25/) |
 | Red cards per match | 0.137 (52 / 380) | ± 0.07 | MyFootballFacts, as above |
 | Home win / draw / away win | 40.8 % / 24.5 % / 34.7 % | ± 6 pp each | Wikipedia, as above |
+| Corners per match | ≈ 10.8 (758 in the first 7 matchdays) | ± 1.5 | [The Analyst: Premier League corners 2024-25](https://theanalyst.com/articles/premier-league-corners-2024-25) (mid-season) |
+| Corners leading to a goal | ≈ 2.8 % (21 of 758) | ± 2 pp | The Analyst, as above |
+| Penalties per match | 0.23 (46 awarded at mid-season) | ± 0.12 | [The Analyst: penalties 2024-25](https://theanalyst.com/articles/football-newsletter-penalties-bruno-fernandes) (mid-season) |
+| Penalties scored | 82.6 % (38 of 46); 89.7 % in 2023/24 | ± 12 pp | The Analyst, as above |
 
 Club spread matters as much as the mean: the best passing side in our league should look
 like a possession giant and the weakest like a direct, low-possession side.
@@ -37,3 +41,14 @@ like a possession giant and the weakest like a direct, low-possession side.
 
 Not calibrated (no reliable public aggregate found): shots-on-target share, substitutions,
 and possession-change rate. These keep the plausibility ranges in TEST_PLAN §2.
+
+
+## Set pieces (D-10, added 2026-10-12)
+
+Corners come from parried saves, blocked shots and clearances near the byline; the delivery is a cross into the
+box that a team-mate meets (and often shoots from) or a defender clears. A foul in the box is a penalty, taken by
+the best finisher on the pitch and valued at 0.78 xG. Adding them meant re-tuning open play so totals still match:
+averaged over four seasons (1,520 matches) the simulation gives 3.01 goals, 12.2 shots per team, 29 % of shots
+from outside the box, 11.2 corners and 0.26 penalties per match, and 40.9 % / 22.8 % / 36.3 % home / draw / away.
+Single seasons vary by a few points either way, so tuning was done on the four-season averages rather than on
+the fixed test season.

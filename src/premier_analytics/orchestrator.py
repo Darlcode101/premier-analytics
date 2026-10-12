@@ -35,7 +35,7 @@ from .schema import Event
 from .scout import Moment, MomentScout
 
 AI_KINDS = frozenset({
-    "goal", "milestone", "big_chance", "woodwork", "red_card", "rocket_shot", "momentum_shift",
+    "goal", "milestone", "big_chance", "woodwork", "red_card", "penalty", "rocket_shot", "momentum_shift",
     "pressure_spell", "half_time", "full_time",
 })
 

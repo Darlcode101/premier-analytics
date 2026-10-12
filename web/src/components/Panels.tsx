@@ -146,6 +146,7 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
     ['passAccuracy', s => 100 * s.pass_accuracy, pct],
     ['tacklesWon', s => s.tackles_won],
     ['fouls', s => s.fouls],
+    ['corners', s => s.corners ?? 0],
     ['cards', s => s.yellow_cards + s.red_cards],
   ]
   const windowRows: [StringKey, (s: TeamStats) => number, ((v: number) => string)?][] = [

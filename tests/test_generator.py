@@ -167,6 +167,7 @@ def check_lost_ball_followed_by_change(m):
             allowed = {"possession_change", "period_end"}
             if e.type == "pass":
                 allowed.add("interception")  # pass -> interception -> possession_change
+                allowed.add("corner")        # D-10: cleared behind, the attacking side keeps it
             assert nxt.type in allowed, f"seq {e.seq} {e.type} -> {nxt.type}"
 
 

@@ -22,7 +22,7 @@ PITCH_WIDTH = 68.0
 
 EventType = Literal[
     "period_start", "period_end", "kickoff", "pass", "shot", "goal", "tackle",
-    "interception", "pressure", "possession_change", "foul", "card", "substitution",
+    "interception", "pressure", "possession_change", "foul", "card", "substitution", "corner", "penalty",
 ]
 
 # Actions only the team in possession can make.
@@ -53,6 +53,8 @@ _REQUIRED: dict[str, tuple[str, ...]] = {
     "foul": ("team_id", "player_id", "x", "y", "fouled_player_id"),
     "card": ("team_id", "player_id", "card"),
     "substitution": ("team_id", "player_out_id", "player_in_id"),
+    "corner": ("team_id", "player_id", "x", "y"),    # D-10: taken from the corner flag
+    "penalty": ("team_id", "player_id", "x", "y"),   # D-10: awarded; the kick follows as a shot
 }
 
 X = Annotated[float, Field(ge=0.0, le=PITCH_LENGTH)]
@@ -91,6 +93,7 @@ class Event(BaseModel):
     player_in_id: str | None = None
     player_out_id: str | None = None
     cause: str | None = None
+    set_piece: Literal["corner", "penalty"] | None = None  # D-10: corner delivery and the shot from it, penalty kick
 
     @model_validator(mode="after")
     def _type_specific(self) -> Event:

@@ -228,6 +228,22 @@
       "title": "Seq",
       "type": "integer"
     },
+    "set_piece": {
+      "anyOf": [
+        {
+          "enum": [
+            "corner",
+            "penalty"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Set Piece"
+    },
     "shot_speed_kmh": {
       "anyOf": [
         {
@@ -267,7 +283,9 @@
         "possession_change",
         "foul",
         "card",
-        "substitution"
+        "substitution",
+        "corner",
+        "penalty"
       ],
       "title": "Type",
       "type": "string"

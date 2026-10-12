@@ -328,6 +328,7 @@ const STAT_ROWS: [DeskKey, (s: TeamStats | NonNullable<TeamStats['last10']>) => 
   ['stat_fouls', s => s.fouls, 'int'],
   ['stat_yellow', s => s.yellow_cards, 'int'],
   ['stat_red', s => s.red_cards, 'int'],
+  ['stat_corners', s => s.corners ?? 0, 'int'],
 ]
 
 const EXPLAINED: Partial<Record<DeskKey, string>> = {
@@ -402,9 +403,10 @@ function StatsTab({ state, ctx }: { state: State; ctx: Ctx }) {
 function incidentText(i: Incident, ctx: Ctx): string {
   const n = (id?: string | null) => (id ? ctx.names[id] ?? id : '')
   switch (i.kind) {
-    case 'goal': return `${n(i.player_id)}${i.assist_id ? ` (${dt(ctx.lang, 'assistBy')} ${n(i.assist_id)})` : ''} · ${ctx.num(`${i.score_home}–${i.score_away}`)}`
+    case 'goal': return `${n(i.player_id)}${i.set_piece ? ` (${dt(ctx.lang, i.set_piece === 'penalty' ? 'sp_penalty' : 'sp_corner')})` : ''}${i.assist_id ? ` (${dt(ctx.lang, 'assistBy')} ${n(i.assist_id)})` : ''} · ${ctx.num(`${i.score_home}–${i.score_away}`)}`
+    case 'penalty': return n(i.player_id)
     case 'sub': return `▲ ${n(i.player_in_id)}  ▼ ${n(i.player_out_id)}`
-    case 'big_chance': return `${n(i.player_id)} · xG ${ctx.num((i.xg ?? 0).toFixed(2))}`
+    case 'big_chance': return `${n(i.player_id)}${i.set_piece === 'penalty' ? ` (${dt(ctx.lang, 'sp_penalty')})` : ''} · xG ${ctx.num((i.xg ?? 0).toFixed(2))}`
     case 'woodwork': return `${n(i.player_id)} · xG ${ctx.num((i.xg ?? 0).toFixed(2))}`
     default: return n(i.player_id)
   }
@@ -422,7 +424,7 @@ function TimelineTab({ state, ctx }: { state: State; ctx: Ctx }) {
             <span className="tl-minute">{ctx.num(i.minute)}'</span>
             <span className="tl-icon">
               {i.kind === 'yellow' ? <Card kind="yellow" /> : i.kind === 'red' || i.kind === 'second_yellow' ? <Card kind="red" />
-                : i.kind === 'goal' ? '●' : i.kind === 'sub' ? '⇅' : '○'}
+                : i.kind === 'goal' ? '●' : i.kind === 'sub' ? '⇅' : i.kind === 'penalty' ? '◉' : '○'}
             </span>
             <span className="tl-body">
               <b>{dt(ctx.lang, `inc_${i.kind}` as DeskKey)}</b> <span className="tl-team"><Bar color={ctx.colors[team.id]} />{team.short_name}</span>

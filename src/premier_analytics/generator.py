@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import random
 
+from .engine import PENALTY_XG
 from .engine import xg as expected_goals
 from .league import Club, League, Player, load_league
 from .schema import PITCH_LENGTH as L
@@ -23,7 +24,13 @@ MIN = 60 * SEC
 GOAL_Y = (W / 2 - 3.66, W / 2 + 3.66)
 BOX_X = 105.0 - 16.5  # edge of the penalty area
 SHOOTING_RANGE_X = 80.0  # 25 m out: speculative shots from further are rare
-FINISHING = 0.93         # global finishing multiplier on xG
+FINISHING = 0.97         # global finishing multiplier on xG (re-tuned with set pieces, D-10)
+# D-10 set pieces, calibrated to 2024/25 (tests/test_set_pieces.py)
+BOX_HALF_WIDTH = 20.16
+BOX_FOUL = 0.13          # foul rate inside the box relative to elsewhere (a foul there is a penalty)
+CORNER_FIND = 0.38       # corner delivery reaches a team-mate
+CORNER_SHOT = 0.6       # …who gets a shot away straight from it
+CORNER_FROM_SAVE, CORNER_FROM_BLOCK, CORNER_FROM_CLEARANCE = 0.3, 0.35, 0.3
 
 # Who tends to be on the ball in each third (own, middle, final), by position.
 _ZONE_WEIGHTS = {
@@ -99,7 +106,7 @@ class _Sim:
     def strength(self, team: str) -> float:
         """Multiplier from momentum and numbers on the pitch (red cards hurt)."""
         m = self.momentum if team == self.home.id else -self.momentum
-        home_adv = 0.007 if team == self.home.id else -0.007  # tuned with the PA-1 styles: 42 % home wins vs 40.8 % real
+        home_adv = 0.0025 if team == self.home.id else -0.0025  # tuned over four seasons with styles and set pieces (D-10)
         return math.exp(0.22 * m + home_adv) * (len(self.on_pitch[team]) / 11) ** 1.5
 
     def pick(self, team: str, x: float, exclude: str | None = None, receiving: bool = False) -> str:
@@ -215,18 +222,21 @@ class _Sim:
             # Pressing: more in the opponent's attacking zones and by pressing teams.
             # Style (PA-1): high-pressing sides also harass the ball deep in its own half.
             high_press = max(0.0, opp_club.pressing - 0.55) if x < 35 else 0.0
-            pressed = rng.random() < (0.12 + 0.35 * opp_club.pressing) * (0.6 + 0.5 * x / L) + 0.75 * high_press
+            pressed = rng.random() < (0.12 + 0.35 * opp_club.pressing) * (0.6 + 0.5 * x / L) + 0.9 * high_press
             if pressed:
                 presser = self.pick(opp, L - x)
                 self.emit("pressure", team_id=opp, player_id=presser, x=L - x, y=W - y)
 
             # Defensive duel: tackle, or a foul.
-            duel = rng.random() < 0.085 * (1.4 if pressed else 1.0) * (1.0 + 2.5 * high_press)
+            duel = rng.random() < 0.085 * (1.4 if pressed else 1.0) * (1.0 + 3.0 * high_press)
             if duel:
                 defender = self.pick(opp, L - x)
                 dplayer = self.player(defender)
-                if rng.random() < 0.16 * (1.3 - opp_club.discipline) / 0.7:
+                in_box = x >= BOX_X and abs(y - W / 2) <= BOX_HALF_WIDTH
+                if rng.random() < 0.16 * (1.3 - opp_club.discipline) / 0.7 * (BOX_FOUL if in_box else 1.0):
                     sent_off = self.foul(opp, defender, carrier, L - x, W - y)
+                    if in_box:  # D-10: a foul in the box is a penalty
+                        return self.penalty(team)
                     if x > 70:
                         x = min(x, 88)  # free kick: play restarts a little back from the box
                     if sent_off and carrier not in self.on_pitch[team]:
@@ -246,9 +256,9 @@ class _Sim:
             if x >= SHOOTING_RANGE_X:
                 centrality = 1 - min(abs(y - W / 2) / (W / 2), 1)
                 depth = (x - SHOOTING_RANGE_X) / (L - SHOOTING_RANGE_X)
-                p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 1.03 * s ** 0.5
+                p_shot = (0.069 + 0.074 * depth ** 0.5) * (0.1 + 1.8 * centrality ** 2) * (0.55 + 0.85 * club.attack) * 0.77 * s ** 0.5  # open play only: set pieces add the rest (D-10)
                 # Style (PA-1): some sides shoot from distance more readily (0.5 = league norm).
-                p_shot *= (0.3 + 1.4 * club.long_shots) if x < BOX_X else (1.15 - 0.3 * club.long_shots)
+                p_shot *= (0.3 + 1.9 * club.long_shots) if x < BOX_X else (1.18 - 0.36 * club.long_shots)
                 if rng.random() < p_shot:
                     return self.shoot(team, x, y, carrier, last_pass, pressed)
 
@@ -266,7 +276,7 @@ class _Sim:
                 dx = abs(dx) + rng.uniform(10, 45 * directness + 10)
             dy = rng.gauss(0, 7.0 + 8.0 * directness)
             # Style (PA-1): building up through midfield, they steer play towards their favoured flank.
-            if club.flank != "balanced" and 30 < x < 80 and rng.random() < 0.28 * club.flank_strength:
+            if club.flank != "balanced" and 30 < x < 80 and rng.random() < 0.31 * club.flank_strength:
                 target = W / 6 if club.flank == "left" else 5 * W / 6
                 dy = (target - y) * rng.uniform(0.45, 0.85) + rng.gauss(0, 4.0)
             # Wide players cross towards the box.
@@ -309,6 +319,8 @@ class _Sim:
                 return opp, L - ex, W - ey, self.pick(opp, L - ex)
             self.emit("pass", team_id=team, player_id=carrier, x=x, y=y, end_x=ex, end_y=ey,
                       outcome="incomplete", under_pressure=pressed)
+            if ex >= 94 and rng.random() < CORNER_FROM_CLEARANCE:  # D-10: cleared behind for a corner
+                return self.corner(team)
             if rng.random() < 0.55:
                 interceptor = self.pick(opp, L - ex)
                 self.emit("interception", team_id=opp, player_id=interceptor, x=L - ex, y=W - ey)
@@ -318,7 +330,37 @@ class _Sim:
             return opp, L - ex, W - ey, self.pick(opp, L - ex)
         return team, x, y, carrier
 
-    def shoot(self, team, x, y, shooter, last_pass, pressed):
+    def penalty(self, team: str):
+        """D-10: the best finisher on the pitch takes it from the spot."""
+        taker = max(self.on_pitch[team], key=lambda pid: self.player(pid).shooting)
+        self.emit("penalty", team_id=team, player_id=taker, x=L - 11, y=W / 2)
+        self.tick(self.rng.uniform(60, 100) * SEC)
+        return self.shoot(team, L - 11, W / 2, taker, None, False, set_piece="penalty")
+
+    def corner(self, team: str):
+        """D-10: a corner from the flag, delivered into the box."""
+        rng = self.rng
+        opp = self.other(team)
+        self.tick(rng.uniform(20, 35) * SEC)
+        taker = self.pick(team, 95)
+        cy = rng.choice([0.5, W - 0.5])
+        self.emit("corner", team_id=team, player_id=taker, x=L - 0.5, y=cy)
+        self.tick(rng.uniform(4, 8) * SEC)
+        ex, ey = rng.uniform(94, 101.5), rng.uniform(24, 44)
+        if rng.random() < CORNER_FIND:
+            receiver = self.pick(team, ex, exclude=taker)
+            delivery = self.emit("pass", team_id=team, player_id=taker, x=L - 0.5, y=cy, end_x=ex, end_y=ey,
+                                 outcome="complete", receiver_id=receiver, set_piece="corner")
+            self.tick(rng.uniform(0.6, 1.2) * SEC)
+            if rng.random() < CORNER_SHOT:
+                return self.shoot(team, ex, ey, receiver, delivery, True, set_piece="corner")
+            return team, ex, ey, receiver
+        self.emit("pass", team_id=team, player_id=taker, x=L - 0.5, y=cy, end_x=ex, end_y=ey,
+                  outcome="incomplete", set_piece="corner")
+        self.change(opp, "incomplete_pass", L - ex, W - ey)
+        return opp, L - ex, W - ey, self.pick(opp, L - ex)
+
+    def shoot(self, team, x, y, shooter, last_pass, pressed, set_piece: str | None = None):
         rng = self.rng
         opp = self.other(team)
         p = self.player(shooter)
@@ -326,7 +368,8 @@ class _Sim:
         angle = math.atan2(7.32 * (L - x), (L - x) ** 2 + (W / 2 - y) ** 2 - 3.66 ** 2)
         if angle < 0:
             angle += math.pi
-        header = last_pass is not None and abs(last_pass.y - W / 2) > 18 and dist < 14 and rng.random() < 0.55
+        header = set_piece != "penalty" and last_pass is not None and abs(last_pass.y - W / 2) > 18 and dist < 14 \
+            and rng.random() < 0.55
         body = "head" if header else rng.choices(["right_foot", "left_foot"], [0.7, 0.3])[0]
 
         # Finishing = the engine's xG for this chance, adjusted for the shooter, the
@@ -340,6 +383,8 @@ class _Sim:
             * s ** 0.3
         )
         p_goal = _clamp(expected_goals(x, y, header=header, under_pressure=pressed) * skill * FINISHING, 0.005, 0.9)
+        if set_piece == "penalty":
+            p_goal = _clamp(PENALTY_XG * (1 + 0.5 * (p.shooting - 0.62)), 0.6, 0.93)
         speed = rng.gauss(58, 7) if header else rng.gauss(78 + 25 * p.shooting - 0.4 * dist, 11)
         speed = round(_clamp(speed, 35, 135), 1)
 
@@ -348,7 +393,10 @@ class _Sim:
             outcome = "goal"
         else:
             r = rng.random()
-            outcome = "blocked" if r < 0.27 else "off_target" if r < 0.68 else "woodwork" if r < 0.71 else "saved"
+            if set_piece == "penalty":
+                outcome = "saved" if r < 0.6 else "off_target" if r < 0.88 else "woodwork"
+            else:
+                outcome = "blocked" if r < 0.27 else "off_target" if r < 0.68 else "woodwork" if r < 0.71 else "saved"
 
         if outcome in ("goal", "saved"):
             ex, ey = L, rng.uniform(GOAL_Y[0] + 0.2, GOAL_Y[1] - 0.2)
@@ -361,7 +409,7 @@ class _Sim:
 
         shot = self.emit(
             "shot", team_id=team, player_id=shooter, x=x, y=y, end_x=ex, end_y=ey, outcome=outcome,
-            shot_speed_kmh=speed, body_part=body, under_pressure=pressed,
+            shot_speed_kmh=speed, body_part=body, under_pressure=pressed, set_piece=set_piece,
         )
         self.tick(rng.uniform(0.8, 1.5) * SEC)
 
@@ -382,10 +430,8 @@ class _Sim:
             return self.kickoff(opp)
 
         if outcome == "saved":
-            if rng.random() < 0.3:  # parried for a corner: attackers keep the ball
-                self.tick(rng.uniform(20, 35) * SEC)
-                cy = rng.choice([0.5, W - 0.5])
-                return team, L - 0.5, cy, self.pick(team, 80)
+            if rng.random() < CORNER_FROM_SAVE:  # parried behind for a corner
+                return self.corner(team)
             gk = next((q for q in self.on_pitch[opp] if self.player(q).position == "GK"), None) or self.pick(opp, 5)
             self.change(opp, "save", 6.0, W / 2)
             self.tick(rng.uniform(4, 12) * SEC)
@@ -397,7 +443,9 @@ class _Sim:
             self.do_subs(opp)
             gk = next((q for q in self.on_pitch[opp] if self.player(q).position == "GK"), None) or self.pick(opp, 5)
             return opp, 5.5, W / 2, gk
-        # blocked or woodwork: a scramble for the loose ball
+        # blocked or woodwork: behind for a corner, or a scramble for the loose ball
+        if outcome == "blocked" and rng.random() < CORNER_FROM_BLOCK:
+            return self.corner(team)
         if rng.random() < 0.45:
             return team, max(60.0, x - rng.uniform(3, 12)), _clamp(y + rng.uniform(-8, 8), 1, W - 1), self.pick(team, x)
         lx, ly = L - x + rng.uniform(0, 6), _clamp(W - y + rng.uniform(-6, 6), 1, W - 1)
