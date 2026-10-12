@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ballAt, emptyPath, planEvent, type BallPath } from '../ballPath'
 import { localDigits } from '../digits'
 import { CONTEXT_LABELS, FACT_LABELS, KIND_LABELS, t } from '../i18n'
 import type { State } from '../state'
 import type { ClubInfo, Hello, Language, Overlay } from '../types'
-import { attacksRight, cellOf, describeZone } from '../zones'
+import { attacksRight, describeZone } from '../zones'
 
 /** Generated shield badge in the club's colours with its initials (fictional clubs, no real crests). */
 export function Crest({ club, size = 40 }: { club: ClubInfo; size?: number }) {
@@ -98,7 +99,37 @@ export function PitchMarkings() {
   )
 }
 
-/** A pitch with a football at the ball's area (one of 9 zones). */
+/** Moves the ball along the events at 60 fps without re-rendering React (see ballPath.ts). */
+function useBallMotion(state: State, mirror: boolean) {
+  const ref = useRef<SVGGElement>(null)
+  const path = useRef<BallPath>(emptyPath(PITCH_L / 2, PITCH_W / 2))
+  const lastSeq = useRef(-1)
+  const speed = state.hello?.speed ?? 1
+  useEffect(() => {
+    const now = performance.now()
+    for (const e of state.trail) {  // every new event, even when several arrive at once
+      if (e.seq > lastSeq.current) {
+        path.current = planEvent(path.current, e, now, speed)
+        lastSeq.current = e.seq
+      }
+    }
+  }, [state.trail, speed])
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      const p = ballAt(path.current, performance.now())
+      const x = mirror ? PITCH_L - p.x : p.x
+      const y = mirror ? PITCH_W - p.y : p.y
+      ref.current?.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [mirror])
+  return ref
+}
+
+/** A pitch with a football that follows the play. */
 export function ZoneMap({ state, colors, lang, compact = false, mirror = false, layout = 'stack' }: {
   state: State; colors: Record<string, string>; lang: Language; compact?: boolean
   /** 'bare': just the pitch, centred and compact (fan app); the zone sentence becomes its accessible label. */
@@ -107,13 +138,10 @@ export function ZoneMap({ state, colors, lang, compact = false, mirror = false, 
   mirror?: boolean
 }) {
   const h = state.hello
-  const ball = state.ball && (mirror ? { x: PITCH_L - state.ball.x, y: PITCH_W - state.ball.y } : state.ball)
-  const cell = ball ? cellOf(ball.x, ball.y) : null
   const color = (state.possession && colors[state.possession]) || '#00ff85'
   const sentence = zoneSentence(state, lang)
   const attackRight = h && state.possession ? attacksRight(state.possession, state.period, h.home.id) !== mirror : null
-  const cx = cell ? (cell.col + 0.5) * (PITCH_L / 3) : PITCH_L / 2
-  const cy = cell ? (cell.row + 0.5) * (PITCH_W / 3) : PITCH_W / 2
+  const ballRef = useBallMotion(state, mirror)
   return (
     <div className={`zone-card${compact ? ' compact' : ''}${layout === 'bare' ? ' bare' : ''}`} data-testid="zone-map">
       {layout !== 'bare' && <div className="zone-head"><span>{t(lang, 'whereBall')}</span></div>}
@@ -126,15 +154,16 @@ export function ZoneMap({ state, colors, lang, compact = false, mirror = false, 
           {Array.from({ length: 12 }, (_, i) => (
             <rect key={i} x={(i * PITCH_L) / 12} y={0} width={PITCH_L / 12} height={PITCH_W} className={i % 2 ? 'stripe-b' : 'stripe-a'} />
           ))}
-          {cell && (
-            <g className="ball-marker" style={{ transform: `translate(${cx}px, ${cy}px)` }} data-testid="ball">
+          <PitchMarkings />
+          {/* drawn last so it sits on top of the pitch lines, solid */}
+          {state.trail.length > 0 && (
+            <g ref={ballRef} className="ball-marker" data-testid="ball">
               <circle r={2.6} fill="#fff" stroke="#1a1a1a" strokeWidth={0.35} />
               <path d="M 0 -1.1 L 1.05 -0.35 L 0.65 0.9 L -0.65 0.9 L -1.05 -0.35 Z" fill="#1a1a1a" />
               <path d="M 0 -1.1 L 0 -2.6 M 1.05 -0.35 L 2.45 -0.85 M 0.65 0.9 L 1.5 2.1 M -0.65 0.9 L -1.5 2.1 M -1.05 -0.35 L -2.45 -0.85"
                 stroke="#1a1a1a" strokeWidth={0.35} />
             </g>
           )}
-          <PitchMarkings />
           {attackRight !== null && layout !== 'bare' && (
             <path className="attack-chevron" d={attackRight ? 'M 96 28 L 101 34 L 96 40' : 'M 9 28 L 4 34 L 9 40'}
               stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
