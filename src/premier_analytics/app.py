@@ -35,6 +35,7 @@ from .season import Season, season_summary, simulate_season
 
 MIN = 60_000
 BACKFILL = 30
+TRACE_HISTORY = 200
 STATS_FIELDS = (
     "goals", "shots", "shots_on_target", "big_chances", "xg", "passes", "passes_completed", "final_third_passes",
     "pass_accuracy", "possession_pct", "tackles_won", "interceptions", "fouls", "yellow_cards", "red_cards",
@@ -174,7 +175,27 @@ class MatchSession:
             "context": [c for c in self.orch.contexts if a.mode == "analyst" and c["language"] == a.language],
             "explainers": self._explainers(a.language),
             "patterns": self.orch.latest_patterns.get(a.language),
+            **self._history(a),
         }
+
+    def _history(self, a: Audience) -> dict:
+        """What a late joiner missed: recaps and the agent activity so far."""
+        recaps = {}
+        for r in self.orch.recaps:  # their own mode first; otherwise the other mode's recap in their language
+            if r.language == a.language and (r.kind not in recaps or r.mode == a.mode):
+                recaps[r.kind] = r
+        mine = [t for t in self.orch.trace if t.audience in ("*", a.key, a.language)]
+        counts = {k: sum(t.outcome == k for t in mine) for k in ("published", "rejected", "stale", "error")}
+        return {
+            "recaps": [r.model_dump(mode="json") for r in recaps.values()],
+            "trace": [self._trace_json(t) for t in mine[-TRACE_HISTORY:]][::-1],
+            "trace_counts": counts,
+        }
+
+    @staticmethod
+    def _trace_json(t: TraceEvent) -> dict:
+        return {"moment_id": t.moment_id, "audience": t.audience, "agent": t.agent, "outcome": t.outcome,
+                "model": t.model, "ms": round(t.ms), "detail": t.detail}
 
     def _explainers(self, language: str) -> dict:
         """Tactics explainers keyed by the stat they explain (CX-8)."""
@@ -256,10 +277,7 @@ class MatchSession:
                 v.queue.put_nowait({"type": "recap", "recap": r.model_dump(mode="json")})
 
     def _on_trace(self, t: TraceEvent) -> None:
-        msg = {"type": "trace", "trace": {
-            "moment_id": t.moment_id, "audience": t.audience, "agent": t.agent, "outcome": t.outcome,
-            "model": t.model, "ms": round(t.ms), "detail": t.detail,
-        }}
+        msg = {"type": "trace", "trace": self._trace_json(t)}
         for v in self.viewers:
             if t.audience in ("*", v.audience.key, v.audience.language):
                 v.queue.put_nowait(msg)

@@ -477,3 +477,20 @@ def test_fan_stats_show_how_each_team_is_playing(server, page: Page):
     expect(card).to_be_visible(timeout=60_000)
     expect(card).to_contain_text(re.compile(r"Harbourside attack mostly down the left|Jovanovic is running Harbourside"))
     expect(card.locator(r"text=/\d/")).to_have_count(0)  # plain words, no numbers
+
+
+def test_desk_opened_after_full_time_still_has_recaps_and_agent_activity(server, browser):
+    mid = new_match(server, speed=600)
+    watcher = browser.new_page()
+    watcher.goto(f"{server}/fan?match={mid}")
+    expect(watcher.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    watcher.wait_for_timeout(1500)  # let the full-time recap finish
+    late = browser.new_page()
+    late.goto(f"{server}/desk?match={mid}")
+    expect(late.get_by_test_id("clock")).to_have_text("FT", timeout=15_000)
+    late.get_by_role("tab", name="Recap").click()
+    expect(late.get_by_test_id("recaps")).to_contain_text("recap", ignore_case=True)
+    late.get_by_role("tab", name="Production").click()
+    expect(late.get_by_test_id("agents").locator(".trace-item").first).to_be_visible()
+    watcher.close()
+    late.close()

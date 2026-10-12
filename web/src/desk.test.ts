@@ -175,3 +175,17 @@ describe('patterns (PA-6)', () => {
     expect(s.patterns?.minute).toBe('20')
   })
 })
+
+describe('late joiners (recaps and agent activity)', () => {
+  it('hello restores recaps, agent activity and its totals', () => {
+    const recap = { headline: 'h', summary: 's', key_points: [], language: 'en' as const, kind: 'full_time' as const, model: null }
+    const trace = { moment_id: 'm', audience: '*', agent: 'explainer', outcome: 'ok' as const, model: 'x', ms: 900, detail: '' }
+    const hello = { type: 'hello' as const, match_id: 'm', status: 'finished' as const, speed: 1, audience: 'x', home: {} as never,
+      away: {} as never, venue: '', referee: '', kickoff: '', weather: { condition: 'clear', temp_c: 10 }, score_home: 1,
+      score_away: 0, recaps: [recap], trace: [trace], trace_counts: { published: 12, rejected: 2, stale: 0, error: 1 } } satisfies Hello
+    const s = reducer(initialState, hello)
+    expect(s.recaps.full_time?.headline).toBe('h')
+    expect(s.trace).toHaveLength(1)
+    expect(s.counts).toEqual({ published: 12, rejected: 2, stale: 0, error: 1 })
+  })
+})

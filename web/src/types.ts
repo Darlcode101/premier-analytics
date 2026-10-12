@@ -243,6 +243,9 @@ export type Message =
       context?: ContextCard[]
       explainers?: Record<string, Explainer>
       patterns?: (PatternsUpdate & { type: 'patterns' }) | null
+      recaps?: Recap[]
+      trace?: TraceEvent[]
+      trace_counts?: { published: number; rejected: number; stale: number; error: number }
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {

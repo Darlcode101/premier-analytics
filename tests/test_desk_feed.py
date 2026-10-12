@@ -130,3 +130,39 @@ def test_hello_carries_season_context(plain_client, league):
     for side in ("home", "away"):
         ctx = season[side]
         assert {"position", "points", "form", "players", "top_scorers"} <= set(ctx)
+
+
+# ---------- late joiners get recaps and agent activity ----------
+
+def _played(client, mode):
+    mid = start(client, autostart=False)
+    with client.websocket_connect(f"/ws/matches/{mid}?mode={mode}&language=en") as ws:
+        ws.receive_json()
+        client.post(f"/api/matches/{mid}/start")
+        collect(ws)
+    return mid
+
+
+@pytest.fixture
+def ai_client():
+    from premier_analytics.demo_llm import scripted_llm
+    with TestClient(create_app(llm=scripted_llm(delay=0), live_session=False, max_sessions=3)) as c:
+        yield c
+
+
+def test_late_desk_gets_recaps_and_agent_activity(ai_client):
+    mid = _played(ai_client, "analyst")
+    with ai_client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as ws:
+        hello = ws.receive_json()
+    assert {r["kind"] for r in hello["recaps"]} == {"half_time", "full_time"}
+    assert all(r["mode"] == "analyst" and r["language"] == "en" for r in hello["recaps"])
+    assert hello["trace"] and {"agent", "outcome", "moment_id"} <= set(hello["trace"][0])
+    assert hello["trace_counts"]["published"] > 0
+
+
+def test_late_viewer_gets_a_recap_even_if_only_the_other_mode_was_written(ai_client):
+    mid = _played(ai_client, "fan")
+    with ai_client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as ws:
+        hello = ws.receive_json()
+    assert {r["kind"] for r in hello["recaps"]} == {"half_time", "full_time"}
+    assert all(r["language"] == "en" for r in hello["recaps"])
