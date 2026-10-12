@@ -175,3 +175,26 @@ def test_desk_sees_the_whole_systems_agent_activity(ai_client):
         hello = ws.receive_json()
     assert hello["trace_counts"]["published"] > 0
     assert any(t["audience"].startswith("fan.") for t in hello["trace"])
+
+
+# ---------- stats by half ----------
+
+def test_stats_split_by_half(plain_client):
+    mid = start(plain_client, autostart=False)
+    with plain_client.websocket_connect(f"/ws/matches/{mid}?mode=analyst") as ws:
+        ws.receive_json()
+        plain_client.post(f"/api/matches/{mid}/start")
+        msgs = collect(ws)
+    stats = [m for m in msgs if m["type"] == "stats"]
+    first_half_live = next(s for s in stats if s["period"] == 1 and s["elapsed_ms"] > 20 * 60_000)
+    for side in ("home", "away"):
+        assert first_half_live[side]["first_half"]["shots"] == first_half_live[side]["shots"]  # in progress
+        assert first_half_live[side]["second_half"] is None
+    final = stats[-1]
+    for side in ("home", "away"):
+        t, h1, h2 = final[side], final[side]["first_half"], final[side]["second_half"]
+        for k in ("goals", "shots", "passes", "corners", "fouls", "yellow_cards"):
+            assert h1[k] + h2[k] == t[k], (side, k)
+        assert h1["xg"] + h2["xg"] == pytest.approx(t["xg"], abs=0.01)
+        assert 0 <= h2["possession_pct"] <= 100 and 0 <= h2["pass_accuracy"] <= 1
+    assert final["home"]["first_half"]["possession_pct"] + final["away"]["first_half"]["possession_pct"] == pytest.approx(100, abs=1)

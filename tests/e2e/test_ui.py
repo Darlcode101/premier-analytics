@@ -540,3 +540,24 @@ def test_desk_shows_corners_and_penalties(server, page: Page):
     expect(stats).to_contain_text("Corners")
     page.get_by_role("tab", name="Timeline").click()
     expect(page.locator("[data-testid=timeline-item][data-kind=penalty]").first).to_contain_text("Penalty awarded")
+
+
+def test_stats_can_be_split_by_half(server, page: Page):
+    mid = new_match(server, speed=600)
+    page.goto(f"{server}/desk?match={mid}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    table = page.get_by_test_id("desk-stats")
+    shots = lambda: table.locator("tr", has_text="Shots").first.locator("td").first.inner_text()  # noqa: E731
+    total = int(shots())
+    page.get_by_role("button", name="1st half").click()
+    expect(table).to_have_attribute("data-period", "first_half")
+    first = int(shots())
+    page.get_by_role("button", name="2nd half").click()
+    second = int(shots())
+    assert first + second == total and first <= total
+    fan = page.context.new_page()
+    fan.goto(f"{server}/fan?match={mid}")
+    fan.get_by_role("button", name="Stats").click()
+    fan.get_by_role("button", name="2nd half").click()
+    expect(fan.get_by_test_id("stats")).to_have_attribute("data-period", "second_half")
+    fan.close()

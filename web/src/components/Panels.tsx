@@ -126,15 +126,40 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
   )
 }
 
+export type Period = 'match' | 'first_half' | 'second_half'
+
+/** A team's figures for the whole match or one half (halves carry the same fields). */
+export function forPeriod(s: TeamStats, period: Period): TeamStats {
+  const half = period === 'match' ? null : s[period]
+  return half ? { ...s, ...half } : s
+}
+
+export function HalfSwitch({ period, setPeriod, state, labels, className = 'half-switch' }: {
+  period: Period; setPeriod: (p: Period) => void; state: State; labels: [string, string, string]; className?: string
+}) {
+  const secondReady = Boolean(state.stats?.home.second_half)
+  return (
+    <div className={className} role="group" data-testid="half-switch">
+      {(['match', 'first_half', 'second_half'] as const).map((p, i) => (
+        <button key={p} aria-pressed={period === p} disabled={p === 'second_half' && !secondReady} onClick={() => setPeriod(p)}>
+          {labels[i]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
   state: State; colors: Record<string, string>; lang: Language; names?: Record<string, string>; topTeam?: string | null
 }) {
+  const [period, setPeriod] = useState<Period>('match')
   const hello = state.hello
   if (!state.stats || !hello) return <p className="empty">{t(lang, 'waiting')}</p>
   // Same order as the scoreboard: the viewer's pinned club first.
   const flip = topTeam === hello.away.id
-  const home = flip ? state.stats.away : state.stats.home
-  const away = flip ? state.stats.home : state.stats.away
+  const shown = period === 'second_half' && !state.stats.home.second_half ? 'match' : period
+  const home = forPeriod(flip ? state.stats.away : state.stats.home, shown)
+  const away = forPeriod(flip ? state.stats.home : state.stats.away, shown)
   const c: [string, string] = flip ? [colors[hello.away.id], colors[hello.home.id]] : [colors[hello.home.id], colors[hello.away.id]]
   const pct = (v: number) => `${Math.round(v)}%`
   const rows: [StringKey, (s: TeamStats) => number, ((v: number) => string)?][] = [
@@ -156,8 +181,10 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
     ['tempo', s => s.window.tempo, v => v.toFixed(1)],
   ]
   return (
-    <div data-testid="stats">
+    <div data-testid="stats" data-period={shown}>
       <AttackMomentumChart state={state} colors={colors} names={names} lang={lang} topTeam={topTeam} />
+      <HalfSwitch period={shown} setPeriod={setPeriod} state={state}
+        labels={[t(lang, 'fullMatch'), t(lang, 'firstHalf'), t(lang, 'secondHalf')]} />
       <div className="stats-head" dir="ltr">
         <span data-testid="stats-left" style={{ color: c[0] }}>{(flip ? hello.away : hello.home).short_name}</span>
         <span data-testid="stats-right" style={{ color: c[1] }}>{(flip ? hello.home : hello.away).short_name}</span>

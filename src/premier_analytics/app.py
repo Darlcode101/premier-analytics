@@ -139,6 +139,7 @@ class MatchSession:
         self.incident_feed = Incidents()
         self.incidents: list[dict] = []
         self.totals: dict[int, tuple[int, dict]] = {}  # elapsed minute -> (elapsed_ms, team totals), for "last 10'"
+        self.half_time: tuple[int, dict] | None = None   # (elapsed_ms, team totals) at half-time
         self.season = season_summary(season, league, req.home, req.away) if season else None
         self.orch = Orchestrator(
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
@@ -309,6 +310,13 @@ class MatchSession:
         then_ms, then = self.totals.get(minute - LAST_WINDOW_MIN, (0, None))
         for side, data in (("home", home), ("away", away)):
             data["last10"] = last_window(data, then[side] if then else None, snap.elapsed_ms, then_ms)
+            if self.half_time and self.half_time[1]:
+                ht_ms, ht = self.half_time
+                data["first_half"] = {k: v for k, v in ht[side].items() if k not in ("window", "last10", "first_half", "second_half")}
+                data["second_half"] = last_window(data, ht[side], snap.elapsed_ms, ht_ms)
+            else:
+                data["first_half"] = last_window(data, None, snap.elapsed_ms, 0)
+                data["second_half"] = None
         players = {pid: {k: round(getattr(p, k), 3) if isinstance(getattr(p, k), float) else getattr(p, k)
                          for k in PLAYER_FIELDS} for pid, p in snap.players.items()}
         tracker = self.orch.pattern_tracker
@@ -354,6 +362,9 @@ class MatchSession:
                 "outcome": e.outcome, "score_home": self.score[0], "score_away": self.score[1],
                 **_abs_coords(e, self.names.home_id),
             })
+            if e.type == "period_end" and e.period == 1:  # freeze the first half exactly at the whistle
+                ht = self._stats()
+                self.half_time = (ht["elapsed_ms"], {"home": ht["home"], "away": ht["away"]})
             minute = e.elapsed_ms // MIN  # elapsed, so first-half stoppage never collides with the second half
             if minute != last_minute:
                 last_minute = minute

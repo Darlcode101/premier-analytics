@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { askQuestion, useMatch } from '../api'
 import { teamColors } from '../colors'
-import { AttackMomentumChart, Agents, Recaps } from '../components/Panels'
+import { AttackMomentumChart, Agents, forPeriod, HalfSwitch, Recaps, type Period } from '../components/Panels'
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
 import { PatternPitch } from '../components/PatternPitch'
 import {
@@ -337,20 +337,26 @@ const EXPLAINED: Partial<Record<DeskKey, string>> = {
 
 function StatsTab({ state, ctx }: { state: State; ctx: Ctx }) {
   const [open, setOpen] = useState<string | null>(null)
+  const [period, setPeriod] = useState<Period>('match')
   if (!state.stats) return <p className="empty">{t(ctx.lang, 'waiting')}</p>
   const explainers = ctx.hello.explainers ?? {}
-  const { home, away } = state.stats
+  const shown = period === 'second_half' && !state.stats.home.second_half ? 'match' : period
+  const home = forPeriod(state.stats.home, shown)
+  const away = forPeriod(state.stats.away, shown)
+  const periodLabel = shown === 'match' ? dt(ctx.lang, 'match') : dt(ctx.lang, shown === 'first_half' ? 'period1' : 'period2')
   const fmt = (v: number, kind: 'int' | 'xg' | 'pct') => ctx.num(kind === 'xg' ? v.toFixed(2) : kind === 'pct' ? `${Math.round(v)}%` : String(v))
   const performers: [PerformerMetric, DeskKey][] = [['xg', 'leadersXg'], ['passes_completed', 'leadersPasses'], ['defensive', 'leadersDefence']]
   const teamOf = (pid: string) => [...ctx.hello.home.lineup, ...ctx.hello.home.bench].some(p => p.id === pid) ? ctx.hello.home.id : ctx.hello.away.id
   return (
-    <div data-testid="desk-stats">
+    <div data-testid="desk-stats" data-period={shown}>
+      <HalfSwitch period={shown} setPeriod={setPeriod} state={state} className="cd-half-switch"
+        labels={[dt(ctx.lang, 'match'), dt(ctx.lang, 'period1'), dt(ctx.lang, 'period2')]} />
       <table className="cd-stats" dir="ltr">
         <thead>
           <tr><th colSpan={2} className="h"><Bar color={ctx.colors[ctx.hello.home.id]} />{ctx.hello.home.short_name}</th><th />
             <th colSpan={2} className="a">{ctx.hello.away.short_name}<Bar color={ctx.colors[ctx.hello.away.id]} /></th></tr>
-          <tr className="sub"><th>{dt(ctx.lang, 'match')}</th><th>{dt(ctx.lang, 'last10')}</th><th />
-            <th>{dt(ctx.lang, 'last10')}</th><th>{dt(ctx.lang, 'match')}</th></tr>
+          <tr className="sub"><th>{periodLabel}</th><th>{dt(ctx.lang, 'last10')}</th><th />
+            <th>{dt(ctx.lang, 'last10')}</th><th>{periodLabel}</th></tr>
         </thead>
         <tbody>
           {STAT_ROWS.map(([k, get, kind]) => {

@@ -79,6 +79,8 @@ export interface TeamStats {
   corners?: number
   window: WindowStats
   last10?: LastWindow
+  first_half?: LastWindow
+  second_half?: LastWindow | null
 }
 
 /** Team figures over the last 10 minutes of play (CD-11). */
