@@ -184,7 +184,8 @@ class MatchSession:
         for r in self.orch.recaps:  # their own mode first; otherwise the other mode's recap in their language
             if r.language == a.language and (r.kind not in recaps or r.mode == a.mode):
                 recaps[r.kind] = r
-        mine = [t for t in self.orch.trace if t.audience in ("*", a.key, a.language)]
+        # The desk's Production tab shows the whole system; other viewers only what concerns them.
+        mine = [t for t in self.orch.trace if a.mode == "analyst" or t.audience in ("*", a.key, a.language)]
         counts = {k: sum(t.outcome == k for t in mine) for k in ("published", "rejected", "stale", "error")}
         return {
             "recaps": [r.model_dump(mode="json") for r in recaps.values()],
@@ -279,7 +280,7 @@ class MatchSession:
     def _on_trace(self, t: TraceEvent) -> None:
         msg = {"type": "trace", "trace": self._trace_json(t)}
         for v in self.viewers:
-            if t.audience in ("*", v.audience.key, v.audience.language):
+            if v.audience.mode == "analyst" or t.audience in ("*", v.audience.key, v.audience.language):
                 v.queue.put_nowait(msg)
 
     def _push_screens(self) -> None:

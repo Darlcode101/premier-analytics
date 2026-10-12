@@ -166,3 +166,12 @@ def test_late_viewer_gets_a_recap_even_if_only_the_other_mode_was_written(ai_cli
         hello = ws.receive_json()
     assert {r["kind"] for r in hello["recaps"]} == {"half_time", "full_time"}
     assert all(r["language"] == "en" for r in hello["recaps"])
+
+
+def test_desk_sees_the_whole_systems_agent_activity(ai_client):
+    """The Production tab is about the system: a desk joining late sees work done for fans too."""
+    mid = _played(ai_client, "fan")
+    with ai_client.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as ws:
+        hello = ws.receive_json()
+    assert hello["trace_counts"]["published"] > 0
+    assert any(t["audience"].startswith("fan.") for t in hello["trace"])
