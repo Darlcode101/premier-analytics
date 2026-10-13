@@ -1,6 +1,6 @@
 // Commentator desk (CD-1..CD-18): a neutral broadcast console. Everything except talking points
 // and recaps is built from match data, so it keeps working with the AI off or down.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { askQuestion, useMatch } from '../api'
 import { teamColors } from '../colors'
 import { AttackMomentumChart, Agents, forPeriod, HalfSwitch, Recaps, type Period } from '../components/Panels'
@@ -11,11 +11,12 @@ import {
   type Markers, type PerformerMetric,
 } from '../desk'
 import { dt, type DeskKey } from '../deskText'
+import { groupKey, subGroups } from '../subs'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
 import type {
-  AskResult, ClubInfo, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
+  AskResult, ClubInfo, SubCard, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
   TeamStats,
 } from '../types'
 
@@ -418,7 +419,7 @@ function incidentText(i: Incident, ctx: Ctx): string {
   }
 }
 
-function TimelineTab({ state, ctx }: { state: State; ctx: Ctx }) {
+function TimelineTab({ state, ctx, onOpenSub }: { state: State; ctx: Ctx; onOpenSub: (incidentId: string) => void }) {
   const items = timeline(state.incidents)
   if (!items.length) return <p className="empty">{dt(ctx.lang, 'noIncidents')}</p>
   return (
@@ -436,10 +437,72 @@ function TimelineTab({ state, ctx }: { state: State; ctx: Ctx }) {
               <b>{dt(ctx.lang, `inc_${i.kind}` as DeskKey)}</b> <span className="tl-team"><Bar color={ctx.colors[team.id]} />{team.short_name}</span>
               <span className="tl-text">{incidentText(i, ctx)}</span>
             </span>
+            {i.kind === 'sub' && i.card && (
+              <button className="cd-link tl-open" data-testid="open-sub-card" onClick={() => onOpenSub(i.id)}
+                title={dt(ctx.lang, 'sub_reopen')} aria-label={dt(ctx.lang, 'sub_reopen')}>⇅</button>
+            )}
           </li>
         )
       })}
     </ol>
+  )
+}
+
+// ---------- substitution card (SB-1..SB-3) ----------
+
+function SubChange({ c, ctx }: { c: SubCard; ctx: Ctx }) {
+  const team = c.team_id === ctx.hello.home.id ? ctx.hello.home : ctx.hello.away
+  const l = c.off.line
+  const acc = l.passes ? Math.round(100 * l.passes_completed / l.passes) : 0
+  const rows: [DeskKey, string][] = [
+    ['passes', `${ctx.num(l.passes_completed)}/${ctx.num(l.passes)} (${ctx.num(acc)}%)`],
+    ['shots', ctx.num(l.shots)], ['xg', ctx.num(l.xg.toFixed(2))], ['goals', ctx.num(l.goals)], ['assists', ctx.num(l.assists)],
+    ['leadersDefence', ctx.num(l.tackles_won + l.interceptions)], ['fouls', ctx.num(l.fouls)],
+  ]
+  const season = (s: { goals: number; assists: number } | null) => s && (
+    <p className="sc-season"><b>{dt(ctx.lang, 'sub_season')}</b> {ctx.num(s.goals)} {dt(ctx.lang, 'goals').toLowerCase()} · {ctx.num(s.assists)} {dt(ctx.lang, 'assists').toLowerCase()}</p>
+  )
+  const person = (p: { player_id: string; number: number; position: string }) => (
+    <p className="sc-name"><span className="sc-num">{ctx.num(p.number)}</span> {ctx.names[p.player_id] ?? p.player_id} <small>{p.position}</small></p>
+  )
+  return (
+    <section className="sc-change-block" data-testid="sub-change" data-change={c.change}>
+      <div className="sc-meta">
+        <span><Bar color={ctx.colors[team.id]} />{team.short_name} · {ctx.num(c.minute)}'</span>
+        <span className={`sc-tag ${c.change}`} data-testid="sub-change-type">{dt(ctx.lang, `change_${c.change}` as DeskKey)}</span>
+      </div>
+      <div className="sc-cols">
+        <div className="sc-off">
+          <h4>▼ {dt(ctx.lang, 'sub_going_off')}</h4>
+          {person(c.off)}
+          <p className="sc-mins">{ctx.num(c.off.minutes)} {dt(ctx.lang, 'sub_minutes')}
+            {c.off.booked && <span className="sc-booked" data-testid="sub-booked"><Card kind="yellow" /> {dt(ctx.lang, 'sub_booked')}</span>}
+          </p>
+          <dl>{rows.map(([k, v]) => <div key={k}><dt>{dt(ctx.lang, k)}</dt><dd>{v}</dd></div>)}</dl>
+          {season(c.off.season)}
+        </div>
+        <div className="sc-on">
+          <h4>▲ {dt(ctx.lang, 'sub_coming_on')}</h4>
+          {person(c.on)}
+          {season(c.on.season)}
+        </div>
+      </div>
+      <p className="sc-foot">
+        {dt(ctx.lang, 'sub_score')} <b dir="ltr">{ctx.num(`${c.score_home}–${c.score_away}`)}</b> · {dt(ctx.lang, 'sub_used')} <b dir="ltr">{ctx.num(c.subs_used)}/{ctx.num(c.subs_allowed)}</b>
+      </p>
+    </section>
+  )
+}
+
+function SubCardPanel({ group, ctx, onClose }: { group: Incident[]; ctx: Ctx; onClose: () => void }) {
+  return (
+    <aside className="cd-subcard" data-testid="sub-card" aria-label={dt(ctx.lang, 'sub_title')} dir={ctx.lang === 'ar' ? 'rtl' : 'ltr'}>
+      <header>
+        <span>⇅ {dt(ctx.lang, 'sub_title')}</span>
+        <button data-testid="sub-card-close" onClick={onClose} aria-label={dt(ctx.lang, 'sub_close')} title={dt(ctx.lang, 'sub_close')}>×</button>
+      </header>
+      {group.map(i => i.card && <SubChange key={i.id} c={i.card} ctx={ctx} />)}
+    </aside>
   )
 }
 
@@ -587,6 +650,18 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
     return out
   }, [h])
 
+  // SB-3: a new substitution opens its card (replacing any other); changes made before joining don't pop up.
+  const groups = useMemo(() => subGroups(state.incidents), [state.incidents])
+  const [openSub, setOpenSub] = useState<string | null>(null)
+  const lastSub = groups.at(-1)?.at(-1)?.id ?? null
+  const seenSub = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (!h) return
+    if (seenSub.current !== undefined && lastSub !== seenSub.current && lastSub) setOpenSub(groupKey(groups, lastSub))
+    seenSub.current = lastSub
+  }, [h, lastSub, groups])
+  const openGroup = groups.find(g => g[0].id === openSub) ?? null
+
   const toggleUsed = (id: string) => setUsed(prev => {
     const next = new Set(prev)
     if (next.has(id)) next.delete(id)
@@ -599,6 +674,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest('input, textarea, select')) return
+      if (e.key === 'Escape') return setOpenSub(null)
       const n = Number(e.key)
       if (n >= 1 && n <= TABS.length) setTab(TABS[n - 1])
       else if (e.key.toLowerCase() === 'u') {
@@ -629,7 +705,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
           </div>
           <div className="cd-scroll" role="tabpanel">
             {tab === 'stats' && <StatsTab state={state} ctx={ctx} />}
-            {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} />}
+            {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} onOpenSub={id => setOpenSub(groupKey(groups, id))} />}
             {tab === 'patterns' && <PatternsTab state={state} ctx={ctx} />}
             {tab === 'momentum' && (
               <div className="cd-momentum">
@@ -645,6 +721,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
         </section>
         <Lineup club={h.away} side="away" state={state} ctx={ctx} season={h.season?.away} />
       </main>
+      {openGroup && <SubCardPanel group={openGroup} ctx={ctx} onClose={() => setOpenSub(null)} />}
     </div>
   )
 }

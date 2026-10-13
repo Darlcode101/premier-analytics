@@ -250,3 +250,13 @@ def test_identical_across_processes(fixture_pair):
     }
     in_process = hashlib.sha256(generate_match(home, away, 42).to_jsonl().encode()).hexdigest()
     assert digests == {in_process}
+
+
+def test_a_substitute_is_never_taken_off_again(league):
+    """SB-1 made this visible: a player who came on stays on (barring a red card)."""
+    for seed in range(30):
+        came_on = set()
+        for e in generate_match("har", "ngc", seed, league).events:
+            if e.type == "substitution":
+                assert e.player_out_id not in came_on, (seed, e.player_out_id)
+                came_on.add(e.player_in_id)

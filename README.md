@@ -46,6 +46,7 @@ flowchart LR
   - *Researcher*: uses **Foundry web search** to find real Premier League benchmarks and tactics explainers with sources. Offline it builds a reviewed context library (every number must appear on a cited page and agree with a second source); live it answers the commentator's questions in the ask box.
   - *Pattern Analyst*: spots how each team is playing: which flank they attack, where they win the ball, who makes them tick, counter-attacks, a switch since half-time. A pattern is only reported if an exact significance test says it isn't chance (tuned on 380 simulated matches: strong styles found in most matches, false alarms under 5 %), and each club's known style from the season is shown next to today's numbers. The agent turns them into one-line notes on the desk (with the pattern drawn on the pitch), "new pattern" alerts among the talking points, and a plain "How they're playing" card for fans.
   - *Context agent*: beside big moments on the desk, adds one line of real-world context from that library ("Northgate's PPDA of 16.7 means they are pressing less than…"), with the source links. Its numbers are checked like everything else.
+- **Substitution cards** (no AI, so instant): the desk gets a pop-up for each change with what the player going off did today, both players' season numbers, subs used, the score and whether it was like-for-like or a more attacking or defensive change; fans get the same in plain words, marked if it's their followed player; the broadcast graphic adds one key stat.
 - **Overlay Validator and Scheduler**: final checks (evidence present, length, freshness) and placement, so overlays never pile up on screen.
 
 ### Microsoft and Azure services
@@ -137,9 +138,9 @@ npm --prefix web test
 pytest tests/e2e
 ```
 
-- **Python (406 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, real-world context checks (sources, second source, invented numbers), tracing, evaluation metrics.
-- **Frontend (64 tests, Vitest)**: state, pitch zones, scoreboard, momentum explanations, line-up markers and formation, digits, translations, saved preferences.
-- **Browser (38 tests, Playwright)**: the real app with scripted agents: phone and desk flows, the desk staying neutral and fitting 1280×720 to 1920×1080, languages and right-to-left Arabic, favourite club, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
+- **Python (418 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, real-world context checks (sources, second source, invented numbers), tracing, evaluation metrics.
+- **Frontend (76 tests, Vitest)**: state, pitch zones, scoreboard, momentum explanations, line-up markers and formation, digits, translations, saved preferences.
+- **Browser (40 tests, Playwright)**: the real app with scripted agents: phone and desk flows, the desk staying neutral and fitting 1280×720 to 1920×1080, languages and right-to-left Arabic, favourite club, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
 - **Evaluations** against live models: `python scripts/run_evals.py` (≈ 15 min, under $1).
 
 CI (GitHub Actions) runs all three suites, builds the Docker image and checks the container starts, and scans for secrets.

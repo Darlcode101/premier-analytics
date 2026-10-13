@@ -32,6 +32,7 @@ from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, ove
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
 from .season import Season, season_summary, simulate_season
+from .subs import SubCards
 
 MIN = 60_000
 BACKFILL = 30
@@ -141,6 +142,7 @@ class MatchSession:
         self.totals: dict[int, tuple[int, dict]] = {}  # elapsed minute -> (elapsed_ms, team totals), for "last 10'"
         self.half_time: tuple[int, dict] | None = None   # (elapsed_ms, team totals) at half-time
         self.season = season_summary(season, league, req.home, req.away) if season else None
+        self.sub_cards = SubCards(league, self.names, self.season)  # SB-1..SB-6
         self.orch = Orchestrator(
             req.home, req.away, self.match.meta.match_id, self.names, [], llm=llm, critic=critic,
             on_overlay=self._on_overlay, recaps=llm is not None, on_recap=self._on_recap,
@@ -352,6 +354,9 @@ class MatchSession:
             metric = self.orch.scout.engine.metrics.get(e.id)
             self.attack.observe(e, metric)
             incident = self.incident_feed.observe(e, metric)
+            card = self.sub_cards.observe(e, self.orch.scout.engine)
+            if incident and card:
+                incident["card"] = card
             if incident:
                 self.incidents.append(incident)
                 self._send({"type": "incident", "incident": incident})

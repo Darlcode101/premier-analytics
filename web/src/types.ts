@@ -120,6 +120,27 @@ export interface Incident {
   xg?: number
   outcome?: string
   set_piece?: 'corner' | 'penalty' | null
+  card?: SubCard  // SB-1: substitutions only
+}
+
+/** SB-1, SB-4: built from match facts on the server, never by AI. */
+export interface SubCard {
+  event_id: string
+  team_id: string
+  minute: string
+  elapsed_ms: number
+  score_home: number
+  score_away: number
+  subs_used: number
+  subs_allowed: number
+  change: 'like_for_like' | 'more_attacking' | 'more_defensive'
+  off: {
+    player_id: string; number: number; position: string; minutes: number; booked: boolean
+    line: Omit<PlayerLine, 'yellow_cards' | 'red_cards'>
+    season: { goals: number; assists: number } | null
+  }
+  on: { player_id: string; number: number; position: string; season: { goals: number; assists: number } | null }
+  fan: Record<Language, string[]>
 }
 
 export interface SourceLink { url: string; title: string }

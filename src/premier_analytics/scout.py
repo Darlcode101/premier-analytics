@@ -273,9 +273,14 @@ class MomentScout:
         return []
 
     def _on_substitution(self, e: Event, _) -> list[Moment]:
+        # SB-7: what the player going off did today, so the graphic can carry one key stat.
+        p = self.engine.players.get(e.player_out_id)
+        today = {"goals": p.goals, "assists": p.assists, "passes": p.passes, "shots": p.shots,
+                 "ball_wins": p.tackles_won + p.interceptions} if p else dict.fromkeys(("goals", "assists", "passes", "shots", "ball_wins"), 0)
         return [self._moment(
             "substitution", 0.3, e,
-            [("player_in", e.player_in_id, e.team_id, [e.id]), ("player_out", e.player_out_id, e.team_id, [e.id])],
+            [("player_in", e.player_in_id, e.team_id, [e.id]), ("player_out", e.player_out_id, e.team_id, [e.id])]
+            + [(f"off_{k}", v, e.player_out_id, [e.id]) for k, v in today.items()],
             e.team_id, e.player_in_id,
         )]
 

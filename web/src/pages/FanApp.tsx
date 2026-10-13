@@ -10,8 +10,9 @@ import { scorers } from '../desk'
 import { formatClock, useMatchClock } from '../clock'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
+import { involvesSub } from '../subs'
 import type { State } from '../state'
-import type { Language, Overlay, Profile } from '../types'
+import type { Incident, Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
 
@@ -33,6 +34,33 @@ function MomentCard({ o, color, names, lang, mine }: { o: Overlay; color: string
       </div>
     </article>
   )
+}
+
+/** SB-4, SB-5: a substitution in plain words, built from match facts (who for whom, today, this season). */
+function SubMoment({ i, color, lang, mine }: { i: Incident; color: string; lang: Language; mine: boolean }) {
+  const [swap, ...rest] = i.card?.fan[lang] ?? []
+  return (
+    <article className={`moment-card k-substitution${mine ? ' mine' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="sub-feed-item"
+      data-mine={mine ? 'true' : undefined} style={{ '--team': color } as React.CSSProperties}>
+      <div className="moment-minute">{localDigits(i.minute, lang)}'</div>
+      <div className="moment-body">
+        <div className="moment-kind"><KindIcon kind="substitution" /> {KIND_LABELS[lang].substitution}
+          {mine && <span className="mine-tag"><i aria-hidden />{t(lang, 'yourPlayer')}</span>}
+        </div>
+        <h3 dir="auto">{localDigits(swap, lang)}</h3>
+        <ul className="sub-lines">{rest.map((l, k) => <li key={k} dir="auto">{localDigits(l, lang)}</li>)}</ul>
+      </div>
+    </article>
+  )
+}
+
+type FeedItem = { at: number; overlay: Overlay } | { at: number; sub: Incident }
+
+/** The live feed: moment cards plus substitution cards (which replace the bare substitution graphic). */
+function feedItems(feed: Overlay[], incidents: Incident[]): FeedItem[] {
+  const items: FeedItem[] = feed.filter(o => o.kind !== 'substitution').map(o => ({ at: o.elapsed_in_ms, overlay: o }))
+  for (const i of incidents) if (i.kind === 'sub' && i.card) items.push({ at: i.elapsed_ms, sub: i })
+  return items.sort((a, b) => b.at - a.at)
 }
 
 /** PA-7: one plain line per team on how they're playing, with where they attack shown as a bar (no numbers). */
@@ -84,6 +112,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
   // Bring the recap forward once it arrives at full time.
   useEffect(() => { if (state.recaps.full_time) setTab(tb => (tb === 'live' ? 'recap' : tb)) }, [state.recaps.full_time])
 
+  const items = useMemo(() => feedItems(state.feed, state.incidents), [state.feed, state.incidents])
   const possessionClub = h && state.possession ? (state.possession === h.home.id ? h.home : h.away) : null
   const board = h ? scoreboardSides(h.home, h.away, state.score, clubId) : null
 
@@ -183,11 +212,12 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
               <ZoneMap state={state} colors={colors} lang={lang} layout="bare"
                 mirror={h ? mirrorFor(clubId, state.period, h.home.id) : false} />
               <div className="timeline">
-                {!state.feed.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
-                {state.feed.map(o => (
-                  <MomentCard key={o.id} o={o} color={(o.team_id && colors[o.team_id]) || '#37003c'} names={names} lang={lang}
-                    mine={involves(o, playerId)} />
-                ))}
+                {!items.length && <p className="empty">{t(lang, 'emptyFeed')}</p>}
+                {items.map(it => 'sub' in it
+                  ? <SubMoment key={it.sub.id} i={it.sub} color={(it.sub.team_id && colors[it.sub.team_id]) || '#37003c'} lang={lang}
+                      mine={involvesSub(it.sub, playerId)} />
+                  : <MomentCard key={it.overlay.id} o={it.overlay} color={(it.overlay.team_id && colors[it.overlay.team_id]) || '#37003c'}
+                      names={names} lang={lang} mine={involves(it.overlay, playerId)} />)}
               </div>
             </>
           )}

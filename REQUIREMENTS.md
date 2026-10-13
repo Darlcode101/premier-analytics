@@ -232,6 +232,20 @@ about a third each down the left, centre and right, so styles must exist before 
 | OV-3 | S | **Scorebug** top-left: club codes, score, clock with seconds and red stoppage time; `?bug=0` hides it. Language and fan/analyst wording from the URL |
 | OV-4 | S | Opened from the landing page and from the desk's Production tab |
 
+### 3.14 Substitution cards (signed off 2026-10-13)
+
+Built only from match facts (no AI): instant, free, and nothing can be invented. Why a manager made a change (injury, tactics) is out of scope: we don't know it.
+
+| ID | P | Requirement |
+|---|---|---|
+| SB-1 | M | **Desk card** when a substitution happens. Player off: minutes played, today's line (passes completed/attempted and %, shots, xG, goals, assists, tackles + interceptions, fouls), a "was on a yellow" flag, season goals and assists. Player on: number, position, season goals and assists. Context: subs used (e.g. 3 of 5), the score and minute of the change |
+| SB-2 | M | **Change type** from the two players' positions: like-for-like, more attacking or more defensive |
+| SB-3 | M | The desk card stays until dismissed or the next substitution; changes at the same stoppage share one card; clicking a substitution in the timeline reopens its card |
+| SB-4 | M | **Fan card** in the live feed in plain words (no xG, no percentages): who came on for whom, one line on what the player going off did today, one on the player coming on's season; English, Spanish and Arabic |
+| SB-5 | S | A fan **following** the player going off or coming on sees the card marked as their player |
+| SB-6 | M | Works with the AI off; late joiners get the substitutions already made |
+| SB-7 | S | The broadcast overlay's substitution graphic adds one key stat for the player going off (e.g. "1 goal, 34 passes") |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |

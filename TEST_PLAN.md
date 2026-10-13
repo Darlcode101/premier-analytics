@@ -153,6 +153,18 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | After a settings change, backfill reuses a fitting AI version, never one written for another club or player | F-4 | pytest |
 | Following a player shows the chip and the confirmation; clearing it removes them; cards about the player are marked | F-5 | e2e + unit |
 
+### Substitution cards (SB-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Card numbers equal the engine's player line at the moment of the change; minutes played counts from kick-off or from coming on; booked flag; subs used; score and minute | SB-1 | pytest |
+| Change type: same line like-for-like, defender off striker on more attacking, and the reverse more defensive | SB-2 | pytest |
+| Changes at the same stoppage group into one card; a later one starts a new card | SB-3 | unit |
+| Fan lines in EN/ES/AR: no xG, no %, no template braces; numbers only from the card; goals mentioned when scored | SB-4 | pytest |
+| Fan feed shows a substitution card; the card is marked when the followed player is involved | SB-4, SB-5 | e2e |
+| AI off: every sub incident carries a card; late joiner's hello has the same cards | SB-6 | pytest |
+| Overlay substitution body carries the key stat in every language, built only from moment facts | SB-7 | pytest |
+| Desk shows the card on a substitution, dismiss hides it, clicking the timeline entry reopens it | SB-1, SB-3 | e2e |
+
 ## 8. Non-functional
 - Latency at 1× over a full match: fast path p95 ≤ 0.5 s, AI upgrade p95 ≤ 4 s (N-1).
 - Cost per full match logged; projected judging cost < budget (N-2).

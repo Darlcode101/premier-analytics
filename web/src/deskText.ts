@@ -108,6 +108,19 @@ const en = {
   noPatterns: 'Patterns appear once there is enough evidence (checked every 5 minutes).',
   patternHint: 'Select a note to see it on the pitch. Arrows: attacks into the final third.',
   patternMethod: 'Only patterns that pass a significance test are shown; "known for" comes from this season.',
+  sub_title: 'Substitution',
+  sub_going_off: 'Going off',
+  sub_coming_on: 'Coming on',
+  sub_minutes: 'min played',
+  sub_booked: 'Was on a yellow',
+  sub_season: 'This season',
+  sub_used: 'Subs used',
+  sub_score: 'Score at the change',
+  sub_close: 'Dismiss',
+  sub_reopen: 'Show substitution card',
+  change_like_for_like: 'Like-for-like',
+  change_more_attacking: 'More attacking',
+  change_more_defensive: 'More defensive',
 } as const
 
 export type DeskKey = keyof typeof en
@@ -220,6 +233,19 @@ const es: Dict = {
   noPatterns: 'Los patrones aparecen cuando hay pruebas suficientes (se revisa cada 5 minutos).',
   patternHint: 'Elige una nota para verla en el campo. Flechas: llegadas al último tercio.',
   patternMethod: 'Solo se muestran patrones que superan una prueba de significación; "conocido por" viene de esta temporada.',
+  sub_title: 'Cambio',
+  sub_going_off: 'Sale',
+  sub_coming_on: 'Entra',
+  sub_minutes: 'min jugados',
+  sub_booked: 'Tenía amarilla',
+  sub_season: 'Esta temporada',
+  sub_used: 'Cambios hechos',
+  sub_score: 'Marcador en el cambio',
+  sub_close: 'Cerrar',
+  sub_reopen: 'Ver ficha del cambio',
+  change_like_for_like: 'Mismo puesto',
+  change_more_attacking: 'Más ofensivo',
+  change_more_defensive: 'Más defensivo',
 }
 
 const ar: Dict = {
@@ -329,6 +355,19 @@ const ar: Dict = {
   noPatterns: 'تظهر الأنماط عند توفر أدلة كافية (تُفحص كل 5 دقائق).',
   patternHint: 'اختر ملاحظة لعرضها على الملعب. الأسهم: الهجمات نحو الثلث الأخير.',
   patternMethod: 'لا تُعرض إلا الأنماط التي تجتاز اختبار الدلالة الإحصائية؛ "معروف بـ" من هذا الموسم.',
+  sub_title: 'تبديل',
+  sub_going_off: 'خروج',
+  sub_coming_on: 'دخول',
+  sub_minutes: 'دقيقة لعب',
+  sub_booked: 'كان لديه إنذار',
+  sub_season: 'هذا الموسم',
+  sub_used: 'التبديلات المستخدمة',
+  sub_score: 'النتيجة عند التبديل',
+  sub_close: 'إغلاق',
+  sub_reopen: 'عرض بطاقة التبديل',
+  change_like_for_like: 'في نفس المركز',
+  change_more_attacking: 'أكثر هجومية',
+  change_more_defensive: 'أكثر دفاعية',
 }
 
 export const deskDictionaries: Record<Language, Dict> = { en, es, ar }

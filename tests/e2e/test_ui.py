@@ -561,3 +561,37 @@ def test_stats_can_be_split_by_half(server, page: Page):
     fan.get_by_role("button", name="2nd half").click()
     expect(fan.get_by_test_id("stats")).to_have_attribute("data-period", "second_half")
     fan.close()
+
+
+# ---------- substitution cards (SB-*) ----------
+
+def test_desk_pops_up_a_substitution_card_that_can_be_reopened(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=600)}")
+    card = page.get_by_test_id("sub-card")
+    expect(card).to_be_visible(timeout=60_000)
+    expect(card).to_contain_text("Going off")
+    expect(card).to_contain_text("Coming on")
+    expect(card.get_by_test_id("sub-change-type").first).to_have_text(re.compile("Like-for-like|More attacking|More defensive"))
+    expect(card).to_contain_text(re.compile(r"Subs used \d/5"))
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    page.get_by_test_id("sub-card-close").click()
+    expect(card).to_have_count(0)
+    page.get_by_role("tab", name="Timeline").click()
+    page.get_by_test_id("open-sub-card").last.click()  # the earliest change
+    expect(card).to_be_visible()
+
+
+def test_fan_feed_explains_substitutions_and_marks_a_followed_player(server, page: Page):
+    page.goto(f"{server}/fan?match={new_match(server, speed=600)}")
+    sub = page.get_by_test_id("sub-feed-item").last
+    expect(sub).to_be_visible(timeout=60_000)
+    swap = sub.locator("h3").inner_text()
+    on, off = re.match(r"(.+) comes on for (.+)", swap).groups()
+    expect(sub.locator(".sub-lines li").first).to_contain_text(re.compile(rf"{re.escape(off)}: .+ in \d+ minutes"))
+    assert not re.search(r"xG|%", sub.inner_text())
+    page.get_by_role("button", name="Me").click()
+    select = page.locator("select")
+    value = select.locator("option", has_text=off).first.get_attribute("value")
+    select.select_option(value)
+    page.get_by_role("button", name="Live").click()
+    expect(page.get_by_test_id("sub-feed-item").filter(has_text=swap)).to_have_attribute("data-mine", "true")

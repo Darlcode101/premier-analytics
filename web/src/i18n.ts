@@ -328,7 +328,7 @@ export const FACT_LABELS: Record<Language, Record<string, string>> = {
     possession_home_pct: 'Home possession %', shots_home: 'Home shots', shots_away: 'Away shots', xg_home: 'Home xG',
     xg_away: 'Away xG', momentum: 'Momentum', field_tilt: 'Field tilt', window_shots: 'Shots in window',
     window_xg: 'xG in window', window_minutes: 'Window (min)', tempo_passes_per_min: 'Passes per minute', ppda: 'PPDA',
-    milestone: 'Milestone', player_in: 'On', player_out: 'Off',
+    milestone: 'Milestone', player_in: 'On', player_out: 'Off', off_goals: 'Goals (player off)', off_assists: 'Assists (player off)', off_passes: 'Passes (player off)', off_shots: 'Shots (player off)', off_ball_wins: 'Ball wins (player off)',
   },
   es: {
     score_home: 'Goles local', score_away: 'Goles visitante', scorer: 'Goleador', minute: 'Minuto', goal_context: 'Situación',
@@ -338,7 +338,7 @@ export const FACT_LABELS: Record<Language, Record<string, string>> = {
     possession_home_pct: 'Posesión local %', shots_home: 'Tiros local', shots_away: 'Tiros visitante', xg_home: 'xG local',
     xg_away: 'xG visitante', momentum: 'Dominio', field_tilt: 'Inclinación', window_shots: 'Tiros en la ventana',
     window_xg: 'xG en la ventana', window_minutes: 'Ventana (min)', tempo_passes_per_min: 'Pases por minuto', ppda: 'PPDA',
-    milestone: 'Hito', player_in: 'Entra', player_out: 'Sale',
+    milestone: 'Hito', player_in: 'Entra', player_out: 'Sale', off_goals: 'Goles (sale)', off_assists: 'Asistencias (sale)', off_passes: 'Pases (sale)', off_shots: 'Tiros (sale)', off_ball_wins: 'Recuperaciones (sale)',
   },
   ar: {
     score_home: 'أهداف المضيف', score_away: 'أهداف الضيف', scorer: 'الهداف', minute: 'الدقيقة', goal_context: 'الموقف',
@@ -348,7 +348,7 @@ export const FACT_LABELS: Record<Language, Record<string, string>> = {
     possession_home_pct: 'استحواذ المضيف %', shots_home: 'تسديدات المضيف', shots_away: 'تسديدات الضيف', xg_home: 'xG المضيف',
     xg_away: 'xG الضيف', momentum: 'الأفضلية', field_tilt: 'ميل الملعب', window_shots: 'تسديدات الفترة',
     window_xg: 'xG الفترة', window_minutes: 'الفترة (د)', tempo_passes_per_min: 'تمريرات في الدقيقة', ppda: 'PPDA',
-    milestone: 'إنجاز', player_in: 'دخول', player_out: 'خروج',
+    milestone: 'إنجاز', player_in: 'دخول', player_out: 'خروج', off_goals: 'أهداف (الخارج)', off_assists: 'صناعة أهداف (الخارج)', off_passes: 'تمريرات (الخارج)', off_shots: 'تسديدات (الخارج)', off_ball_wins: 'استعادة الكرة (الخارج)',
   },
 }
 

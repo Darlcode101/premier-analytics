@@ -78,6 +78,7 @@ class _Sim:
         }
         self.bench = {c.id: list(c.bench) for c in (home, away)}
         self.subs_made = {home.id: 0, away.id: 0}
+        self.came_on: set[str] = set()  # substitutes stay on
         self.booked: set[str] = set()
         self.momentum = 0.0  # > 0 favours home
         self.next_momentum_tick = MIN
@@ -155,7 +156,7 @@ class _Sim:
         plan = self.sub_plan[team]
         while plan and plan[0] <= self.clock and self.subs_made[team] < 5:
             plan.pop(0)
-            outs = [p for p in self.on_pitch[team] if self.player(p).position != "GK"]
+            outs = [p for p in self.on_pitch[team] if self.player(p).position != "GK" and p not in self.came_on]
             ins = [p for p in self.bench[team] if self.player(p).position != "GK"]
             if not outs or not ins:
                 return
@@ -166,6 +167,7 @@ class _Sim:
             self.on_pitch[team].remove(out)
             self.on_pitch[team].append(inn)
             self.bench[team].remove(inn)
+            self.came_on.add(inn)
             self.subs_made[team] += 1
             self.emit("substitution", team_id=team, player_out_id=out, player_in_id=inn)
             self.tick(self.rng.uniform(15, 35) * SEC)

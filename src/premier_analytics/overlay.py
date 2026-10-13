@@ -144,8 +144,8 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
                      "{player} off {minute}' · {team} down to {remaining} players"),
         "great_pass": ("KEY PASS · {player}", "Brilliant pass from {player}",
                        "{player} · difficulty {difficulty} over {pdist} m"),
-        "substitution": ("SUBSTITUTION · {team}", "{player_in} on, {player_out} off",
-                         "{minute}' {player_in} replaces {player_out}"),
+        "substitution": ("SUBSTITUTION · {team}", "{player_in} on for {player_out} ({out_stat})",
+                         "{minute}' {player_in} replaces {player_out} · {out_stat}"),
         "half_time": ("HALF-TIME: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} at the break",
                       "Shots {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · possession {poss}%-{poss_away}%"),
         "full_time": ("FULL-TIME: {home} {sh}-{sa} {away}", "Final score: {home} {sh}-{sa} {away}",
@@ -174,8 +174,8 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
                      "{player} expulsado {minute}' · {team} con {remaining} jugadores"),
         "great_pass": ("PASE CLAVE · {player}", "Pase brillante de {player}",
                        "{player} · dificultad {difficulty} en {pdist} m"),
-        "substitution": ("CAMBIO · {team}", "Entra {player_in}, sale {player_out}",
-                         "{minute}' {player_in} sustituye a {player_out}"),
+        "substitution": ("CAMBIO · {team}", "Entra {player_in} por {player_out} ({out_stat})",
+                         "{minute}' {player_in} sustituye a {player_out} · {out_stat}"),
         "half_time": ("DESCANSO: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} al descanso",
                       "Tiros {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · posesión {poss}%-{poss_away}%"),
         "full_time": ("FINAL: {home} {sh}-{sa} {away}", "Resultado final: {home} {sh}-{sa} {away}",
@@ -204,8 +204,8 @@ TEMPLATES: dict[str, dict[str, tuple[str, str, str]]] = {
                      "طرد {player} الدقيقة {minute} · {team} بـ{remaining} لاعبين"),
         "great_pass": ("تمريرة حاسمة · {player}", "تمريرة رائعة من {player}",
                        "{player} · صعوبة {difficulty} لمسافة {pdist} م"),
-        "substitution": ("تبديل · {team}", "دخول {player_in} وخروج {player_out}",
-                         "الدقيقة {minute}: {player_in} بدلاً من {player_out}"),
+        "substitution": ("تبديل · {team}", "دخول {player_in} بدلاً من {player_out} ({out_stat})",
+                         "الدقيقة {minute}: {player_in} بدلاً من {player_out} · {out_stat}"),
         "half_time": ("نهاية الشوط الأول: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} بين الشوطين",
                       "التسديدات {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · الاستحواذ {poss}%-{poss_away}%"),
         "full_time": ("نهاية المباراة: {home} {sh}-{sa} {away}", "النتيجة النهائية: {home} {sh}-{sa} {away}",
@@ -244,6 +244,7 @@ def _num(v: Any) -> str:
 
 
 def template_context(m: Moment, names: Names, language: Language) -> dict[str, str]:
+    from .subs import OFF_STATS, key_stat  # subs builds on this module
     f = {fact.label: fact.value for fact in m.facts}
     team = m.team_id
     opp = names.away_id if team == names.home_id else names.home_id if team else None
@@ -270,6 +271,7 @@ def template_context(m: Moment, names: Names, language: Language) -> dict[str, s
         "wmin": f.get("window_minutes"), "wshots": f.get("window_shots"), "wxg": f.get("window_xg"),
         "tilt": round(100 * f["field_tilt"]) if "field_tilt" in f else None,
         "tempo": f.get("tempo_passes_per_min"),
+        "out_stat": key_stat({k: f[f"off_{k}"] for k in OFF_STATS}, language) if "off_passes" in f else None,
     }
     return {k: _num(v) if v is not None else "" for k, v in ctx.items()}
 
