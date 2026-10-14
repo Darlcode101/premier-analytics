@@ -161,8 +161,13 @@ def test_fan_moment_cards_explain_why(server, page: Page):
     item = page.get_by_test_id("feed-item").first
     expect(item).to_be_visible(timeout=20_000)
     item.get_by_role("button", name="Why?").click()
-    evidence = page.locator("[data-testid='feed-item'] dl.evidence")  # new cards may push it down the list
-    expect(evidence).to_have_count(1)
+    why = page.get_by_test_id("why")  # new cards may push it down the list
+    expect(why).to_have_count(1)
+    expect(why.locator(".why-lines li").first).to_be_visible()  # F-7: plain sentences first
+    assert not re.search(r"xG|%", why.locator(".why-lines").inner_text())
+    expect(why.locator("dl.evidence")).to_have_count(0)
+    why.get_by_role("button", name="See the numbers").click()  # F-8: the raw facts are one tap away
+    expect(why.locator("dl.evidence")).to_have_count(1)
 
 
 def test_fan_app_fits_a_phone(server, page: Page):
@@ -595,3 +600,23 @@ def test_fan_feed_explains_substitutions_and_marks_a_followed_player(server, pag
     select.select_option(value)
     page.get_by_role("button", name="Live").click()
     expect(page.get_by_test_id("sub-feed-item").filter(has_text=swap)).to_have_attribute("data-mine", "true")
+
+
+def test_fan_stats_list_the_cards(server, page: Page):
+    from premier_analytics.generator import generate_match
+    from premier_analytics.league import load_league
+    events = generate_match("har", "ngc", 42, load_league()).events
+    cards = [e for e in events if e.type == "card"]
+    assert cards, "seed 42 should have at least one card"
+    page.goto(f"{server}/fan?match={new_match(server, speed=600)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    page.get_by_role("button", name="Stats").click()
+    items = page.get_by_test_id("cards-list").locator("li")
+    expect(items).to_have_count(len(cards))
+    expect(items.first).to_contain_text(re.compile(r"\d+'"))
+    expect(page.get_by_test_id("cards-list")).not_to_contain_text("on a yellow")
+    items.first.get_by_test_id("card-row").click()  # F-6a: the › opens why
+    expect(items.first.get_by_test_id("card-why")).to_have_text(re.compile(
+        r"Late tackle|counter-attack|Pulled back|Holding|Handball|Dissent|Time-wasting|Dangerous|clear chance|Violent|Offensive"))
+    page.get_by_role("button", name="1st half").click()
+    expect(items).to_have_count(sum(e.period == 1 for e in cards))

@@ -153,6 +153,24 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | After a settings change, backfill reuses a fitting AI version, never one written for another club or player | F-4 | pytest |
 | Following a player shows the chip and the confirmation; clearing it removes them; cards about the player are marked | F-5 | e2e + unit |
 
+### Fan cards list and "Why?" (F-6..F-8)
+| Test | Covers | Layer |
+|---|---|---|
+| Bookings per team in match order, filtered by half | F-6 | unit |
+| Fan Stats lists every card of the match, and only first-half ones on the 1st-half switch | F-6 | e2e |
+| xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
+| "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
+
+### Card reasons (F-6a, F-6b) and known styles (PA-3c)
+| Test | Covers | Layer |
+|---|---|---|
+| Every card has a reason fitting its colour; foul cards directly follow that player's foul and name the fouled player; time-wasting only by a side ahead in the second half | F-6b | pytest |
+| Over a simulated season: dissent 10-19 %, time-wasting 4-12 %, handball 2-8 % of bookings; late tackles the most common foul; yellows per team still 2.04 ± 0.3 | F-6b | pytest |
+| Card incidents carry the reason and fouled player | F-6b | pytest |
+| Reason wording for every reason in EN/ES/AR, with and without the fouled player; second yellows say so | F-6a | unit |
+| Tapping › on a card in fan Stats shows its reason | F-6a | e2e |
+| Known styles: configured flanks found, balanced clubs never get a flank, top long-shot and pressing clubs found, over a pooled four-season history; binomial test exact at season scale | PA-3c | pytest |
+
 ### Substitution cards (SB-*)
 | Test | Covers | Layer |
 |---|---|---|

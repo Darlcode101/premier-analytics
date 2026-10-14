@@ -5,6 +5,8 @@ import type { State } from '../state'
 import type { Hello, Language, Overlay, TeamStats } from '../types'
 import { explainAttack, linkedMoments } from '../explain'
 import { Evidence } from './Shared'
+import { bookings } from '../desk'
+import { cardReasonText } from '../cardReasons'
 
 function FeedItem({ o, color, names, lang }: { o: Overlay; color: string; names: Record<string, string>; lang: Language }) {
   const [open, setOpen] = useState(false)
@@ -149,6 +151,43 @@ export function HalfSwitch({ period, setPeriod, state, labels, className = 'half
   )
 }
 
+/** F-6: who has been booked or sent off, per team, following the half switch; the › opens why (F-6a). */
+function CardsList({ state, lang, names, period, order, colors }: {
+  state: State; lang: Language; names: Record<string, string>; period: Period; order: [string, string]; colors: [string, string]
+}) {
+  const [open, setOpen] = useState<string | null>(null)
+  const lists = order.map(id => bookings(state.incidents, id, period))
+  return (
+    <section className="cards-list" data-testid="cards-list">
+      <h3 className="section-title" style={{ marginTop: 14 }}>{t(lang, 'cardsTitle')}</h3>
+      {lists.every(l => !l.length) ? <p className="empty small">{t(lang, 'noCards')}</p> : (
+        <div className="cards-cols">
+          {lists.map((list, side) => (
+            <ul key={order[side]} style={{ '--team': colors[side] } as React.CSSProperties} data-testid={`cards-${side ? 'right' : 'left'}`}>
+              {list.map(b => {
+                const key = `${b.player_id}-${b.minute}-${b.kind}`
+                const why = cardReasonText(b.reason, b.victim ? names[b.victim] ?? null : null, lang, b.kind === 'second_yellow')
+                return (
+                  <li key={key} data-kind={b.kind}>
+                    <button className="card-row" aria-expanded={open === key} disabled={!why}
+                      onClick={() => setOpen(o => (o === key ? null : key))} data-testid="card-row">
+                      <i className={`card-chip ${b.kind === 'yellow' ? 'yellow' : 'red'}`} aria-label={b.kind} />
+                      <span className="card-name" dir="auto">{names[b.player_id] ?? b.player_id}</span>
+                      <span className="card-min">{localDigits(b.minute, lang)}'</span>
+                      {why && <span className="card-chev" aria-hidden>›</span>}
+                    </button>
+                    {open === key && why && <p className="card-why" dir="auto" data-testid="card-why">{why}</p>}
+                  </li>
+                )
+              })}
+            </ul>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
   state: State; colors: Record<string, string>; lang: Language; names?: Record<string, string>; topTeam?: string | null
 }) {
@@ -192,6 +231,7 @@ export function Stats({ state, colors, lang, names = {}, topTeam = null }: {
       {rows.map(([k, get, fmt]) => (
         <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} lang={lang} />
       ))}
+      <CardsList state={state} lang={lang} names={names} period={shown} order={flip ? [hello.away.id, hello.home.id] : [hello.home.id, hello.away.id]} colors={c} />
       <h3 className="section-title" style={{ marginTop: 14 }}>{t(lang, 'last10')}</h3>
       {windowRows.map(([k, get, fmt]) => (
         <StatRow key={k} label={t(lang, k)} home={get(home)} away={get(away)} fmt={fmt} colors={c} lang={lang} />

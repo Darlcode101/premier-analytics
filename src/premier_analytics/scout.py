@@ -255,7 +255,9 @@ class MomentScout:
         return [self._moment("penalty", 0.8, e, [("taker", e.player_id, e.team_id, [e.id])], e.team_id, e.player_id)]
 
     def _on_card(self, e: Event, _) -> list[Moment]:
-        facts = [("card", e.card, e.player_id, [e.id])]
+        facts = [("card", e.card, e.player_id, [e.id]), ("card_reason", e.card_reason, e.player_id, [e.id])]
+        if e.fouled_player_id:
+            facts.append(("fouled_player", e.fouled_player_id, e.team_id, [e.id]))
         if e.card == "yellow":
             return [self._moment("yellow_card", 0.35, e, facts, e.team_id, e.player_id)]
         reds = self.engine.teams[e.team_id].red_cards

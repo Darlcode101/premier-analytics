@@ -12,6 +12,7 @@ import {
 } from '../desk'
 import { dt, type DeskKey } from '../deskText'
 import { groupKey, subGroups } from '../subs'
+import { cardReasonText } from '../cardReasons'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
@@ -415,6 +416,12 @@ function incidentText(i: Incident, ctx: Ctx): string {
     case 'sub': return `▲ ${n(i.player_in_id)}  ▼ ${n(i.player_out_id)}`
     case 'big_chance': return `${n(i.player_id)}${i.set_piece === 'penalty' ? ` (${dt(ctx.lang, 'sp_penalty')})` : ''} · xG ${ctx.num((i.xg ?? 0).toFixed(2))}`
     case 'woodwork': return `${n(i.player_id)} · xG ${ctx.num((i.xg ?? 0).toFixed(2))}`
+    case 'yellow':
+    case 'second_yellow':
+    case 'red': {
+      const why = cardReasonText(i.card_reason, i.fouled_player_id ? n(i.fouled_player_id) : null, ctx.lang)
+      return why ? `${n(i.player_id)} · ${why}` : n(i.player_id)
+    }
     default: return n(i.player_id)
   }
 }

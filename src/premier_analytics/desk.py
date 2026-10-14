@@ -29,8 +29,8 @@ class Incidents:
                     "score_home": e.score_home, "score_away": e.score_away}
         if e.type == "penalty":
             return {**base, "kind": "penalty"}
-        if e.type == "card":
-            return {**base, "kind": e.card}
+        if e.type == "card":  # F-6b: with why it was shown (and who was fouled, for foul cards)
+            return {**base, "kind": e.card, "card_reason": e.card_reason, "fouled_player_id": e.fouled_player_id}
         if e.type == "substitution":
             return {**base, "kind": "sub", "player_id": e.player_in_id,
                     "player_in_id": e.player_in_id, "player_out_id": e.player_out_id}

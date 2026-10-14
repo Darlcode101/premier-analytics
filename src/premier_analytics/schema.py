@@ -25,6 +25,12 @@ EventType = Literal[
     "interception", "pressure", "possession_change", "foul", "card", "substitution", "corner", "penalty",
 ]
 
+# F-6b: why a card was shown. Foul cards name the fouled player (fouled_player_id).
+CardReason = Literal[
+    "late_tackle", "tactical_foul", "holding", "handball", "dissent", "time_wasting",
+    "serious_foul_play", "denied_goal_chance", "violent_conduct", "offensive_language",
+]
+
 # Actions only the team in possession can make.
 ON_BALL_TYPES = frozenset({"pass", "shot"})
 
@@ -51,7 +57,7 @@ _REQUIRED: dict[str, tuple[str, ...]] = {
     "pressure": ("team_id", "player_id", "x", "y"),
     "possession_change": ("team_id", "cause", "x", "y"),
     "foul": ("team_id", "player_id", "x", "y", "fouled_player_id"),
-    "card": ("team_id", "player_id", "card"),
+    "card": ("team_id", "player_id", "card", "card_reason"),
     "substitution": ("team_id", "player_out_id", "player_in_id"),
     "corner": ("team_id", "player_id", "x", "y"),    # D-10: taken from the corner flag
     "penalty": ("team_id", "player_id", "x", "y"),   # D-10: awarded; the kick follows as a shot
@@ -90,6 +96,7 @@ class Event(BaseModel):
     score_away: Annotated[int, Field(ge=0)] | None = None
     fouled_player_id: str | None = None
     card: Literal["yellow", "second_yellow", "red"] | None = None
+    card_reason: CardReason | None = None  # F-6b: why the referee showed it
     player_in_id: str | None = None
     player_out_id: str | None = None
     cause: str | None = None

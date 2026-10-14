@@ -121,6 +121,8 @@ export interface Incident {
   outcome?: string
   set_piece?: 'corner' | 'penalty' | null
   card?: SubCard  // SB-1: substitutions only
+  card_reason?: string | null  // F-6b: cards only
+  fouled_player_id?: string | null
 }
 
 /** SB-1, SB-4: built from match facts on the server, never by AI. */

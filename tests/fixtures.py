@@ -62,5 +62,6 @@ class Fx:
         v = victim or ("a9" if team == HOME else "h9")
         return self.add("foul", t, team_id=team, player_id=p, x=x, y=y, fouled_player_id=v)
 
-    def card(self, t, team, player, card="yellow"):
-        return self.add("card", t, team_id=team, player_id=player, card=card)
+    def card(self, t, team, player, card="yellow", reason=None):
+        reason = reason or ("serious_foul_play" if card == "red" else "late_tackle")
+        return self.add("card", t, team_id=team, player_id=player, card=card, card_reason=reason)

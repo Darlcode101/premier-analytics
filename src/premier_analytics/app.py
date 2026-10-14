@@ -31,7 +31,7 @@ from .orchestrator import Orchestrator, TraceEvent
 from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, overlay_id
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
-from .season import Season, season_summary, simulate_season
+from .season import HISTORY_SEASONS, Season, season_summary, simulate_season
 from .subs import SubCards
 
 MIN = 60_000
@@ -49,7 +49,7 @@ LAST_WINDOW_MIN = 10
 @functools.cache
 def default_season() -> Season:
     """The simulated season behind the desk's context (CD-14); the same on every start, so build it once."""
-    return simulate_season(load_league())
+    return simulate_season(load_league(), history=HISTORY_SEASONS)
 
 
 def build_researcher_from_env() -> ResearcherAgent | None:

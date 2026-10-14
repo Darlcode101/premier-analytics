@@ -47,6 +47,30 @@
       "default": null,
       "title": "Card"
     },
+    "card_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "late_tackle",
+            "tactical_foul",
+            "holding",
+            "handball",
+            "dissent",
+            "time_wasting",
+            "serious_foul_play",
+            "denied_goal_chance",
+            "violent_conduct",
+            "offensive_language"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Card Reason"
+    },
     "cause": {
       "anyOf": [
         {

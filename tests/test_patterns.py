@@ -4,7 +4,7 @@ import pytest
 from premier_analytics.generator import generate_match
 from premier_analytics.patterns import PatternTracker, binomial_tail, channel_of
 from premier_analytics.schema import PITCH_WIDTH
-from premier_analytics.season import simulate_season
+from premier_analytics.season import HISTORY_SEASONS, simulate_season
 
 W = PITCH_WIDTH
 
@@ -69,7 +69,7 @@ def test_second_half_switch_is_reported_only_when_the_flank_changes(league):
 @pytest.fixture(scope="module")
 def season_results(league):
     """380 matches (every pairing, many seeds): 14 matches per club is too few to judge 'most matches'."""
-    season = simulate_season(league)
+    season = simulate_season(league, history=HISTORY_SEASONS)
     profiles = season.profiles()
     clubs = [c.id for c in league.clubs]
     pairs = [(h, a) for h in clubs for a in clubs if h != a]
@@ -111,7 +111,7 @@ def test_detector_rarely_raises_false_alarms(season_results):
 
 @pytest.fixture(scope="module")
 def profiles(league):
-    return simulate_season(league).profiles()
+    return simulate_season(league, history=HISTORY_SEASONS).profiles()
 
 
 def test_season_profiles_hold_every_style_measure(league, profiles):

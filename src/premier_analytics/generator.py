@@ -28,6 +28,12 @@ FINISHING = 0.97         # global finishing multiplier on xG (re-tuned with set 
 # D-10 set pieces, calibrated to 2024/25 (tests/test_set_pieces.py)
 BOX_HALF_WIDTH = 20.16
 BOX_FOUL = 0.13          # foul rate inside the box relative to elsewhere (a foul there is a penalty)
+# Cards (F-6b). Booking reasons follow 2023/24 reporting (docs/REALISM.md): about 14 % dissent, 8 % time-wasting,
+# a few % handball, the rest fouls; total yellows per team stay at the calibrated 2.04.
+FOUL_CARD = 0.9          # share of the old foul-booking rate kept for fouls; off-ball cautions make up the rest
+DISSENT_P = 0.027        # after a foul is given against them, someone in that side protests too much
+TIME_WASTING_P = 0.05    # a side ahead in the second half dawdles over a free kick or a substitution
+OFFENSIVE_P = 0.03       # share of dissent that is offensive language (a straight red)
 CORNER_FIND = 0.38       # corner delivery reaches a team-mate
 CORNER_SHOT = 0.6       # …who gets a shot away straight from it
 CORNER_FROM_SAVE, CORNER_FROM_BLOCK, CORNER_FROM_CLEARANCE = 0.3, 0.35, 0.3
@@ -161,6 +167,7 @@ class _Sim:
             if not outs or not ins:
                 return
             out = self.rng.choice(outs)
+            self.maybe_time_wasting(team, out)  # a slow walk off
             pos = self.player(out).position
             same = [p for p in ins if self.player(p).position == pos]
             inn = self.rng.choice(same or ins)
@@ -172,25 +179,55 @@ class _Sim:
             self.emit("substitution", team_id=team, player_out_id=out, player_in_id=inn)
             self.tick(self.rng.uniform(15, 35) * SEC)
 
-    def foul(self, fouler_team: str, fouler: str, victim: str, x: float, y: float) -> bool:
-        """Emit a foul and maybe a card. x, y are from the fouler's perspective.
-        Returns True if the fouler was sent off."""
+    def foul(self, fouler_team: str, fouler: str, victim: str, x: float, y: float, attacking: bool = False) -> bool:
+        """Emit a foul and maybe a card, plus any protest or time-wasting it leads to. x, y are from the
+        fouler's perspective; attacking: the ball carrier committed it. Returns True if the fouler was sent off."""
+        rng = self.rng
         self.emit("foul", team_id=fouler_team, player_id=fouler, x=x, y=y, fouled_player_id=victim)
-        self.tick(self.rng.uniform(20, 45) * SEC)
+        self.tick(rng.uniform(20, 45) * SEC)
         disc = self.clubs[fouler_team].discipline
-        r = self.rng.random()
+        r = rng.random()
         if r < 0.0012:
-            card = "red"
-        elif r < 0.0012 + 0.27 * (1.25 - disc) * (0.2 if fouler in self.booked else 1.0):
-            card = "second_yellow" if fouler in self.booked else "yellow"
-        else:
-            return False
-        self.emit("card", team_id=fouler_team, player_id=fouler, card=card)
+            reason = "denied_goal_chance" if x < 30 else rng.choices(["serious_foul_play", "violent_conduct"], [0.8, 0.2])[0]
+            self.caution(fouler_team, fouler, reason, victim=victim, red=True)
+        elif r < 0.0012 + FOUL_CARD * 0.27 * (1.25 - disc) * (0.2 if fouler in self.booked else 1.0):
+            if attacking:
+                weights = {"late_tackle": 0.35, "holding": 0.55, "handball": 0.1}
+            elif x >= L / 2:  # stopping a break before it gets going
+                weights = {"late_tackle": 0.38, "tactical_foul": 0.45, "holding": 0.13, "handball": 0.04}
+            else:
+                weights = {"late_tackle": 0.62, "tactical_foul": 0.15, "holding": 0.19, "handball": 0.04}
+            reason = rng.choices(list(weights), list(weights.values()))[0]
+            self.caution(fouler_team, fouler, reason, victim=victim)
+        # Off the ball: protests from the side penalised, and a side ahead in the second half taking its time.
+        if rng.random() < DISSENT_P:
+            outfield = [p for p in self.on_pitch[fouler_team] if self.player(p).position != "GK"]
+            if outfield:
+                protester = rng.choice(outfield)
+                if rng.random() < OFFENSIVE_P:
+                    self.caution(fouler_team, protester, "offensive_language", red=True)
+                else:
+                    self.caution(fouler_team, protester, "dissent")
+        victim_team = self.other(fouler_team)
+        if victim in self.on_pitch[victim_team]:
+            self.maybe_time_wasting(victim_team, victim)
+        return fouler not in self.on_pitch[fouler_team]
+
+    def maybe_time_wasting(self, team: str, player: str) -> None:
+        other = self.other(team)
+        if (self.period == 2 and self.score[team] > self.score[other] and player not in self.booked
+                and self.rng.random() < TIME_WASTING_P):
+            self.caution(team, player, "time_wasting")
+
+    def caution(self, team: str, player: str, reason: str, victim: str | None = None, red: bool = False) -> bool:
+        """Show a card. Returns True if the player is sent off."""
+        card = "red" if red else "second_yellow" if player in self.booked else "yellow"
+        self.emit("card", team_id=team, player_id=player, card=card, card_reason=reason, fouled_player_id=victim)
         self.tick(self.rng.uniform(20, 40) * SEC)
         if card == "yellow":
-            self.booked.add(fouler)
+            self.booked.add(player)
             return False
-        self.on_pitch[fouler_team].remove(fouler)
+        self.on_pitch[team].remove(player)
         return True
 
     def change(self, team: str, cause: str, x: float, y: float) -> None:
@@ -267,7 +304,7 @@ class _Sim:
             # Occasional offensive foul by the carrier.
             if rng.random() < 0.006 * (1.3 - club.discipline) / 0.7:
                 victim = self.pick(opp, L - x)
-                self.foul(team, carrier, victim, x, y)
+                self.foul(team, carrier, victim, x, y, attacking=True)
                 self.change(opp, "foul", L - x, W - y)
                 return opp, L - x, W - y, self.pick(opp, L - x)
 

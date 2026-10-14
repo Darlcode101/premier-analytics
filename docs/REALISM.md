@@ -43,6 +43,20 @@ Not calibrated (no reliable public aggregate found): shots-on-target share, subs
 and possession-change rate. These keep the plausibility ranges in TEST_PLAN §2.
 
 
+## Why cards are shown (F-6b, added 2026-10-14)
+
+Every card carries a reason. Public figures by reason are thin, so these are rounded estimates rather than tight targets:
+
+| Booking reason | Target share of yellows | Simulated (300 matches) | Source |
+|---|---|---|---|
+| Dissent | about 14 % (tested 10-19 %) | 13.5 % | [The Analyst](https://theanalyst.com/articles/new-premier-league-records-on-the-cards): 216 dissent yellows in 2023/24, out of about 1,602 yellows ([MyFootballFacts](https://www.myfootballfacts.com/premier-league/all-time-premier-league/cards/premier-league-red-and-yellow-cards-2023-24/)) |
+| Time-wasting | about 8 % (tested 4-12 %) | 7.0 % | [The Analyst](https://theanalyst.com/articles/yellow-cards-time-wasting-dissent-will-help-biggest-premier-league-teams) on the 2023/24 time-wasting crackdown (club counts, no league total) |
+| Handball | a few % (tested 2-8 %) | 4.9 % | Estimate; no league-wide source found |
+| Fouls (late tackle, tactical foul, holding) | the rest | 74.6 % | — |
+
+Total yellows per team stay at the calibrated 2.04 (simulated 2.035). Time-wasting is only shown to a side ahead in the
+second half, as in real matches.
+
 ## Set pieces (D-10, added 2026-10-12)
 
 Corners come from parried saves, blocked shots and clearances near the byline; the delivery is a cross into the

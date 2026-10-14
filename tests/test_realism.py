@@ -205,3 +205,14 @@ def test_typical_chaos_is_mid_range(season):
                 readings.append(eng.snapshot().chaos)
     assert 0.25 <= mean(readings) <= 0.75
     assert min(readings) < mean(readings) < max(readings)
+
+
+def test_card_reasons_follow_the_real_mix(season):
+    """F-6b: why players are booked. Estimates from 2023/24 reporting (docs/REALISM.md): dissent about 14 %,
+    time-wasting about 8 %, handball a few %, the rest fouls."""
+    reasons = [e.card_reason for m in season for e in m.events if e.type == "card" and e.card != "red"]
+    share = lambda r: sum(x == r for x in reasons) / len(reasons)  # noqa: E731
+    assert 0.10 <= share("dissent") <= 0.19, share("dissent")
+    assert 0.04 <= share("time_wasting") <= 0.12, share("time_wasting")
+    assert 0.02 <= share("handball") <= 0.08, share("handball")
+    assert share("late_tackle") > share("tactical_foul") > 0 and share("holding") > 0

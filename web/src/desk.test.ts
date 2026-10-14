@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  boardName, formation, formationLines, loadUsed, playerMarkers, saveUsed, scorers, subsUsed, timeline, topOpenPoint, topPerformers,
+  bookings, boardName, formation, formationLines, loadUsed, playerMarkers, saveUsed, scorers, subsUsed, timeline, topOpenPoint, topPerformers,
 } from './desk'
 import { initialState, reducer } from './state'
 import type { Hello, Incident, Overlay, PlayerInfo, PlayerLine } from './types'
@@ -187,5 +187,23 @@ describe('late joiners (recaps and agent activity)', () => {
     expect(s.recaps.full_time?.headline).toBe('h')
     expect(s.trace).toHaveLength(1)
     expect(s.counts).toEqual({ published: 12, rejected: 2, stale: 0, error: 1 })
+  })
+})
+
+describe('bookings in the fan Stats (F-6)', () => {
+  it('lists a team\'s cards in order and follows the half switch', () => {
+    const incs = [
+      inc('red', { player_id: 'p5', minute: '70', period: 2, elapsed_ms: 4_300_000 }),
+      inc('yellow', { player_id: 'p4', minute: '30', period: 1, elapsed_ms: 1_800_000, card_reason: 'late_tackle', fouled_player_id: 'q9' }),
+      inc('yellow', { team_id: 'ngc', player_id: 'q4', minute: '31', period: 1, elapsed_ms: 1_860_000 }),
+      inc('goal', { player_id: 'p9' }),
+    ]
+    expect(bookings(incs, 'har')).toEqual([
+      { player_id: 'p4', minute: '30', kind: 'yellow', reason: 'late_tackle', victim: 'q9' },
+      { player_id: 'p5', minute: '70', kind: 'red', reason: null, victim: null },
+    ])
+    expect(bookings(incs, 'har', 'first_half').map(b => b.player_id)).toEqual(['p4'])
+    expect(bookings(incs, 'har', 'second_half').map(b => b.player_id)).toEqual(['p5'])
+    expect(bookings(incs, 'ngc').map(b => b.player_id)).toEqual(['q4'])
   })
 })

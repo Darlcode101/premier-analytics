@@ -232,6 +232,22 @@ about a third each down the left, centre and right, so styles must exist before 
 | OV-3 | S | **Scorebug** top-left: club codes, score, clock with seconds and red stoppage time; `?bug=0` hides it. Language and fan/analyst wording from the URL |
 | OV-4 | S | Opened from the landing page and from the desk's Production tab |
 
+### 3.16 Known styles from more than one season (2026-10-14)
+
+| ID | P | Requirement |
+|---|---|---|
+| PA-3c | M | Whether a club is **known for** a style is judged over this season plus the three before (pooled, same significance test and margin); the figures shown stay this season's. One 14-match season was too few: random variation could hide a real style or invent one |
+
+### 3.15 Fan app: cards list and plain-words "Why?" (signed off 2026-10-14)
+
+| ID | P | Requirement |
+|---|---|---|
+| F-6 | M | **Cards in Stats**: each team's bookings and sendings-off (card, player, minute) under the stat rows, following the full match / half switch (no "on a yellow" notes; user request 10-14) |
+| F-6a | M | Each card has a **› on the right** that opens why it was shown, in plain words (EN/ES/AR): "Late tackle on Kai Greaves", "Fouled X to stop a counter-attack", "Handball", "Dissent towards the referee", "Time-wasting"; second yellows say so. The desk timeline and the fan "Why?" show the same reason |
+| F-6b | M | **Reasons come from the simulation** (never AI): foul cards follow that player's foul and name the fouled player; dissent after a foul given against a side; time-wasting only by a side ahead in the second half (slow free kicks, slow walk off when substituted); straight reds: dangerous tackle, denying a clear chance (near goal), violent conduct, offensive language. Mix calibrated to real bookings (docs/REALISM.md) with total cards unchanged |
+| F-7 | M | **"Why?" in plain words**: 1-3 short sentences built from the moment's facts in code (no AI), EN/ES/AR; chance quality as everyday odds ("about 1 time in 8"), what a goal does to the game, what a missed chance would have made the score, what a card means, what a spell on top looked like; no xG or percentages |
+| F-8 | S | The raw facts stay one tap away behind "See the numbers" |
+
 ### 3.14 Substitution cards (signed off 2026-10-13)
 
 Built only from match facts (no AI): instant, free, and nothing can be invented. Why a manager made a change (injury, tactics) is out of scope: we don't know it.

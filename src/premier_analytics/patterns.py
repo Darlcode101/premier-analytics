@@ -10,7 +10,7 @@ than 5 % of matches).
 from __future__ import annotations
 
 from collections import Counter
-from math import comb
+from math import exp, lgamma, log, log1p
 
 from pydantic import BaseModel, Field
 
@@ -32,14 +32,18 @@ COUNTER_MIN, COUNTER_SHARE, COUNTER_BASE, COUNTER_ALPHA, COUNTER_MS = 3, 0.4, 0.
 USUAL_MIN, USUAL_ALPHA = 15, 0.001
 
 
+def _log_pmf(i: int, n: int, p: float) -> float:
+    return lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1) + i * log(p) + (n - i) * log1p(-p)
+
+
 def binomial_tail(k: int, n: int, p: float) -> float:
-    """P(X >= k) for X ~ Binomial(n, p)."""
-    return min(1.0, sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(max(k, 0), n + 1)))
+    """P(X >= k) for X ~ Binomial(n, p). In log space, so season-sized samples don't overflow."""
+    return min(1.0, sum(exp(_log_pmf(i, n, p)) for i in range(max(k, 0), n + 1)))
 
 
 def binomial_lower(k: int, n: int, p: float) -> float:
     """P(X <= k)."""
-    return min(1.0, sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(0, k + 1)))
+    return min(1.0, sum(exp(_log_pmf(i, n, p)) for i in range(0, k + 1)))
 
 
 def channel_of(y: float) -> str:

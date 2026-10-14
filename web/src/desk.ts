@@ -102,3 +102,15 @@ export function topOpenPoint(feed: Overlay[], used: Set<string>): string | null 
   for (const o of feed) if (!used.has(o.id) && (!best || o.priority > best.priority)) best = o
   return best?.id ?? null
 }
+
+export type CardKind = 'yellow' | 'second_yellow' | 'red'
+
+/** F-6: a team's bookings and sendings-off, in match order, for the whole match or one half. */
+export function bookings(incidents: Incident[], teamId: string, period: 'match' | 'first_half' | 'second_half' = 'match') {
+  return incidents
+    .filter(i => (i.kind === 'yellow' || i.kind === 'second_yellow' || i.kind === 'red') && i.team_id === teamId && i.player_id)
+    .filter(i => period === 'match' || i.period === (period === 'first_half' ? 1 : 2))
+    .sort((a, b) => a.elapsed_ms - b.elapsed_ms)
+    .map(i => ({ player_id: i.player_id as string, minute: i.minute, kind: i.kind as CardKind,
+      reason: i.card_reason ?? null, victim: i.fouled_player_id ?? null }))
+}

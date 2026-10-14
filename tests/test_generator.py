@@ -260,3 +260,32 @@ def test_a_substitute_is_never_taken_off_again(league):
             if e.type == "substitution":
                 assert e.player_out_id not in came_on, (seed, e.player_out_id)
                 came_on.add(e.player_in_id)
+
+
+FOUL_REASONS = {"late_tackle", "tactical_foul", "holding", "handball"}
+CAUTION_REASONS = FOUL_REASONS | {"dissent", "time_wasting"}
+RED_REASONS = {"serious_foul_play", "denied_goal_chance", "violent_conduct", "offensive_language"}
+
+
+def test_every_card_has_a_reason_that_fits(league):
+    """F-6b: foul cards follow that player's foul and name the fouled player; time-wasting only by a side
+    that is ahead in the second half; straight reds have red-card reasons."""
+    seen = set()
+    for seed in range(40):
+        m = generate_match("har", "ngc", seed, league)
+        score = {"har": 0, "ngc": 0}
+        prev = None
+        for e in m.events:
+            if e.type == "goal":
+                score[e.team_id] += 1
+            if e.type == "card":
+                seen.add(e.card_reason)
+                assert e.card_reason in (RED_REASONS if e.card == "red" else CAUTION_REASONS), (e.card, e.card_reason)
+                if e.card_reason in FOUL_REASONS | {"serious_foul_play", "denied_goal_chance"}:
+                    assert prev.type == "foul" and prev.player_id == e.player_id, (seed, e.seq)
+                    assert e.fouled_player_id == prev.fouled_player_id
+                if e.card_reason == "time_wasting":
+                    other = "ngc" if e.team_id == "har" else "har"
+                    assert e.period == 2 and score[e.team_id] > score[other], (seed, e.seq)
+            prev = e
+    assert {"late_tackle", "dissent", "time_wasting"} <= seen

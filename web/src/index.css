@@ -578,3 +578,23 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .tl-open { margin-inline-start: auto; padding: 1px 7px !important; }
 .sub-lines { list-style: none; margin: 2px 0 0; padding: 0; }
 .sub-lines li { margin: 2px 0; color: inherit; opacity: .85; font-size: 14px; line-height: 1.4; }
+
+/* fan Stats: cards (F-6) */
+.cards-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cards-cols ul { list-style: none; margin: 0; padding: 0 0 0 8px; border-inline-start: 3px solid var(--team); }
+.cards-cols li { font-size: 13px; padding: 1px 0; }
+.card-row { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 0; border: 0; background: none; font: inherit; color: inherit; text-align: start; cursor: pointer; }
+.card-row:disabled { cursor: default; }
+.card-name { flex: 1; min-width: 0; }
+.card-chev { margin-inline-start: auto; color: #8a8a99; font-size: 16px; line-height: 1; transition: transform .15s; }
+[dir='rtl'] .card-chev { transform: scaleX(-1); }
+.card-row[aria-expanded='true'] .card-chev { transform: rotate(90deg); }
+.card-why { margin: 0 0 4px; padding-inline-start: 15px; font-size: 12px; color: #55556a; line-height: 1.35; }
+.card-chip { display: inline-block; width: 9px; height: 12px; border-radius: 2px; flex: none; }
+.card-chip.yellow { background: #f5c518; } .card-chip.red { background: #e5484d; }
+.card-min { color: #6b6b7b; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty.small { font-size: 13px; margin: 4px 0; }
+/* fan Why? (F-7, F-8) */
+.why-lines { margin: 8px 0 4px; padding-inline-start: 18px; font-size: 14px; line-height: 1.45; }
+.why-lines li { margin: 2px 0; }
+.see-numbers { background: none; border: 0; padding: 0; font-size: 12px; color: #6b6b7b; text-decoration: underline; cursor: pointer; }

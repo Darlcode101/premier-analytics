@@ -198,3 +198,18 @@ def test_stats_split_by_half(plain_client):
         assert h1["xg"] + h2["xg"] == pytest.approx(t["xg"], abs=0.01)
         assert 0 <= h2["possession_pct"] <= 100 and 0 <= h2["pass_accuracy"] <= 1
     assert final["home"]["first_half"]["possession_pct"] + final["away"]["first_half"]["possession_pct"] == pytest.approx(100, abs=1)
+
+
+def test_card_incidents_say_why(league):
+    """F-6b: the feed carries the card's reason, and the fouled player for foul cards."""
+    from premier_analytics.desk import Incidents
+    from premier_analytics.generator import generate_match
+    found = 0
+    for seed in range(10):
+        feed = Incidents()
+        for e in generate_match("har", "ngc", seed, league).events:
+            inc = feed.observe(e)
+            if inc and e.type == "card":
+                found += 1
+                assert inc["card_reason"] == e.card_reason and inc["fouled_player_id"] == e.fouled_player_id
+    assert found

@@ -11,13 +11,18 @@ import { formatClock, useMatchClock } from '../clock'
 import { loadFavourite, saveFavourite } from '../prefs'
 import { mirrorFor } from '../zones'
 import { involvesSub } from '../subs'
+import { whyLines } from '../why'
 import type { State } from '../state'
 import type { Incident, Language, Overlay, Profile } from '../types'
 
 type Tab = 'live' | 'stats' | 'recap' | 'me'
 
-function MomentCard({ o, color, names, lang, mine }: { o: Overlay; color: string; names: Record<string, string>; lang: Language; mine: boolean }) {
+function MomentCard({ o, color, names, lang, mine, homeId, awayId }: {
+  o: Overlay; color: string; names: Record<string, string>; lang: Language; mine: boolean; homeId: string; awayId: string
+}) {
   const [open, setOpen] = useState(false)
+  const [numbers, setNumbers] = useState(false)
+  const lines = open ? whyLines(o, names, homeId, awayId, lang) : []
   return (
     <article className={`moment-card k-${o.kind}${mine ? ' mine' : ''}`} dir={o.direction} data-testid="feed-item"
       data-mine={mine ? 'true' : undefined} style={{ '--team': color } as React.CSSProperties}>
@@ -30,7 +35,15 @@ function MomentCard({ o, color, names, lang, mine }: { o: Overlay; color: string
         <h3>{localDigits(o.headline, lang)}</h3>
         <p>{localDigits(o.body, lang)}</p>
         <button className="why" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(lang, 'why')}</button>
-        {open && <Evidence overlay={o} names={names} lang={lang} />}
+        {open && (
+          <div className="why-panel" data-testid="why">
+            {lines.length > 0 && <ul className="why-lines">{lines.map((l, k) => <li key={k} dir="auto">{localDigits(l, lang)}</li>)}</ul>}
+            {lines.length > 0
+              ? <button className="see-numbers" onClick={() => setNumbers(v => !v)} aria-expanded={numbers}>{t(lang, numbers ? 'hideNumbers' : 'seeNumbers')}</button>
+              : null}
+            {(numbers || !lines.length) && <Evidence overlay={o} names={names} lang={lang} />}
+          </div>
+        )}
       </div>
     </article>
   )
@@ -217,7 +230,7 @@ export function FanApp({ matchId, lang, setLang }: { matchId: string; lang: Lang
                   ? <SubMoment key={it.sub.id} i={it.sub} color={(it.sub.team_id && colors[it.sub.team_id]) || '#37003c'} lang={lang}
                       mine={involvesSub(it.sub, playerId)} />
                   : <MomentCard key={it.overlay.id} o={it.overlay} color={(it.overlay.team_id && colors[it.overlay.team_id]) || '#37003c'}
-                      names={names} lang={lang} mine={involves(it.overlay, playerId)} />)}
+                      names={names} lang={lang} mine={involves(it.overlay, playerId)} homeId={h?.home.id ?? ''} awayId={h?.away.id ?? ''} />)}
               </div>
             </>
           )}

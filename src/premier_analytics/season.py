@@ -16,6 +16,7 @@ from .patterns import BOX_X, FINAL_THIRD_X, binomial_tail, channel_of
 SEASON_ALPHA = 0.005  # with a clear margin over the league too; open-play shot samples are small
 
 SEASON_SEED = 2025
+HISTORY_SEASONS = 3  # earlier seasons pooled to decide what a club is known for (one 14-match season is too few)
 
 
 @dataclass(frozen=True)
@@ -53,15 +54,28 @@ class Season:
     passers: dict = field(default_factory=dict)  # club -> Counter of final-third entries by passer
     regains: dict = field(default_factory=dict)  # club -> [won in the attacking third, all ball wins]
     shots: dict = field(default_factory=dict)    # club -> [outside the box, all shots]
+    history: list = field(default_factory=list)  # earlier seasons: evidence for "known for", not shown
+
+    def _pooled(self, attr: str, club: str):
+        """A style count over this season and its history."""
+        parts = [getattr(s, attr).get(club) for s in (self, *self.history)]
+        parts = [p for p in parts if p is not None]
+        if isinstance(parts[0], Counter):
+            return sum(parts, Counter())
+        return [sum(p[0] for p in parts), sum(p[1] for p in parts)]
 
     def profiles(self) -> dict:
-        """Each club's style over the season, measured from its matches (not read from its settings), plus
-        the styles that stand out from the league (PA-3: significant over the season and by a clear margin)."""
+        """Each club's style this season, measured from its matches (not read from its settings), plus the
+        styles it is known for (PA-3: significant and by a clear margin over this season and the earlier ones in
+        `history`, so one short season's luck neither invents nor hides a style). Shares shown are this season's."""
         clubs = sorted(self.entries)
-        league = {
-            "high_regain_share": sum(self.regains[c][0] for c in clubs) / sum(self.regains[c][1] for c in clubs),
-            "long_shot_share": sum(self.shots[c][0] for c in clubs) / sum(self.shots[c][1] for c in clubs),
-        }
+
+        def league_share(attr: str, pooled: bool) -> float:
+            rows = [self._pooled(attr, c) if pooled else getattr(self, attr)[c] for c in clubs]
+            return sum(r[0] for r in rows) / sum(r[1] for r in rows)
+
+        league = {"high_regain_share": league_share("regains", False), "long_shot_share": league_share("shots", False)}
+        base = {"high_regain_share": league_share("regains", True), "long_shot_share": league_share("shots", True)}
         out: dict = {"_league": league}
         for club in clubs:
             counts = self.entries[club]
@@ -78,16 +92,20 @@ class Season:
                 "playmaker_share": pm_count / n,
             }
             styles = []
-            side = max(("left", "right"), key=flank.get)
-            k = counts[side]
-            if flank[side] >= 0.42 and 3 * binomial_tail(k, n, 1 / 3) < SEASON_ALPHA:
+            all_entries = self._pooled("entries", club)
+            all_n = sum(all_entries.values()) or 1
+            side = max(("left", "right"), key=lambda c: all_entries[c])
+            k = all_entries[side]
+            if k / all_n >= 0.42 and 3 * binomial_tail(k, all_n, 1 / 3) < SEASON_ALPHA:
                 styles.append({"kind": "flank", "value": side, "share": flank[side], "league": 1 / 3})
-            if p["high_regain_share"] >= league["high_regain_share"] + 0.04 and \
-                    binomial_tail(reg_k, reg_n, league["high_regain_share"]) < SEASON_ALPHA:
+            reg_k, reg_n = self._pooled("regains", club)
+            if reg_k / reg_n >= base["high_regain_share"] + 0.04 and \
+                    binomial_tail(reg_k, reg_n, base["high_regain_share"]) < SEASON_ALPHA:
                 styles.append({"kind": "high_regains", "value": "attacking", "share": p["high_regain_share"],
                                "league": league["high_regain_share"]})
-            if p["long_shot_share"] >= league["long_shot_share"] + 0.05 and \
-                    binomial_tail(sh_k, sh_n, league["long_shot_share"]) < SEASON_ALPHA:
+            sh_k, sh_n = self._pooled("shots", club)
+            if sh_k / sh_n >= base["long_shot_share"] + 0.05 and \
+                    binomial_tail(sh_k, sh_n, base["long_shot_share"]) < SEASON_ALPHA:
                 styles.append({"kind": "long_shots", "value": "outside_box", "share": p["long_shot_share"],
                                "league": league["long_shot_share"]})
             styles.append({"kind": "playmaker", "value": playmaker, "share": p["playmaker_share"], "league": None})
@@ -145,8 +163,9 @@ def schedule(club_ids: list[str]) -> list[list[tuple[str, str]]]:
     return first_half + [[(a, h) for h, a in day] for day in first_half]
 
 
-def simulate_season(league: League, seed: int = SEASON_SEED) -> Season:
-    season = Season(results=[])
+def simulate_season(league: League, seed: int = SEASON_SEED, history: int = 0) -> Season:
+    """history: how many earlier seasons to simulate as evidence for each club's known styles."""
+    season = Season(results=[], history=[simulate_season(league, seed - i) for i in range(1, history + 1)])
     for day, pairs in enumerate(schedule([c.id for c in league.clubs]), 1):
         for home, away in pairs:
             match_seed = seed * 1000 + len(season.results)

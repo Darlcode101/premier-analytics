@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ballAt, emptyPath, planEvent, type BallPath } from '../ballPath'
 import { localDigits } from '../digits'
+import { cardReasonText } from '../cardReasons'
 import { CONTEXT_LABELS, FACT_LABELS, KIND_LABELS, t } from '../i18n'
 import type { State } from '../state'
 import type { ClubInfo, Hello, Language, Overlay } from '../types'
@@ -46,6 +47,7 @@ export function KindIcon({ kind, size = 16 }: { kind: string; size?: number }) {
 
 function factValue(value: string | number | boolean, label: string, names: Record<string, string>, lang: Language): string {
   if (label === 'goal_context') return CONTEXT_LABELS[lang][String(value)] ?? String(value)
+  if (label === 'card_reason') return cardReasonText(String(value), null, lang) ?? String(value)
   if (typeof value === 'string') return names[value] ?? value
   if (label === 'field_tilt') return `${Math.round(Number(value) * 100)}%`
   return String(value)
