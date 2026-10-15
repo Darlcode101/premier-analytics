@@ -1,22 +1,22 @@
 {
   "metrics": {
-    "groundedness.groundedness": 4.811688311688312,
-    "groundedness.groundedness_score": 4.811688311688312,
-    "groundedness.groundedness_passed": 0.9675324675324676,
-    "relevance.relevance": 4.220779220779221,
-    "relevance.relevance_score": 4.220779220779221,
+    "groundedness.groundedness": 4.852112676056338,
+    "groundedness.groundedness_score": 4.852112676056338,
+    "groundedness.groundedness_passed": 0.9788732394366197,
+    "relevance.relevance": 4.52112676056338,
+    "relevance.relevance_score": 4.52112676056338,
     "relevance.relevance_passed": 1.0,
-    "coherence.coherence": 3.987012987012987,
-    "coherence.coherence_score": 3.987012987012987,
+    "coherence.coherence": 4.014084507042254,
+    "coherence.coherence_score": 4.014084507042254,
     "coherence.coherence_passed": 1.0,
-    "fluency.fluency": 3.292207792207792,
-    "fluency.fluency_score": 3.292207792207792,
+    "fluency.fluency": 3.380281690140845,
+    "fluency.fluency_score": 3.380281690140845,
     "fluency.fluency_passed": 1.0,
-    "why.explains_why": 4.071428571428571,
-    "groundedness.binary_aggregate": 0.97,
+    "why.explains_why": 4.21830985915493,
+    "groundedness.binary_aggregate": 0.98,
     "relevance.binary_aggregate": 1.0,
     "coherence.binary_aggregate": 1.0,
     "fluency.binary_aggregate": 1.0
   },
-  "studio_url": "https://ai.azure.com/resource/build/evaluation/891e40b3-c677-45e1-86cb-4658d84faff1?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a"
+  "studio_url": "https://ai.azure.com/resource/build/evaluation/3628df41-59f8-4404-a33c-783a6f8a6c57?wsid=/subscriptions/0931ac23-c5a6-489e-9082-0a3a4b1e504b/resourceGroups/rg-darling6-3123/providers/Microsoft.CognitiveServices/accounts/premieranalytics-resource/projects/premieranalytics&tid=9c9bcd11-977a-4e9c-a9a0-bc734090164a"
 }

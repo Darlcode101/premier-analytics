@@ -333,6 +333,7 @@ Built only from match facts (no AI): instant, free, and nothing can be invented.
 | 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
+| 10-15 | A-8 final check (evaluation round 7, no AI changes, after the generator changes): explains why 4.22, groundedness 4.85, relevance 4.52, Critic/language/length 100 %. One role slip in 142 captions (shooter called the blocker) found by groundedness, not the Critic: noted as a limitation |
 
 ## 8. Milestones
 Scope cut line: if behind on 17 Oct, drop all **C** items and S items D-8, I-4, T-6, P-5, A-8.

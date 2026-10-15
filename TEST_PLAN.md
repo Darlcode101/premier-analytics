@@ -75,7 +75,7 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Language: output language detected == requested (EN/ES/AR) | P-4 | 100 % |
 | Explains *why* (contains causal reasoning, not just restating) — LLM-judge rubric | E-1 | mean ≥ 4/5 |
 
-**Status (2026-10-11, round 6: 3 matches × 4 audiences, 154 AI overlays; details in docs/EVALS.md):** grounding 100 % after critic, groundedness 4.81 ✅; language 100 % ✅; analyst more numbers 91 %, fan text plain 92 % ✅; **explains why 4.07 ✅** (run-to-run noise ≈ ±0.2; every configuration since round 4 between 3.9 and 4.4); favourite-club bias not yet measured live (unit-tested only).
+**Status (2026-10-15, round 7 final check: 3 matches × 4 audiences, 142 AI overlays; details in docs/EVALS.md):** grounding 100 % after critic, groundedness 4.85 ✅; language 100 % ✅; analyst more numbers 94 %, fan text plain 91 % ✅; **explains why 4.22 ✅** (run-to-run noise ≈ ±0.2; every configuration since round 4 between 3.9 and 4.4); favourite-club bias not yet measured live (unit-tested only).
 
 ## 7. E2E tests (Playwright)
 - Load app → pick match → start → first overlay within 5 s.
