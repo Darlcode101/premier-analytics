@@ -277,6 +277,8 @@ export type Message =
       trace?: TraceEvent[]
       trace_counts?: { published: number; rejected: number; stale: number; error: number }
       cue?: Cue | null
+      brief?: Brief | null
+      storylines?: Storyline[]
       cue_note?: string | null
       used?: string[]
     }
@@ -305,6 +307,9 @@ export type Message =
   | { type: 'cue'; cue: Cue | null }
   | { type: 'cue_note'; ref: string; language: Language; text: string }
   | { type: 'used'; ref: string; used: boolean }
+  | { type: 'brief'; brief: Brief }
+  | { type: 'storylines'; storylines: Storyline[] }
+  | { type: 'storyline_error'; error: string }
   | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
@@ -328,4 +333,26 @@ export interface Cue {
   state: 'on_air' | 'up_next'
   break_kind: string | null
   window_s: number | null
+  storyline?: string | null  // PS-3: the storyline (English text) this point feeds
+}
+
+/** PS-1: the pre-match brief (the table and form are in the season context). */
+export interface BriefSide {
+  players_to_watch: { player_id: string; why: 'top_scorer' | 'top_assists' | 'playmaker'; value: number }[]
+  styles: { kind: string; value: string; share: number; league: number | null }[]
+}
+export interface StorylineSuggestion {
+  seed_id: string; kind: string; text: Record<Language, string>; players: string[]; clubs: string[]; source: 'ai' | 'plain'
+}
+export interface Brief {
+  meetings: { matchday: number; home: string; away: string; home_goals: number; away_goals: number }[]
+  home: BriefSide
+  away: BriefSide
+  suggestions: StorylineSuggestion[]
+}
+/** PS-2, PS-3: a storyline the desk follows, with the Watcher's updates. */
+export interface Storyline {
+  id: string; text: Record<Language, string>; players: string[]; clubs: string[]; source: 'suggested' | 'custom'
+  seed_id: string | null
+  updates: { ref: string; minute: string; text: Record<Language, string>; source: 'ai' | 'plain' }[]
 }

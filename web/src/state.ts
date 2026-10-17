@@ -1,4 +1,4 @@
-import type { AttackPoint, ContextCard, Cue, Hello, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, Brief, ContextCard, Cue, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -45,6 +45,9 @@ export interface State {
   cue: Cue | null              // GP-1: the Producer's current cue (desk only)
   cueNote: { ref: string; text: string } | null  // GP-5: belongs to the talking point, not one cue
   used: Set<string>            // GP-4: talking points used, shared by every desk on the match
+  brief: Brief | null          // PS-1
+  storylines: Storyline[]      // PS-2, PS-3: shared by every desk on the match
+  storylineError: string | null
 }
 
 export const initialState: State = {
@@ -52,7 +55,7 @@ export const initialState: State = {
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
   possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
-  cue: null, cueNote: null, used: new Set(),
+  cue: null, cueNote: null, used: new Set(), brief: null, storylines: [], storylineError: null,
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -92,6 +95,8 @@ export function reducer(s: State, m: Action): State {
         cue: m.cue ?? null,
         cueNote: m.cue && m.cue_note ? { ref: m.cue.ref, text: m.cue_note } : null,
         used: new Set(m.used ?? []),
+        brief: m.brief ?? null,
+        storylines: m.storylines ?? [],
       }
     case 'backfill': {
       // history is shown but never animated
@@ -172,6 +177,12 @@ export function reducer(s: State, m: Action): State {
       else used.delete(m.ref)
       return { ...s, used }
     }
+    case 'brief':
+      return { ...s, brief: m.brief }
+    case 'storylines':
+      return { ...s, storylines: m.storylines, storylineError: null }
+    case 'storyline_error':
+      return { ...s, storylineError: m.error }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }
     case 'end':

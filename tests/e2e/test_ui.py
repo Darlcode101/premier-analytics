@@ -652,3 +652,24 @@ def test_ask_box_answers_match_questions_from_the_match_data(server, page: Page)
     expect(answer).to_contain_text("From the match data, checked · as of")
     answer.get_by_test_id("how-i-know").click()
     expect(answer.locator(".cd-evidence")).to_contain_text("get_score()")
+
+
+# ---------- prep and storylines (PS-*) ----------
+
+def test_desk_preps_storylines_then_kicks_off_and_follows_them(server, page: Page):
+    r = httpx.post(f"{server}/api/matches", json={"home": "har", "away": "ngc", "seed": 292, "speed": 300, "autostart": False})
+    page.goto(f"{server}/desk?match={r.json()['match_id']}")
+    expect(page.get_by_test_id("prep")).to_be_visible(timeout=10_000)  # before kick-off, prep comes first
+    expect(page.get_by_test_id("brief-home")).to_contain_text("Players to watch")
+    page.get_by_test_id("storyline-suggestion").first.get_by_role("button").click()
+    page.get_by_test_id("storyline-input").fill("Can Zane Kowalczyk make a difference off the bench?")
+    page.get_by_role("button", name="Add", exact=True).click()
+    expect(page.get_by_test_id("storyline")).to_have_count(2)
+    page.get_by_test_id("storyline-input").fill("Will it rain?")
+    page.get_by_role("button", name="Add", exact=True).click()
+    expect(page.get_by_test_id("storyline-error")).to_contain_text("player or club")
+    page.get_by_test_id("kick-off").click()
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    page.get_by_role("tab", name="Prep").click()
+    story = page.get_by_test_id("storyline").filter(has_text="Kowalczyk")
+    expect(story.get_by_test_id("storyline-update").first).to_be_visible()

@@ -29,6 +29,11 @@ export async function createMatch(home: string, away: string, seed: number, spee
   return (await r.json()).match_id
 }
 
+/** PS-1: the desk kicks off a match it has prepared for. */
+export async function startMatch(matchId: string): Promise<void> {
+  await fetch(`/api/matches/${matchId}/start`, { method: 'POST' }).catch(() => undefined)
+}
+
 /** The desk's ask box (CX-3): a sourced web answer, capped per match. */
 export async function askQuestion(matchId: string, question: string, language: Language): Promise<AskResult> {
   try {

@@ -1,7 +1,7 @@
 // Commentator desk (CD-1..CD-18): a neutral broadcast console. Everything except talking points
 // and recaps is built from match data, so it keeps working with the AI off or down.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { askQuestion, useMatch } from '../api'
+import { askQuestion, startMatch, useMatch } from '../api'
 import { teamColors } from '../colors'
 import { AttackMomentumChart, Agents, forPeriod, HalfSwitch, Recaps, type Period } from '../components/Panels'
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
@@ -18,11 +18,11 @@ import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
 import type {
-  AskResult, ClubInfo, SubCard, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
+  AskResult, BriefSide, ClubInfo, SubCard, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
   TeamStats,
 } from '../types'
 
-const TABS = ['stats', 'patterns', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
+const TABS = ['prep', 'stats', 'patterns', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
 type Tab = typeof TABS[number]
 type Side = 'home' | 'away'
 
@@ -298,6 +298,10 @@ function OnAirCard({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle: (re
       </div>
       <h3>{ctx.num(text?.headline ?? (KIND_LABELS[lang][cue.label] ?? cue.label))}</h3>
       {text?.body && <p>{ctx.num(text.body)}</p>}
+      {cue.storyline && (
+        <p className="oa-story" data-testid="cue-storyline"><b>{dt(lang, 'storylineLabel')}:</b>{' '}
+          {state.storylines.find(s => s.text.en === cue.storyline)?.text[lang] ?? cue.storyline}</p>
+      )}
       {note && <p className="oa-note" data-testid="cue-note"><span className="ai-tag">AI</span> <b>{dt(lang, 'producerNote')}:</b> {ctx.num(note)}</p>}
       <footer>
         <span className="oa-source" data-testid="cue-source">{word(`src_${cue.source}`, cue.source)} → {dt(lang, 'src_producer')}</span>
@@ -567,6 +571,118 @@ function SubCardPanel({ group, ctx, onClose }: { group: Incident[]; ctx: Ctx; on
   )
 }
 
+// ---------- prep and storylines (PS-1..PS-3) ----------
+
+function styleLine(s: BriefSide['styles'][number], lang: Language): string {
+  const pct = String(Math.round(100 * s.share))
+  const lg = s.league === null ? '' : String(Math.round(100 * s.league))
+  const side = s.value === 'left' || s.value === 'right' ? dt(lang, `side_${s.value}` as DeskKey) : s.value
+  const key = `st_${s.kind}` as DeskKey
+  return (dt(lang, key) ?? s.kind).replace('{side}', side).replace('{pct}', pct).replace('{lg}', lg)
+}
+
+function PrepTab({ state, ctx, send }: { state: State; ctx: Ctx; send: (msg: object) => void }) {
+  const [text, setText] = useState('')
+  const brief = state.brief
+  const season = ctx.hello.season
+  const lang = ctx.lang
+  const active = state.storylines
+  const full = active.length >= 4
+  return (
+    <div className="cd-prep" data-testid="prep">
+      <div className="cd-prep-head">
+        <h3 className="cd-sub">{dt(lang, 'briefTitle')}</h3>
+        <span className="no-print">
+          {state.status === 'waiting' && (
+            <button className="cd-used" data-testid="kick-off" onClick={() => void startMatch(ctx.hello.match_id)}>{dt(lang, 'kickOff')}</button>
+          )}{' '}
+          <button className="cd-link" onClick={() => window.print()}>{dt(lang, 'print')}</button>
+        </span>
+      </div>
+      {!brief ? <p className="empty">{t(lang, 'waiting')}</p> : (
+        <>
+          <div className="cd-season-cards">
+            {(['home', 'away'] as const).map(side => {
+              const c = ctx.hello[side]
+              const s = season?.[side]
+              return (
+                <div key={side} className="cd-season-card" data-testid={`brief-${side}`}>
+                  <h4><Bar color={ctx.colors[c.id]} />{c.short_name}
+                    {s && <span className="cd-brief-pos"> · {ctx.num(s.position)} · {ctx.num(s.points)} {dt(lang, 'pts')}</span>}</h4>
+                  {s && <div className="cd-form" dir="ltr">{s.form.map((r, i) => <span key={i} className={`f-${r}`}>{r}</span>)}</div>}
+                  <h5>{dt(lang, 'playersToWatch')}</h5>
+                  <ul className="cd-watch">
+                    {brief[side].players_to_watch.map(w => (
+                      <li key={w.why}><b>{ctx.names[w.player_id] ?? w.player_id}</b> <span>{ctx.num(dt(lang, `w_${w.why}` as DeskKey).replace('{n}', String(w.value)))}</span></li>
+                    ))}
+                  </ul>
+                  {brief[side].styles.length > 0 && <>
+                    <h5>{dt(lang, 'knownFor')}</h5>
+                    <ul className="cd-watch">{brief[side].styles.map(st => <li key={st.kind}>{ctx.num(styleLine(st, lang))}</li>)}</ul>
+                  </>}
+                </div>
+              )
+            })}
+          </div>
+          {brief.meetings.length > 0 && <>
+            <h5 className="cd-sub">{dt(lang, 'meetingsTitle')}</h5>
+            <ul className="cd-watch" dir="ltr">
+              {brief.meetings.map(m => (
+                <li key={m.matchday}>{dt(lang, 'matchday')} {ctx.num(m.matchday)}: {ctx.names[m.home]} <b>{ctx.num(`${m.home_goals}-${m.away_goals}`)}</b> {ctx.names[m.away]}</li>
+              ))}
+            </ul>
+          </>}
+        </>
+      )}
+
+      <h3 className="cd-sub">{dt(lang, 'storylinesTitle')} <span className="cd-count">{ctx.num(active.length)}/{ctx.num(4)}</span></h3>
+      {state.storylineError && <p className="cd-note cd-error" data-testid="storyline-error">{state.storylineError}</p>}
+      {!active.length && <p className="cd-note">{dt(lang, 'noStorylines')}</p>}
+      {active.map(s => (
+        <article key={s.id} className="cd-story" data-testid="storyline">
+          <header>
+            <h4 dir="auto">{s.text[lang] ?? s.text.en}</h4>
+            <button className="cd-link no-print" onClick={() => send({ type: 'storyline_remove', id: s.id })}
+              aria-label={dt(lang, 'removeStoryline')} title={dt(lang, 'removeStoryline')}>×</button>
+          </header>
+          {!s.updates.length ? <p className="cd-note">{dt(lang, 'noUpdates')}</p> : (
+            <ol className="cd-story-updates">
+              {[...s.updates].reverse().map((u, i) => (
+                <li key={`${u.ref}-${i}`} data-testid="storyline-update">
+                  <span className="cd-min">{ctx.num(u.minute)}'</span> <span dir="auto">{ctx.num(u.text[lang] ?? u.text.en)}</span>
+                  {u.source === 'ai' && lang === 'en' && <span className="ai-tag">AI</span>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </article>
+      ))}
+      <form className="cd-ask no-print" onSubmit={e => { e.preventDefault(); if (text.trim() && !full) { send({ type: 'storyline_add', text: text.trim() }); setText('') } }}>
+        <input data-testid="storyline-input" value={text} onChange={e => setText(e.target.value)} maxLength={120}
+          placeholder={dt(lang, 'customStoryline')} aria-label={dt(lang, 'customStoryline')} disabled={full} />
+        <button type="submit" disabled={full || !text.trim()}>{dt(lang, 'addStoryline')}</button>
+      </form>
+      {brief && brief.suggestions.length > 0 && <>
+        <h5 className="cd-sub">{dt(lang, 'suggestedStorylines')}</h5>
+        <ul className="cd-suggestions no-print">
+          {brief.suggestions.map(sg => {
+            const added = active.some(s => s.seed_id === sg.seed_id)
+            return (
+              <li key={sg.seed_id} data-testid="storyline-suggestion">
+                <span dir="auto">{ctx.num(sg.text[lang] ?? sg.text.en)}</span>
+                {sg.source === 'ai' && lang === 'en' && <span className="ai-tag">AI</span>}
+                <button className="cd-used" disabled={added || full} onClick={() => send({ type: 'storyline_add', suggestion_id: sg.seed_id })}>
+                  {added ? '✓' : `+ ${dt(lang, 'addStoryline')}`}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </>}
+    </div>
+  )
+}
+
 // ---------- season (CD-14) ----------
 
 function SeasonTab({ ctx }: { ctx: Ctx }) {
@@ -716,7 +832,7 @@ function ProductionTab({ state, ctx }: { state: State; ctx: Ctx }) {
 export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Language; setLang: (l: Language) => void }) {
   const profile: Profile = { mode: 'analyst', language: lang, club_id: null, player_id: null }
   const { state, send } = useMatch(matchId, profile)
-  const [tab, setTab] = useState<Tab>('stats')
+  const [chosenTab, setTab] = useState<Tab | null>(null)
   const [asked, setAsked] = useState<Asked[]>([])
   const ask = (question: string) => {
     setAsked(prev => [...prev, { question, result: null }])
@@ -766,9 +882,10 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   })
 
   if (!h) return <div className="cd" data-testid="desk"><p className="empty">{t(lang, 'kickOffSoon')}</p></div>
+  const tab: Tab = chosenTab ?? (state.status === 'waiting' ? 'prep' : 'stats')  // PS-1: prep first until kick-off
   const ctx: Ctx = { lang, hello: h, colors, names, num: v => localDigits(v, lang) }
   const tabLabel = (id: Tab) => id === 'timeline' ? dt(lang, 'timeline') : id === 'season' ? dt(lang, 'season')
-    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'patterns' ? dt(lang, 'patterns') : id === 'momentum' ? t(lang, 'momentumChart') : t(lang, id)
+    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'patterns' ? dt(lang, 'patterns') : id === 'momentum' ? t(lang, 'momentumChart') : id === 'prep' ? dt(lang, 'prep') : t(lang, id)
 
   return (
     <div className="cd" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="desk">
@@ -783,6 +900,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
             ))}
           </div>
           <div className="cd-scroll" role="tabpanel">
+            {tab === 'prep' && <PrepTab state={state} ctx={ctx} send={send} />}
             {tab === 'stats' && <StatsTab state={state} ctx={ctx} />}
             {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} onOpenSub={id => setOpenSub(groupKey(groups, id))} />}
             {tab === 'patterns' && <PatternsTab state={state} ctx={ctx} />}

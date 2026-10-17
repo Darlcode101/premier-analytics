@@ -161,6 +161,18 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
 | "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
 
+### Prep and storylines (PS-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Brief: earlier meetings, top scorer and playmaker per club, known styles, all from the simulated season | PS-1 | pytest |
+| Seeds in EN/ES/AR only use their own numbers and name their players or clubs | PS-1 | pytest |
+| AI suggestions: grounded ones kept, invented numbers fall back to the plain seed, unknown seeds dropped, 3-5 offered | PS-1 | pytest |
+| Storylines from suggestions or typed; typed ones must name a player or club in the match; at most 4; remove | PS-2 | pytest |
+| Which moments feed which storyline: anything involving the player (coming on included); club storylines only for moments that matter | PS-3 | pytest |
+| Watcher: grounded updates kept; NONE, invented numbers or players give no AI update | PS-3 | pytest |
+| Through the app with the AI off: brief and suggestions in hello, storylines shared and followed with updates, errors to the desk that asked, cues tagged with their storyline; fans get none of it | PS-1..PS-3 | pytest |
+| Desk: before kick-off Prep comes first; add a suggestion and a typed storyline, an untrackable one is refused; kick off; updates appear for the storyline | PS-1..PS-3 | e2e |
+
 ### Ask about this match (AM-*)
 | Test | Covers | Layer |
 |---|---|---|

@@ -37,6 +37,7 @@ from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, ove
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
 from .season import HISTORY_SEASONS, Season, season_summary, simulate_season
+from .storylines import StorylineAgent, build_brief, plain_suggestions, seeds
 from .subs import SubCards
 
 MIN = 60_000
@@ -154,8 +155,16 @@ class MatchSession:
             on_trace=self._on_trace, max_ai_audiences=max_ai_audiences,
             context_library=library, on_context=self._on_context,
             season_profiles=profiles, on_patterns=self._on_patterns,
-            on_cue=self._on_cue, on_cue_note=self._on_cue_note,
+            on_cue=self._on_cue, on_cue_note=self._on_cue_note, on_storylines=self._on_storylines,
         )
+        # Prep and storylines (PS-1): the brief and storyline seeds come from the simulated season.
+        self.brief, self.seeds, self.suggestions = None, [], []
+        if season is not None:
+            self.brief = build_brief(season, league, profiles or {}, self.names)
+            self.seeds = seeds(season, league, profiles or {}, self.names)
+            self.suggestions = plain_suggestions(self.seeds)
+        self.storyline_agent = StorylineAgent(llm, critic) if llm is not None and self.seeds else None
+        self._suggesting: asyncio.Task | None = None
         self.library = library or []
         self.ask_desk = AskDesk(researcher) if researcher else None
         # AM-1: questions about this match. Tool-using answers need longer than a live caption's timeout.
@@ -188,8 +197,47 @@ class MatchSession:
             "explainers": self._explainers(a.language),
             "patterns": self.orch.latest_patterns.get(a.language),
             **self._history(a),
-            **(self._producer_state(a) if a.mode == "analyst" else {}),
+            **(self._producer_state(a) | self._prep_state() if a.mode == "analyst" else {}),
         }
+
+    def _prep_state(self) -> dict:
+        """PS-1, PS-2: the brief with its suggested storylines, and the storylines being followed."""
+        return {"brief": {**self.brief, "suggestions": self.suggestions} if self.brief else None,
+                "storylines": self.orch.storylines.active}
+
+    async def _suggest_storylines(self) -> None:
+        start = time.perf_counter()
+        try:
+            self.suggestions = await self.storyline_agent.suggest(self.seeds, self.names)
+            self.orch._trace("brief", "*", "storylines", "published", self.storyline_agent.model,
+                             (time.perf_counter() - start) * 1000)
+        except Exception as err:  # the plain seeds stand
+            self.orch._trace("brief", "*", "storylines", "error", detail=repr(err)[:200])
+            return
+        self._to_desks({"type": "brief", "brief": {**self.brief, "suggestions": self.suggestions}})
+
+    def storyline_action(self, msg: dict, viewer: Viewer) -> None:
+        """PS-2: add (a suggestion or typed text) or remove; errors go back to the desk that asked."""
+        st = self.orch.storylines
+        try:
+            if msg.get("type") == "storyline_remove":
+                st.remove(str(msg.get("id", "")))
+            elif isinstance(msg.get("suggestion_id"), str):
+                suggestion = next((s for s in self.suggestions if s["seed_id"] == msg["suggestion_id"]), None)
+                if suggestion is None:
+                    raise ValueError("That suggestion is no longer available")
+                st.add_suggestion(suggestion)
+            elif isinstance(msg.get("text"), str) and msg["text"].strip():
+                st.add_custom(msg["text"][:300])
+            else:
+                return
+        except ValueError as err:
+            viewer.queue.put_nowait({"type": "storyline_error", "error": str(err)})
+            return
+        self.orch.publish_storylines()
+
+    def _on_storylines(self, active: list[dict]) -> None:
+        self._to_desks({"type": "storylines", "storylines": active})
 
     def _producer_state(self, a: Audience) -> dict:
         """GP-4: the desk's current cue, its note and what has been used, for late joiners and reloads."""
@@ -233,6 +281,8 @@ class MatchSession:
     def join(self, a: Audience) -> Viewer:
         v = Viewer(audience=a)
         self.viewers.append(v)
+        if a.mode == "analyst" and self.storyline_agent is not None and self._suggesting is None:
+            self._suggesting = asyncio.create_task(self._suggest_storylines())  # PS-1: words them while they read
         self.orch.add_audience(a)
         v.queue.put_nowait(self.hello(a))
         wanted = self.orch.visible(a)[-BACKFILL:]
@@ -556,6 +606,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
                     msg = json.loads(frame["text"])
                     if msg.get("type") == "used" and isinstance(msg.get("ref"), str) and len(msg["ref"]) <= 200:
                         s.mark_used(msg["ref"], bool(msg.get("used", True)))
+                    elif msg.get("type") in ("storyline_add", "storyline_remove"):
+                        s.storyline_action(msg, viewer)
 
         tasks = {asyncio.create_task(pump()), asyncio.create_task(listen())}
         try:

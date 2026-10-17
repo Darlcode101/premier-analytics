@@ -27,6 +27,7 @@ from .context import ContextAgent, ContextCard, ContextEntry, check_card
 from .pattern_agent import AlertGate, Note, PatternAnalystAgent, fan_lines, plain_notes
 from .patterns import PatternTracker
 from .producer import Candidate, Cue, Producer, ProducerAgent
+from .storylines import CLUB_PLAIN_UPDATE, Storylines, WatcherAgent, plain_update
 from .overlay import (
     STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, display_minute, fast_overlay, validate,
 )
@@ -94,7 +95,8 @@ class Orchestrator:
                  context_library: list[ContextEntry] | None = None, on_context: Callable[[dict], None] | None = None,
                  season_profiles: dict | None = None, on_patterns: Callable[[dict], None] | None = None,
                  on_cue: Callable[[Cue | None], None] | None = None,
-                 on_cue_note: Callable[[str, str, str], None] | None = None):
+                 on_cue_note: Callable[[str, str, str], None] | None = None,
+                 on_storylines: Callable[[list[dict]], None] | None = None):
         self.names = names
         self.audiences: list[Audience] = []
         self.max_ai_audiences = max_ai_audiences
@@ -147,6 +149,10 @@ class Orchestrator:
         self.on_cue = on_cue
         self.on_cue_note = on_cue_note
         self.cue_notes: dict[str, dict[str, str]] = {}  # talking point ref -> language -> note
+        # Storylines (PS-2, PS-3): what the commentator follows, and the Watcher linking moments to them.
+        self.storylines = Storylines(names)
+        self.watcher = WatcherAgent(llm, critic) if llm is not None and critic is not None else None
+        self.on_storylines = on_storylines
         if llm is not None:
             self.explainer = ExplainerAgent(llm)
             self.personaliser = PersonaliserAgent(llm)
@@ -167,6 +173,9 @@ class Orchestrator:
         for m in moments:
             if m.severity >= ANALYST_THRESHOLD and m.kind != "substitution":  # subs come as richer cards
                 self.producer.offer(self._moment_candidate(m))
+            if m.severity >= ANALYST_THRESHOLD:
+                for story in self.storylines.relevant(m):
+                    self._spawn(self._watch(story, m))
             if self.recap_producer is not None and m.kind in ("half_time", "full_time"):
                 self._spawn(self._recap(m))
             for a in self.audiences:
@@ -204,6 +213,34 @@ class Orchestrator:
         self.producer.mark_used(ref, used)
         if self.producer.version != before:
             self._publish_cue()
+
+    def publish_storylines(self) -> None:
+        if self.on_storylines:
+            self.on_storylines(self.storylines.active)
+
+    async def _watch(self, story: dict, m: Moment) -> None:
+        """PS-3: one storyline update for this moment, from the Watcher or plain; boosts the talking point."""
+        text, source = None, "plain"
+        if self.watcher is not None:
+            start = time.perf_counter()
+            try:
+                text = await self.watcher.update(story, m, self.names)
+                self._trace(m.id, "*", "storyline_watcher", "published" if text else "none", self.watcher.model,
+                            (time.perf_counter() - start) * 1000, detail=story["text"]["en"][:60])
+            except Exception as err:
+                self._trace(m.id, "*", "storyline_watcher", "error", detail=repr(err)[:200])
+        if text is not None:
+            update, source = {**plain_update(m, self.names), "en": text}, "ai"
+        elif story["players"] or m.severity >= CLUB_PLAIN_UPDATE:
+            update = plain_update(m, self.names)
+        else:
+            return  # a club storyline and a moment the Watcher didn't link
+        if story not in self.storylines.active:
+            return  # removed meanwhile
+        story["updates"].append({"ref": m.id, "minute": display_minute(m), "text": update, "source": source})
+        for ref in (m.id, f"inc-{m.event_id}"):  # the moment, or its substitution card
+            self.producer.mark_storyline(ref, story["text"]["en"])
+        self.publish_storylines()
 
     def _moment_candidate(self, m: Moment) -> Candidate:
         o = fast_overlay(m, Audience(mode="analyst", language="en"), self.names)

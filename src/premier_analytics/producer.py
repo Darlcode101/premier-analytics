@@ -81,6 +81,7 @@ class Cue(BaseModel):
     state: Literal["on_air", "up_next"]
     break_kind: str | None = None
     window_s: int | None = None
+    storyline: str | None = None  # PS-3: the storyline this talking point feeds
 
 
 class Producer:
@@ -104,6 +105,11 @@ class Producer:
     def mark_context(self, ref: str) -> None:
         if ref in self.pool:
             self.pool[ref].has_context = True
+
+    def mark_storyline(self, ref: str, storyline: str) -> None:
+        """PS-3: this talking point feeds a storyline the commentator is following."""
+        if ref in self.pool:
+            self.pool[ref].storyline = storyline
 
     def mark_used(self, ref: str, used: bool) -> Cue | None:
         (self.used.add if used else self.used.discard)(ref)
@@ -162,14 +168,15 @@ class Producer:
             return None
         state = "on_air" if self.break_kind else "up_next"
         cur = self.current
-        if cur is not None and (cur.ref, cur.state, cur.break_kind) == (best.ref, state, self.break_kind):
+        if cur is not None and (cur.ref, cur.state, cur.break_kind, cur.storyline) == \
+                (best.ref, state, self.break_kind, best.storyline):
             return None
         self._count += 1
         self.version += 1
         self.current = Cue(
             id=self._count, ref=best.ref, kind=best.kind, label=best.label, source=best.source, team_id=best.team_id,
             minute=best.minute, reasons=self.reasons(best), state=state, break_kind=self.break_kind,
-            window_s=BREAK_WINDOWS_S.get(self.break_kind) if self.break_kind else None,
+            window_s=BREAK_WINDOWS_S.get(self.break_kind) if self.break_kind else None, storyline=best.storyline,
         )
         return self.current
 
