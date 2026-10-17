@@ -20,6 +20,7 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
   const [away, setAway] = useState('ngc')
   const [seed, setSeed] = useState(42)
   const [speed, setSpeed] = useState(10)
+  const [hold, setHold] = useState(false)  // PS-1: the desk preps, then kicks off
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [matchId, setMatchId] = useState<string | null>(new URLSearchParams(location.search).get('match'))
@@ -30,7 +31,7 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
     setBusy(true)
     setError('')
     try {
-      const id = await createMatch(home, away, seed, speed)
+      const id = await createMatch(home, away, seed, speed, !hold)
       setMatchId(id)
       history.replaceState(null, '', `/?match=${id}`)
     } catch (e) {
@@ -94,6 +95,10 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
                 </span>
               </label>
             </div>
+            <label className="hold-toggle">
+              <input type="checkbox" checked={hold} onChange={e => setHold(e.target.checked)} data-testid="hold-for-desk" />
+              <span>{t(lang, 'holdForDesk')}</span>
+            </label>
             <button className="cta" onClick={start} disabled={busy || !clubs.length}>{t(lang, 'kickOff')}</button>
             {error && <p className="error" role="alert">{error}</p>}
           </section>

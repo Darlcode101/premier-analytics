@@ -673,3 +673,14 @@ def test_desk_preps_storylines_then_kicks_off_and_follows_them(server, page: Pag
     page.get_by_role("tab", name="Prep").click()
     story = page.get_by_test_id("storyline").filter(has_text="Kowalczyk")
     expect(story.get_by_test_id("storyline-update").first).to_be_visible()
+
+
+def test_landing_can_hold_kick_off_for_the_desk(server, page: Page):
+    page.goto(server)
+    page.get_by_test_id("hold-for-desk").check()
+    page.get_by_role("button", name="Kick off").click()
+    page.get_by_test_id("desk-link").click()
+    expect(page.get_by_test_id("kick-off")).to_be_visible(timeout=10_000)  # waiting for the commentator
+    expect(page.get_by_test_id("clock")).not_to_contain_text("1'")
+    page.get_by_test_id("kick-off").click()
+    expect(page.get_by_test_id("kick-off")).to_have_count(0, timeout=10_000)

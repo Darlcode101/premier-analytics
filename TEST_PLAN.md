@@ -171,6 +171,7 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Which moments feed which storyline: anything involving the player (coming on included); club storylines only for moments that matter | PS-3 | pytest |
 | Watcher: grounded updates kept; NONE, invented numbers or players give no AI update | PS-3 | pytest |
 | Through the app with the AI off: brief and suggestions in hello, storylines shared and followed with updates, errors to the desk that asked, cues tagged with their storyline; fans get none of it | PS-1..PS-3 | pytest |
+| Landing: holding kick-off opens the desk on Prep with a Kick off button that starts the match | PS-4 | e2e |
 | Desk: before kick-off Prep comes first; add a suggestion and a typed storyline, an untrackable one is refused; kick off; updates appear for the storyline | PS-1..PS-3 | e2e |
 
 ### Ask about this match (AM-*)

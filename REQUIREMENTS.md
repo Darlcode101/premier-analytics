@@ -293,6 +293,7 @@ Build order, each step reusing the last: ① Producer, ② Ask about this match,
 |---|---|---|
 | PS-1 | M | A **pre-match brief** before kick-off (printable): table, form, top scorers, known styles, this season's meeting, players to watch, all computed; plus 3-5 AI-suggested **storylines**, Critic-checked |
 | PS-2 | M | The commentator picks suggested storylines or types their own (up to 4); typed ones must concern players or clubs in the match |
+| PS-4 | S | The landing page can hold kick-off for the desk (opt-in, off by default so a judge's fan link never waits): the desk preps, then kicks off |
 | PS-3 | M | A **Storyline Watcher** agent links new moments to storylines and posts short, Critic-checked updates; a board per storyline; the Producer boosts storyline updates |
 
 **④ Live mic fact-check**

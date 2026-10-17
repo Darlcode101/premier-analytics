@@ -16,11 +16,11 @@ export async function fetchClubs(): Promise<ClubSummary[]> {
   return r.json()
 }
 
-export async function createMatch(home: string, away: string, seed: number, speed: number): Promise<string> {
+export async function createMatch(home: string, away: string, seed: number, speed: number, autostart = true): Promise<string> {
   const r = await fetch('/api/matches', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ home, away, seed, speed }),
+    body: JSON.stringify({ home, away, seed, speed, autostart }),
   })
   if (!r.ok) {
     const detail = await r.json().catch(() => ({}))

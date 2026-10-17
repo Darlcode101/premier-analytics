@@ -649,3 +649,6 @@ html.overlay-page, html.overlay-page body { background: transparent; }
   .cd-main, .cd-tabs, .cd-scroll { display: block !important; overflow: visible !important; height: auto !important; }
   .cd-prep, .cd-prep * { color: #000 !important; background: none !important; }
 }
+
+.hold-toggle { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-size: 14px; cursor: pointer; }
+.hold-toggle input { width: 16px; height: 16px; accent-color: #37003c; }
