@@ -10,6 +10,7 @@ import re
 
 from .agents import Explanation, FakeLLM, Personalised
 from .context import ContextCard, Source, WebAnswer
+from .producer import ProducerNote
 from .recap import RecapDraft
 
 _PHRASES = {
@@ -71,6 +72,7 @@ def scripted_llm(delay: float = 0.3) -> FakeLLM:
         "translator": _translator,
         "context": _context,
         "recap": lambda p: RecapDraft(headline="Match recap", summary="The key moments, explained.", key_points=[]),
+        "producer": lambda p: ProducerNote(text="Worth a mention while play is stopped."),
     }, delay=delay, name="scripted")
 
 
@@ -78,4 +80,4 @@ def down_llm() -> FakeLLM:
     def fail(_prompt: str) -> Exception:
         return RuntimeError("model unavailable (simulated outage)")
 
-    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap")}, name="down")
+    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap", "producer")}, name="down")

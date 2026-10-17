@@ -598,3 +598,25 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .why-lines { margin: 8px 0 4px; padding-inline-start: 18px; font-size: 14px; line-height: 1.45; }
 .why-lines li { margin: 2px 0; }
 .see-numbers { background: none; border: 0; padding: 0; font-size: 12px; color: #6b6b7b; text-decoration: underline; cursor: pointer; }
+
+/* the Producer's cue (GP-1..GP-5) */
+.cd-onair-card { margin: 8px 10px 4px; padding: 10px 12px; border: 1px solid var(--cd-line); border-inline-start: 4px solid var(--cd-faint);
+  border-radius: 6px; background: var(--cd-raise); }
+.cd-onair-card.on_air { border-inline-start-color: var(--cd-red); box-shadow: 0 0 0 1px color-mix(in srgb, var(--cd-red) 35%, transparent); }
+.cd-onair-card.none { border-inline-start-color: var(--cd-line); background: none; }
+.cd-onair-card.none .empty { margin: 0; font-size: 12px; }
+.oa-status { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--cd-dim); }
+.oa-status b { color: var(--cd-text); }
+.oa-window { text-transform: none; letter-spacing: 0; }
+.cd-onair-card.on_air .oa-status b { color: var(--cd-red); }
+.oa-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cd-red); animation: oa-pulse 1.2s ease-in-out infinite; }
+@keyframes oa-pulse { 50% { opacity: .35; } }
+.oa-min { margin-inline-start: auto; text-transform: none; letter-spacing: 0; color: var(--cd-text); font-weight: 600; }
+.cd-onair-card h3 { margin: 6px 0 2px; font-size: 16px; line-height: 1.3; }
+.cd-onair-card p { margin: 2px 0; font-size: 13px; color: var(--cd-dim); line-height: 1.45; }
+.oa-note { color: var(--cd-text) !important; border-inline-start: 2px solid #8fb8ff; padding-inline-start: 8px; margin-top: 6px !important; }
+.cd-onair-card footer { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; }
+.oa-source { color: var(--cd-dim); font-weight: 600; }
+.oa-reason { padding: 1px 6px; border-radius: 3px; background: var(--cd-panel); color: var(--cd-faint); }
+.cd-onair-card .cd-used { margin-inline-start: auto; }
+@media (prefers-reduced-motion: reduce) { .oa-dot { animation: none; } }

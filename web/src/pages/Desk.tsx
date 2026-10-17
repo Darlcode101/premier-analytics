@@ -7,12 +7,13 @@ import { AttackMomentumChart, Agents, forPeriod, HalfSwitch, Recaps, type Period
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
 import { PatternPitch } from '../components/PatternPitch'
 import {
-  boardName, formation, formationLines, loadUsed, playerMarkers, saveUsed, scorers, subsUsed, timeline, topOpenPoint, topPerformers,
+  boardName, formation, formationLines, playerMarkers, scorers, subsUsed, timeline, topPerformers,
   type Markers, type PerformerMetric,
 } from '../desk'
 import { dt, type DeskKey } from '../deskText'
 import { groupKey, subGroups } from '../subs'
 import { cardReasonText } from '../cardReasons'
+import { cueText, onAirMs, shownState, type LastOnAir } from '../cue'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
@@ -222,11 +223,12 @@ function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
   )
 }
 
-function TalkingPoints({ state, ctx, used, toggle }: { state: State; ctx: Ctx; used: Set<string>; toggle: (id: string) => void }) {
+function TalkingPoints({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle: (ref: string) => void }) {
   const [team, setTeam] = useState<string | null>(null)
+  const used = state.used
   const feed = team ? state.feed.filter(o => o.team_id === team) : state.feed
-  const next = topOpenPoint(feed, used)
-  const openCount = feed.filter(o => !used.has(o.id)).length
+  const next = state.cue?.ref ?? null
+  const openCount = feed.filter(o => !used.has(o.moment_id)).length
   // PA-6: pattern alerts sit among the talking points at the minute they were spotted.
   const alerts = state.patternAlerts.filter(a => !team || a.team_id === team)
   const items: ({ type: 'alert'; a: (typeof alerts)[number]; at: number } | { type: 'point'; o: Overlay; at: number })[] = [
@@ -245,13 +247,65 @@ function TalkingPoints({ state, ctx, used, toggle }: { state: State; ctx: Ctx; u
           ))}
         </div>
       </header>
+      <OnAirCard state={state} ctx={ctx} toggle={toggle} />
       <div className="cd-scroll">
         {!feed.length && !alerts.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
         {items.map(item => item.type === 'alert' ? <PatternAlert key={item.a.pattern_id} a={item.a} ctx={ctx} /> : (
-          <TalkingPoint key={item.o.id} o={item.o} used={used.has(item.o.id)} next={item.o.id === next} toggle={() => toggle(item.o.id)} ctx={ctx}
+          <TalkingPoint key={item.o.id} o={item.o} used={used.has(item.o.moment_id)} next={item.o.moment_id === next} toggle={() => toggle(item.o.moment_id)} ctx={ctx}
             contexts={state.contexts.filter(c => c.moment_id === item.o.moment_id && c.language === ctx.lang)} />
         ))}
       </div>
+    </section>
+  )
+}
+
+/** GP-1..GP-5: the Producer's cue, pinned above the talking points. */
+function OnAirCard({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle: (ref: string) => void }) {
+  const cue = state.cue
+  const speed = ctx.hello.speed ?? 1
+  const [last, setLast] = useState<LastOnAir | null>(null)
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (cue?.state === 'on_air') {
+      setLast({ ref: cue.ref, until: Date.now() + onAirMs(cue.window_s, speed), break_kind: cue.break_kind, window_s: cue.window_s })
+    }
+  }, [cue?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {  // re-render when the on-air display time runs out
+    if (!last || last.until === Infinity) return
+    const timer = window.setTimeout(() => setTick(n => n + 1), Math.max(0, last.until - Date.now()) + 50)
+    return () => window.clearTimeout(timer)
+  }, [last])
+  const lang = ctx.lang
+  if (!cue) {
+    return <section className="cd-onair-card none" data-testid="cue-card" data-state="none"><p className="empty">{dt(lang, 'noCue')}</p></section>
+  }
+  const shown = shownState(cue, last, Date.now())
+  const text = cueText(cue, state, lang)
+  const team = cue.team_id ? (cue.team_id === ctx.hello.home.id ? ctx.hello.home : ctx.hello.away) : null
+  const note = state.cueNote?.ref === cue.ref ? state.cueNote.text : null
+  const word = (key: string, fallback: string) => (dt(lang, key as DeskKey) as string | undefined) ?? fallback
+  return (
+    <section className={`cd-onair-card ${shown.state}`} data-testid="cue-card" data-state={shown.state} data-ref={cue.ref}
+      dir={lang === 'ar' ? 'rtl' : 'ltr'} aria-live="polite">
+      <div className="oa-status">
+        {shown.state === 'on_air'
+          ? <><i className="oa-dot" aria-hidden /><b>{dt(lang, 'onAir')}</b>
+              {shown.break_kind && <> · {word(`br_${shown.break_kind}`, shown.break_kind)}</>}
+              {shown.window_s ? <> · <span className="oa-window">{ctx.num(dt(lang, 'aboutSeconds').replace('{n}', String(shown.window_s)))}</span></> : null}</>
+          : <><b>{dt(lang, 'upNext')}</b> · {dt(lang, 'openPlay')}</>}
+        <span className="oa-min">{ctx.num(cue.minute)}'</span>
+        {team && <span className="cd-teamtag"><Bar color={ctx.colors[team.id]} />{team.short_name}</span>}
+      </div>
+      <h3>{ctx.num(text?.headline ?? (KIND_LABELS[lang][cue.label] ?? cue.label))}</h3>
+      {text?.body && <p>{ctx.num(text.body)}</p>}
+      {note && <p className="oa-note" data-testid="cue-note"><span className="ai-tag">AI</span> <b>{dt(lang, 'producerNote')}:</b> {ctx.num(note)}</p>}
+      <footer>
+        <span className="oa-source" data-testid="cue-source">{word(`src_${cue.source}`, cue.source)} → {dt(lang, 'src_producer')}</span>
+        {cue.reasons.map(r => <span key={r} className="oa-reason">{word(`r_${r}`, r)}</span>)}
+        <button className="cd-used" data-testid="cue-used" onClick={() => toggle(cue.ref)} aria-label={dt(lang, 'markUsed')}>
+          <span aria-hidden>✓</span> {dt(lang, 'markUsed')}
+        </button>
+      </footer>
     </section>
   )
 }
@@ -637,9 +691,8 @@ function ProductionTab({ state, ctx }: { state: State; ctx: Ctx }) {
 
 export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Language; setLang: (l: Language) => void }) {
   const profile: Profile = { mode: 'analyst', language: lang, club_id: null, player_id: null }
-  const { state } = useMatch(matchId, profile)
+  const { state, send } = useMatch(matchId, profile)
   const [tab, setTab] = useState<Tab>('stats')
-  const [used, setUsed] = useState<Set<string>>(() => loadUsed(matchId))
   const [asked, setAsked] = useState<Asked[]>([])
   const ask = (question: string) => {
     setAsked(prev => [...prev, { question, result: null }])
@@ -669,13 +722,9 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   }, [h, lastSub, groups])
   const openGroup = groups.find(g => g[0].id === openSub) ?? null
 
-  const toggleUsed = (id: string) => setUsed(prev => {
-    const next = new Set(prev)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    saveUsed(matchId, next)
-    return next
-  })
+  // GP-4: used is shared match state on the server; it echoes back to every desk.
+  const toggleUsed = (ref: string) => send({ type: 'used', ref, used: !state.used.has(ref) })
+
 
   // CD-18: 1-6 switch panels, U marks the next talking point as used.
   useEffect(() => {
@@ -685,8 +734,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
       const n = Number(e.key)
       if (n >= 1 && n <= TABS.length) setTab(TABS[n - 1])
       else if (e.key.toLowerCase() === 'u') {
-        const id = topOpenPoint(state.feed, used)
-        if (id) toggleUsed(id)
+        if (state.cue) toggleUsed(state.cue.ref)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -703,7 +751,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
       <Header state={state} ctx={ctx} setLang={setLang} />
       <main className="cd-main">
         <Lineup club={h.home} side="home" state={state} ctx={ctx} season={h.season?.home} />
-        <TalkingPoints state={state} ctx={ctx} used={used} toggle={toggleUsed} />
+        <TalkingPoints state={state} ctx={ctx} toggle={toggleUsed} />
         <section className="cd-panel cd-tabs" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <div className="cd-tablist" role="tablist">
             {TABS.map((id, i) => (

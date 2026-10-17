@@ -620,3 +620,19 @@ def test_fan_stats_list_the_cards(server, page: Page):
         r"Late tackle|counter-attack|Pulled back|Holding|Handball|Dissent|Time-wasting|Dangerous|clear chance|Violent|Offensive"))
     page.get_by_role("button", name="1st half").click()
     expect(items).to_have_count(sum(e.period == 1 for e in cards))
+
+
+# ---------- the Producer (GP-*) ----------
+
+def test_desk_producer_cues_what_to_say_and_used_moves_it_on(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=120, seed=292)}")
+    card = page.get_by_test_id("cue-card")
+    expect(card).to_have_attribute("data-state", "on_air", timeout=30_000)  # a break comes within minutes
+    expect(card.get_by_test_id("cue-source")).to_contain_text("→ Producer")
+    expect(card.get_by_test_id("cue-note")).to_contain_text("Producer", timeout=10_000)  # GP-5: the AI producer adds a line
+    expect(card).to_contain_text(re.compile(r"Goal|Penalty|Free kick|Card|Substitution|Goal kick|Half-time"))
+    ref = card.get_attribute("data-ref")
+    card.get_by_test_id("cue-used").click()
+    expect(card).not_to_have_attribute("data-ref", ref, timeout=10_000)  # the producer moves on
+    page.reload()  # used is shared server state, so it survives a reload
+    expect(page.get_by_test_id("cue-card")).not_to_have_attribute("data-ref", ref, timeout=20_000)

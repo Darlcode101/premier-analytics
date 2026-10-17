@@ -20,19 +20,20 @@ from dataclasses import dataclass
 
 from .agents import (
     AllModelsFailed, CriticAgent, ExplainerAgent, Explanation, LLM, Personalised, PersonaliserAgent,
-    TranslatorAgent,
+    TranslatorAgent, _number_forms,
 )
 from .mcp_server import MatchState
 from .context import ContextAgent, ContextCard, ContextEntry, check_card
 from .pattern_agent import AlertGate, Note, PatternAnalystAgent, fan_lines, plain_notes
 from .patterns import PatternTracker
+from .producer import Candidate, Cue, Producer, ProducerAgent
 from .overlay import (
     STALE_MS, Audience, Names, Overlay, Scheduler, ValidationError, display_minute, fast_overlay, validate,
 )
 from .recap import Recap, RecapProducer
 from .telemetry import tracer
 from .schema import Event
-from .scout import Moment, MomentScout
+from .scout import ANALYST_THRESHOLD, Moment, MomentScout
 
 AI_KINDS = frozenset({
     "goal", "milestone", "big_chance", "woodwork", "red_card", "penalty", "rocket_shot", "momentum_shift",
@@ -91,7 +92,9 @@ class Orchestrator:
                  on_recap: Callable[[Recap], None] | None = None, max_ai_audiences: int | None = None,
                  on_trace: Callable[[TraceEvent], None] | None = None,
                  context_library: list[ContextEntry] | None = None, on_context: Callable[[dict], None] | None = None,
-                 season_profiles: dict | None = None, on_patterns: Callable[[dict], None] | None = None):
+                 season_profiles: dict | None = None, on_patterns: Callable[[dict], None] | None = None,
+                 on_cue: Callable[[Cue | None], None] | None = None,
+                 on_cue_note: Callable[[str, str, str], None] | None = None):
         self.names = names
         self.audiences: list[Audience] = []
         self.max_ai_audiences = max_ai_audiences
@@ -138,6 +141,12 @@ class Orchestrator:
         self.latest_patterns: dict[str, dict] = {}
         self._next_pattern_check = PATTERN_CHECK_MS
         self._pattern_checks = 0
+        # The Producer (GP-*): rules pick what to say next; an AI producer may add one line (GP-5).
+        self.producer = Producer()
+        self.producer_agent = ProducerAgent(llm, critic) if llm is not None and critic is not None else None
+        self.on_cue = on_cue
+        self.on_cue_note = on_cue_note
+        self.cue_notes: dict[str, dict[str, str]] = {}  # talking point ref -> language -> note
         if llm is not None:
             self.explainer = ExplainerAgent(llm)
             self.personaliser = PersonaliserAgent(llm)
@@ -155,6 +164,8 @@ class Orchestrator:
         moments = self.scout.observe(e)
         self.state.add_moments(moments)
         for m in moments:
+            if m.severity >= ANALYST_THRESHOLD and m.kind != "substitution":  # subs come as richer cards
+                self.producer.offer(self._moment_candidate(m))
             if self.recap_producer is not None and m.kind in ("half_time", "full_time"):
                 self._spawn(self._recap(m))
             for a in self.audiences:
@@ -173,6 +184,85 @@ class Orchestrator:
                         self._spawn(self._context(m, language))
         await asyncio.sleep(0)  # let background work start
         return fast
+
+    # ---------- the Producer (GP-*) ----------
+
+    def offer(self, c: Candidate) -> None:
+        """A talking point produced outside the orchestrator (e.g. a substitution card)."""
+        self.producer.offer(c)
+
+    def after_event(self, e: Event) -> None:
+        """Called once everything for this event has been offered: maybe a new cue."""
+        before = self.producer.version
+        self.producer.observe(e)
+        if self.producer.version != before:
+            self._publish_cue()
+
+    def mark_used(self, ref: str, used: bool) -> None:
+        before = self.producer.version
+        self.producer.mark_used(ref, used)
+        if self.producer.version != before:
+            self._publish_cue()
+
+    def _moment_candidate(self, m: Moment) -> Candidate:
+        o = fast_overlay(m, Audience(mode="analyst", language="en"), self.names)
+        players = {self.names.player(m.player_id)} if m.player_id else set()
+        players |= {self.names.player(f.value) for f in m.facts if isinstance(f.value, str) and f.value in self.names.players}
+        numbers = self.critic.allowed_numbers(m) if self.critic is not None else set()
+        return Candidate(
+            ref=m.id, kind="moment", label=m.kind, importance=m.severity, elapsed_ms=m.elapsed_ms, team_id=m.team_id,
+            source="explainer" if m.kind in AI_KINDS and self.llm is not None else "moment_scout",
+            minute=display_minute(m), text=f"{o.headline}. {o.body}", numbers=numbers, players=players,
+        )
+
+    def _publish_cue(self) -> None:
+        cue = self.producer.current
+        if cue is not None:
+            self._trace(cue.ref, "*", "producer", "cue",
+                        detail=f"{cue.state} {cue.break_kind or 'open play'} · {cue.source} · {', '.join(cue.reasons)}")
+        if self.on_cue:
+            self.on_cue(cue)
+        if cue is not None and cue.state == "on_air" and self.producer_agent is not None and cue.ref not in self.cue_notes:
+            self._spawn(self._producer_note(cue))
+
+    async def _producer_note(self, cue: Cue) -> None:
+        """GP-5: one line of angle from the AI producer about this talking point; dropped if the cue moved to
+        another one before it arrived. Notes belong to the talking point, so they survive play resuming."""
+        item = self.producer.pool.get(cue.ref)
+        if item is None:
+            return
+        others = [c for c in self.producer.ranked() if c.ref != cue.ref][:3]
+        start = time.perf_counter()
+        with tracer.start_as_current_span("invoke_agent producer", attributes={
+            "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "producer",
+        }) as span:
+            try:
+                text = await self.producer_agent.note(item, others, self.names)
+            except Exception as err:  # the cue stands without a note
+                span.set_status(StatusCode.ERROR, repr(err)[:200])
+                self._trace(cue.ref, "*", "producer_ai", "error", detail=repr(err)[:200])
+                return
+            ms = (time.perf_counter() - start) * 1000
+            current = self.producer.current
+            outcome = "none" if text is None else "stale" if current is None or current.ref != cue.ref else "published"
+            span.set_attribute("pa.outcome", outcome)
+            self._trace(cue.ref, "*", "producer_ai", outcome, self.producer_agent.model, ms)
+        if outcome != "published":
+            return
+        notes = self.cue_notes.setdefault(cue.ref, {})
+        for language in sorted({a.language for a in self.audiences if a.mode == "analyst"} or {"en"}):
+            localised = text
+            if language != "en":
+                try:
+                    res = await self.translator.run_full(Personalised(headline="-", body=text), language)
+                    localised = res.value.body
+                except Exception:
+                    continue
+                if self.producer_agent.problems(localised, item, others, self.names):
+                    continue
+            notes[language] = localised
+            if self.on_cue_note:
+                self.on_cue_note(cue.ref, language, localised)
 
     def add_audience(self, a: Audience) -> None:
         if a.key not in self.schedulers:
@@ -291,6 +381,7 @@ class Orchestrator:
             "sources": [src.model_dump() for src in entry.sources], "origin": entry.origin,
         }
         self.contexts.append(card_out)
+        self.producer.mark_context(m.id)
         if self.on_context:
             self.on_context(card_out)
 
@@ -330,6 +421,16 @@ class Orchestrator:
                     span.set_status(StatusCode.ERROR, repr(err)[:200])
                     self._trace("patterns", "*", "pattern_analyst", "error", detail=repr(err)[:200])
         by_id = {p.id: p for p in candidates}
+        for n in english:  # GP-1: alerts are talking points the Producer can cue
+            if n.pattern_id in alerts:
+                p = by_id[n.pattern_id]
+                numbers = set().union(*(_number_forms(v) for v in p.numbers.values()))
+                players = {self.names.player(p.value)} if p.kind in ("hub", "playmaker") else set()
+                self.producer.offer(Candidate(
+                    ref=p.id, kind="pattern", label=p.kind, source="pattern_analyst", importance=0.7,
+                    elapsed_ms=elapsed_ms, team_id=p.team_id, minute=minute, text=n.text, numbers=numbers,
+                    players=players,
+                ))
         for language in sorted({a.language for a in self.audiences} or {"en"}):
             notes = english if language == "en" else await self._localise_notes(english, by_id, language)
             payload = {

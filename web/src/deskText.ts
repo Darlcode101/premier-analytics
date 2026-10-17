@@ -121,6 +121,17 @@ const en = {
   change_like_for_like: 'Like-for-like',
   change_more_attacking: 'More attacking',
   change_more_defensive: 'More defensive',
+  onAir: 'On air',
+  upNext: 'Up next',
+  openPlay: 'open play',
+  producerNote: 'Producer',
+  noCue: "The producer's cue appears here once there is something to say.",
+  aboutSeconds: '~{n} s',
+  br_goal: 'Goal', br_penalty: 'Penalty', br_free_kick: 'Free kick', br_card: 'Card', br_substitution: 'Substitution',
+  br_goal_kick: 'Goal kick', br_half_time: 'Half-time', br_full_time: 'Full-time',
+  src_explainer: 'Explainer', src_moment_scout: 'Moment Scout', src_pattern_analyst: 'Pattern Analyst',
+  src_substitutions: 'Substitutions', src_producer: 'Producer',
+  r_big_moment: 'Big moment', r_fresh: 'Just happened', r_context: 'Real-world context', r_storyline: 'Storyline', r_pattern: 'Pattern',
 } as const
 
 export type DeskKey = keyof typeof en
@@ -246,6 +257,17 @@ const es: Dict = {
   change_like_for_like: 'Mismo puesto',
   change_more_attacking: 'Más ofensivo',
   change_more_defensive: 'Más defensivo',
+  onAir: 'En el aire',
+  upNext: 'A continuación',
+  openPlay: 'juego en curso',
+  producerNote: 'Productor',
+  noCue: 'Aquí aparecerá la indicación del productor cuando haya algo que decir.',
+  aboutSeconds: '~{n} s',
+  br_goal: 'Gol', br_penalty: 'Penalti', br_free_kick: 'Falta', br_card: 'Tarjeta', br_substitution: 'Cambio',
+  br_goal_kick: 'Saque de puerta', br_half_time: 'Descanso', br_full_time: 'Final',
+  src_explainer: 'Explicador', src_moment_scout: 'Detector de momentos', src_pattern_analyst: 'Analista de patrones',
+  src_substitutions: 'Cambios', src_producer: 'Productor',
+  r_big_moment: 'Gran momento', r_fresh: 'Recién ocurrido', r_context: 'Contexto real', r_storyline: 'Historia', r_pattern: 'Patrón',
 }
 
 const ar: Dict = {
@@ -368,6 +390,17 @@ const ar: Dict = {
   change_like_for_like: 'في نفس المركز',
   change_more_attacking: 'أكثر هجومية',
   change_more_defensive: 'أكثر دفاعية',
+  onAir: 'على الهواء',
+  upNext: 'التالي',
+  openPlay: 'اللعب مستمر',
+  producerNote: 'المنتج',
+  noCue: 'ستظهر هنا إشارة المنتج عندما يكون هناك ما يقال.',
+  aboutSeconds: '~{n} ث',
+  br_goal: 'هدف', br_penalty: 'ركلة جزاء', br_free_kick: 'ركلة حرة', br_card: 'بطاقة', br_substitution: 'تبديل',
+  br_goal_kick: 'ركلة مرمى', br_half_time: 'استراحة', br_full_time: 'نهاية المباراة',
+  src_explainer: 'المفسّر', src_moment_scout: 'راصد اللحظات', src_pattern_analyst: 'محلل الأنماط',
+  src_substitutions: 'التبديلات', src_producer: 'المنتج',
+  r_big_moment: 'لحظة كبيرة', r_fresh: 'حدث للتو', r_context: 'سياق واقعي', r_storyline: 'قصة المباراة', r_pattern: 'نمط',
 }
 
 export const deskDictionaries: Record<Language, Dict> = { en, es, ar }

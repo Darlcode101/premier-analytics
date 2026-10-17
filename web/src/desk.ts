@@ -1,6 +1,6 @@
 // Commentator desk helpers (CD-4..CD-13). Pure functions over the deterministic incident feed and
 // live player lines, so everything here works with the AI off.
-import type { Incident, Overlay, PlayerInfo, PlayerLine } from './types'
+import type { Incident, PlayerInfo, PlayerLine } from './types'
 
 export interface Markers {
   goals: string[]      // minutes
@@ -80,28 +80,6 @@ export function topPerformers(players: Record<string, PlayerLine>, metric: Perfo
 
 // ---------- talking points ----------
 
-const usedKey = (matchId: string) => `pa.used.${matchId}`
-
-export function loadUsed(matchId: string): Set<string> {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(usedKey(matchId)) ?? '[]') as string[])
-  } catch {
-    return new Set()
-  }
-}
-
-export function saveUsed(matchId: string, used: Set<string>): void {
-  try {
-    localStorage.setItem(usedKey(matchId), JSON.stringify([...used]))
-  } catch { /* not remembered */ }
-}
-
-/** The point most worth saying next: highest priority among those not yet used. */
-export function topOpenPoint(feed: Overlay[], used: Set<string>): string | null {
-  let best: Overlay | null = null
-  for (const o of feed) if (!used.has(o.id) && (!best || o.priority > best.priority)) best = o
-  return best?.id ?? null
-}
 
 export type CardKind = 'yellow' | 'second_yellow' | 'red'
 

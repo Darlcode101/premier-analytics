@@ -1,4 +1,4 @@
-import type { AttackPoint, ContextCard, Hello, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, ContextCard, Cue, Hello, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -42,6 +42,9 @@ export interface State {
   patterns: PatternsUpdate | null
   patternAlerts: (PatternNote & { minute: string; elapsed_ms: number })[]
   shape: { home: TeamShape; away: TeamShape } | null
+  cue: Cue | null              // GP-1: the Producer's current cue (desk only)
+  cueNote: { ref: string; text: string } | null  // GP-5: belongs to the talking point, not one cue
+  used: Set<string>            // GP-4: talking points used, shared by every desk on the match
 }
 
 export const initialState: State = {
@@ -49,6 +52,7 @@ export const initialState: State = {
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
   possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
+  cue: null, cueNote: null, used: new Set(),
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -85,6 +89,9 @@ export function reducer(s: State, m: Action): State {
         patternAlerts: s.hello?.match_id === m.match_id ? s.patternAlerts : [],
         shape: s.hello?.match_id === m.match_id ? s.shape : null,
         players: s.hello?.match_id === m.match_id ? s.players : {},
+        cue: m.cue ?? null,
+        cueNote: m.cue && m.cue_note ? { ref: m.cue.ref, text: m.cue_note } : null,
+        used: new Set(m.used ?? []),
       }
     case 'backfill': {
       // history is shown but never animated
@@ -154,6 +161,16 @@ export function reducer(s: State, m: Action): State {
       const c = m.context
       const known = s.contexts.some(x => x.moment_id === c.moment_id && x.language === c.language)
       return known ? s : { ...s, contexts: [...s.contexts, c] }
+    }
+    case 'cue':
+      return { ...s, cue: m.cue, cueNote: s.cueNote && m.cue && s.cueNote.ref === m.cue.ref ? s.cueNote : null }
+    case 'cue_note':
+      return s.cue && s.cue.ref === m.ref ? { ...s, cueNote: { ref: m.ref, text: m.text } } : s
+    case 'used': {
+      const used = new Set(s.used)
+      if (m.used) used.add(m.ref)
+      else used.delete(m.ref)
+      return { ...s, used }
     }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }

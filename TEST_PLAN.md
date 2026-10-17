@@ -161,6 +161,18 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
 | "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
 
+### Producer (GP-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Each stoppage type puts the cue on air with its window; the next pass, shot or kick-off returns it to up next; throw-ins and corner kicks do not count as breaks | GP-2 | pytest |
+| Window estimates are within ±35 % of the simulation's median stoppage length per type | GP-2 | pytest |
+| Ranking: importance wins when equally fresh; a fresh medium moment beats an old big one; pattern alerts age more slowly; context and storyline boosts; used items never cued; stale items dropped | GP-1 | pytest |
+| A cue is only published when it changes; each published cue names its source and reasons and is in the trace | GP-1, GP-3 | pytest |
+| Through the app with the AI off: cues go on air at substitutions and goals; marking used over the WebSocket moves the cue and syncs a second desk; hello carries the cue and used set | GP-4, GP-6 | pytest |
+| AI note: a grounded note is published (and translated); NONE gives no note; an invented number is dropped; a note for a cue that has moved on is dropped | GP-5 | pytest |
+| On-air display lasts max(window / speed, 6 s) of real time | GP-2 | unit |
+| Desk shows the On air card with its source during a live match; Used moves it on | GP-1, GP-4 | e2e |
+
 ### Card reasons (F-6a, F-6b) and known styles (PA-3c)
 | Test | Covers | Layer |
 |---|---|---|

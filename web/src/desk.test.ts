@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  bookings, boardName, formation, formationLines, loadUsed, playerMarkers, saveUsed, scorers, subsUsed, timeline, topOpenPoint, topPerformers,
+  bookings, boardName, formation, formationLines, playerMarkers, scorers, subsUsed, timeline, topPerformers,
 } from './desk'
 import { initialState, reducer } from './state'
 import type { Hello, Incident, Overlay, PlayerInfo, PlayerLine } from './types'
@@ -87,33 +87,6 @@ describe('top performers (CD-13)', () => {
     expect(topPerformers(players, 'xg').map(p => p.player_id)).toEqual(['a', 'b', 'c'])
     expect(topPerformers(players, 'passes_completed', 2).map(p => p.player_id)).toEqual(['b', 'a'])
     expect(topPerformers(players, 'defensive').map(p => [p.player_id, p.value])).toEqual([['b', 5], ['c', 4], ['a', 1]])
-  })
-})
-
-describe('talking points (CD-9, CD-10)', () => {
-  const store = new Map<string, string>()
-  beforeEach(() => {
-    store.clear()
-    ;(globalThis as Record<string, unknown>).localStorage = {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, v),
-      removeItem: (k: string) => void store.delete(k),
-    }
-  })
-  it('used points are remembered per match', () => {
-    saveUsed('m1', new Set(['o1', 'o2']))
-    expect(loadUsed('m1')).toEqual(new Set(['o1', 'o2']))
-    expect(loadUsed('m2')).toEqual(new Set())
-  })
-  it('never throws when storage is blocked', () => {
-    ;(globalThis as Record<string, unknown>).localStorage = { getItem: () => { throw new Error('x') }, setItem: () => { throw new Error('x') } }
-    expect(() => saveUsed('m1', new Set(['o1']))).not.toThrow()
-    expect(loadUsed('m1')).toEqual(new Set())
-  })
-  it('highlights the highest-priority point not yet used', () => {
-    const o = (id: string, priority: number) => ({ id, priority }) as Overlay
-    expect(topOpenPoint([o('a', 2), o('b', 5), o('c', 9)], new Set(['c']))).toBe('b')
-    expect(topOpenPoint([o('a', 2)], new Set(['a']))).toBe(null)
   })
 })
 

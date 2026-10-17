@@ -273,6 +273,9 @@ export type Message =
       recaps?: Recap[]
       trace?: TraceEvent[]
       trace_counts?: { published: number; rejected: number; stale: number; error: number }
+      cue?: Cue | null
+      cue_note?: string | null
+      used?: string[]
     }
   | { type: 'backfill'; overlays: Overlay[] }
   | {
@@ -296,6 +299,9 @@ export type Message =
   | { type: 'patterns' } & PatternsUpdate
   | { type: 'stats'; home: TeamStats; away: TeamStats; players?: Record<string, PlayerLine>; shape?: { home: TeamShape; away: TeamShape }; chaos: number; clock_ms: number; period: number; elapsed_ms?: number; attack?: AttackPoint }
   | { type: 'incident'; incident: Incident }
+  | { type: 'cue'; cue: Cue | null }
+  | { type: 'cue_note'; ref: string; language: Language; text: string }
+  | { type: 'used'; ref: string; used: boolean }
   | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
@@ -305,3 +311,18 @@ export type Message =
 
 export type Hello = Extract<Message, { type: 'hello' }>
 export type MatchEvent = Extract<Message, { type: 'event' }>
+
+/** GP-1..GP-5: the Producer's cue — what to say next, and whether now is a break to say it in. */
+export interface Cue {
+  id: number
+  ref: string            // moment id, pattern id or incident id
+  kind: 'moment' | 'pattern' | 'sub' | 'storyline' | 'fact'
+  label: string
+  source: string         // the agent it came from
+  team_id: string | null
+  minute: string
+  reasons: string[]
+  state: 'on_air' | 'up_next'
+  break_kind: string | null
+  window_s: number | null
+}

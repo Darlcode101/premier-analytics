@@ -262,6 +262,48 @@ Built only from match facts (no AI): instant, free, and nothing can be invented.
 | SB-6 | M | Works with the AI off; late joiners get the substitutions already made |
 | SB-7 | S | The broadcast overlay's substitution graphic adds one key stat for the player going off (e.g. "1 goal, 34 passes") |
 
+### 3.17 The Gallery: an AI production team for the commentator (signed off 2026-10-17)
+
+Focus decision: the entry concentrates on the commentator / broadcast side (the fan app keeps working, no new work).
+Build order, each step reusing the last: ① Producer, ② Ask about this match, ③ Prep and storylines,
+④ Live mic fact-check (only after its feasibility check). Feature freeze 24 Oct.
+
+**① Producer: "say this next"**
+
+| ID | P | Requirement |
+|---|---|---|
+| GP-1 | M | An **On air next** cue at the top of the desk: the single best talking point among everything the agents produced (moment explanations, pattern alerts, substitution cards; later storyline updates and fact flags). Ranked by rules: importance × freshness, with a boost for real-world context and storylines; nothing already marked used; stale items drop out |
+| GP-2 | M | **Break timing**: the cue goes **on air** at natural stoppages (goal, penalty, free kick, card, substitution, goal kick, half-time) with an estimated window from the simulation's measured stoppage lengths ("~40 s"); in open play it shows **Up next**. At replay speeds the on-air state stays visible for at least 6 s of real time |
+| GP-3 | M | **Visible hand-offs**: each cue names its source and why it was picked ("Pattern Analyst → Producer · fresh · big moment"); each decision is in the agent trace (Production tab) |
+| GP-4 | M | **Used** is shared match state on the server: marking a cue or talking point used (button or U key) moves the cue on, syncs every desk on the match, survives a reload, and late joiners get it |
+| GP-5 | S | **AI producer note** (user decision 10-17: rules pick, AI adds): when a cue goes on air, an AI producer may add one sentence of genuinely useful angle (e.g. linking it to another talking point or the match situation), checked by the Critic against the facts; it says nothing when it has nothing useful; a note that arrives after the cue has moved on is dropped |
+| GP-6 | M | Works with the AI off (rules only, no note) |
+
+**② Ask about this match**
+
+| ID | P | Requirement |
+|---|---|---|
+| AM-1 | M | The ask box routes each question: about **this match** to a Match Analyst agent using the read-only match tools (plus player stats since a given minute); about the **real world** to the Researcher, as now |
+| AM-2 | M | Grounding: every number must match a tool result (Critic); one retry, then the tool facts are shown without the narrative |
+| AM-3 | M | The answer shows its evidence and "as of 67'"; questions outside the data say so (e.g. offsides are not in this feed) |
+
+**③ Prep and storylines**
+
+| ID | P | Requirement |
+|---|---|---|
+| PS-1 | M | A **pre-match brief** before kick-off (printable): table, form, top scorers, known styles, this season's meeting, players to watch, all computed; plus 3-5 AI-suggested **storylines**, Critic-checked |
+| PS-2 | M | The commentator picks suggested storylines or types their own (up to 4); typed ones must concern players or clubs in the match |
+| PS-3 | M | A **Storyline Watcher** agent links new moments to storylines and posts short, Critic-checked updates; a board per storyline; the Producer boosts storyline updates |
+
+**④ Live mic fact-check**
+
+| ID | P | Requirement |
+|---|---|---|
+| FC-0 | M | Feasibility check first (half a day at most): keyless Azure AI Speech transcription in the desk browser via the existing AIServices resource. If not reliable, ④ is dropped with nothing else affected |
+| FC-1 | M | A **Listen** button, off by default; audio and transcripts are never stored or logged |
+| FC-2 | M | A Claim agent extracts checkable stat claims and a Fact-checker compares them with the match; a discreet flag appears only when a claim is clearly wrong |
+| FC-3 | S | A typed "say" box feeds the same checker, so the demo does not depend on a live mic |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -333,6 +375,7 @@ Built only from match facts (no AI): instant, free, and nothing can be invented.
 | 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
+| 10-17 | Focus locked on the commentator / broadcast side after seeing 200+ similar entries (fan app frozen). The Gallery (§3.17) signed off: Producer, Ask about this match, Prep and storylines, Live mic fact-check, in that order. Producer: rules pick the cue and an AI producer may add a line (user: "both"). Break windows come from measured stoppage lengths (goal 78 s, penalty 75 s, free kick 41 s, card 35 s, sub 32 s, goal kick 29 s); throw-ins (17 s, ~36 a match) and corner kicks are not breaks. AI notes belong to the talking point, not one cue: at replay speed play resumes within a second and the note was otherwise lost |
 | 10-15 | A-8 final check (evaluation round 7, no AI changes, after the generator changes): explains why 4.22, groundedness 4.85, relevance 4.52, Critic/language/length 100 %. One role slip in 142 captions (shooter called the blocker) found by groundedness, not the Critic: noted as a limitation |
 
 ## 8. Milestones

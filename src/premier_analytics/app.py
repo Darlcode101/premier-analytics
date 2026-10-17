@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import functools
+import json
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -21,13 +22,14 @@ from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
-from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM
+from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM, _number_forms
 from .context import AgentFrameworkWebSearch, AskDesk, ContextEntry, ResearcherAgent, load_library
 from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
 from .league import League, load_league
 from .momentum import AttackMomentum
 from .orchestrator import Orchestrator, TraceEvent
+from .producer import Candidate
 from .overlay import Audience, Names, Overlay, display_minute, fast_overlay, overlay_id
 from .recap import Recap
 from .schema import PITCH_LENGTH, PITCH_WIDTH, Event
@@ -149,6 +151,7 @@ class MatchSession:
             on_trace=self._on_trace, max_ai_audiences=max_ai_audiences,
             context_library=library, on_context=self._on_context,
             season_profiles=profiles, on_patterns=self._on_patterns,
+            on_cue=self._on_cue, on_cue_note=self._on_cue_note,
         )
         self.library = library or []
         self.ask_desk = AskDesk(researcher) if researcher else None
@@ -179,6 +182,16 @@ class MatchSession:
             "explainers": self._explainers(a.language),
             "patterns": self.orch.latest_patterns.get(a.language),
             **self._history(a),
+            **(self._producer_state(a) if a.mode == "analyst" else {}),
+        }
+
+    def _producer_state(self, a: Audience) -> dict:
+        """GP-4: the desk's current cue, its note and what has been used, for late joiners and reloads."""
+        cue = self.orch.producer.current
+        return {
+            "cue": cue.model_dump() if cue else None,
+            "cue_note": self.orch.cue_notes.get(cue.ref, {}).get(a.language) if cue else None,
+            "used": sorted(self.orch.producer.used),
         }
 
     def _history(self, a: Audience) -> dict:
@@ -280,6 +293,22 @@ class MatchSession:
             if v.audience.language == r.language and v.audience.mode == r.mode:
                 v.queue.put_nowait({"type": "recap", "recap": r.model_dump(mode="json")})
 
+    def _to_desks(self, msg: dict, language: str | None = None) -> None:
+        for v in self.viewers:
+            if v.audience.mode == "analyst" and language in (None, v.audience.language):
+                v.queue.put_nowait(msg)
+
+    def _on_cue(self, cue) -> None:
+        self._to_desks({"type": "cue", "cue": cue.model_dump() if cue else None})
+
+    def _on_cue_note(self, ref: str, language: str, text: str) -> None:
+        self._to_desks({"type": "cue_note", "ref": ref, "language": language, "text": text}, language)
+
+    def mark_used(self, ref: str, used: bool) -> None:
+        """GP-4: shared across every desk on this match."""
+        self._to_desks({"type": "used", "ref": ref, "used": used})
+        self.orch.mark_used(ref, used)
+
     def _on_trace(self, t: TraceEvent) -> None:
         msg = {"type": "trace", "trace": self._trace_json(t)}
         for v in self.viewers:
@@ -327,6 +356,18 @@ class MatchSession:
                 "chaos": round(snap.chaos, 3), "clock_ms": self.clock_ms, "period": self.period,
                 "elapsed_ms": snap.elapsed_ms, "attack": self.attack.point(minute)}
 
+    def _sub_candidate(self, incident: dict, card: dict) -> Candidate:
+        """A substitution card as a talking point for the Producer (GP-1)."""
+        line, off_season, on_season = card["off"]["line"], card["off"]["season"] or {}, card["on"]["season"] or {}
+        values = [*line.values(), card["off"]["minutes"], *off_season.values(), *on_season.values(),
+                  card["subs_used"], card["subs_allowed"], card["score_home"], card["score_away"]]
+        return Candidate(
+            ref=incident["id"], kind="sub", label="substitution", source="substitutions", importance=0.45,
+            elapsed_ms=incident["elapsed_ms"], team_id=incident["team_id"], minute=incident["minute"],
+            text=" ".join(card["fan"]["en"]), numbers=set().union(*(_number_forms(v) for v in values)),
+            players={self.names.player(card["off"]["player_id"]), self.names.player(card["on"]["player_id"])},
+        )
+
     def _end(self) -> dict:
         return {"type": "end", "score_home": self.score[0], "score_away": self.score[1]}
 
@@ -357,6 +398,8 @@ class MatchSession:
             card = self.sub_cards.observe(e, self.orch.scout.engine)
             if incident and card:
                 incident["card"] = card
+                self.orch.offer(self._sub_candidate(incident, card))
+            self.orch.after_event(e)
             if incident:
                 self.incidents.append(incident)
                 self._send({"type": "incident", "incident": incident})
@@ -490,9 +533,14 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
                 await ws.send_json(await viewer.queue.get())
 
         async def listen() -> None:
-            # Notice a departed viewer even when there is nothing to send.
-            while (await ws.receive())["type"] != "websocket.disconnect":
-                pass
+            # Notice a departed viewer even when there is nothing to send; desks may mark talking points used.
+            while (frame := await ws.receive())["type"] != "websocket.disconnect":
+                if audience.mode != "analyst" or not frame.get("text"):
+                    continue
+                with contextlib.suppress(ValueError, TypeError, AttributeError):
+                    msg = json.loads(frame["text"])
+                    if msg.get("type") == "used" and isinstance(msg.get("ref"), str) and len(msg["ref"]) <= 200:
+                        s.mark_used(msg["ref"], bool(msg.get("used", True)))
 
         tasks = {asyncio.create_task(pump()), asyncio.create_task(listen())}
         try:

@@ -54,10 +54,11 @@ function socketUrl(matchId: string, p: Profile): string {
 
 /** Live match state for one viewer profile. Reconnects (keeping the pitch context) when the profile changes. */
 export function useMatch(matchId: string | null, profile: Profile): {
-  state: State; connected: boolean; dispatch: (a: Action) => void
+  state: State; connected: boolean; dispatch: (a: Action) => void; send: (msg: object) => void
 } {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [connected, setConnected] = useState(false)
+  const socketRef = useRef<WebSocket | null>(null)
   const finished = useRef(false)
   finished.current = state.status === 'finished'
 
@@ -69,6 +70,7 @@ export function useMatch(matchId: string | null, profile: Profile): {
 
     const connect = () => {
       socket = new WebSocket(socketUrl(matchId, profile))
+      socketRef.current = socket
       socket.onopen = () => setConnected(true)
       socket.onmessage = ev => dispatch(JSON.parse(ev.data) as Message)
       socket.onclose = () => {
@@ -84,5 +86,9 @@ export function useMatch(matchId: string | null, profile: Profile): {
     }
   }, [matchId, profile.mode, profile.language, profile.club_id, profile.player_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { state, connected, dispatch }
+  // Desk -> server (GP-4: mark a talking point used). Dropped while reconnecting; the server state wins.
+  const send = (msg: object) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) socketRef.current.send(JSON.stringify(msg))
+  }
+  return { state, connected, dispatch, send }
 }
