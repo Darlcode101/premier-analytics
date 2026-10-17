@@ -310,6 +310,7 @@ export type Message =
   | { type: 'brief'; brief: Brief }
   | { type: 'storylines'; storylines: Storyline[] }
   | { type: 'storyline_error'; error: string }
+  | { type: 'fact_check'; checked: number; flags: FactFlag[]; status: 'ok' | 'unavailable' | 'error' }
   | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
@@ -355,4 +356,10 @@ export interface Storyline {
   id: string; text: Record<Language, string>; players: string[]; clubs: string[]; source: 'suggested' | 'custom'
   seed_id: string | null
   updates: { ref: string; minute: string; text: Record<Language, string>; source: 'ai' | 'plain' }[]
+}
+
+/** FC-2: a clear error in something the commentator said, with the right number and where it came from. */
+export interface FactFlag {
+  verdict: 'wrong'; subject: string; metric: string; claimed: number; actual: number; since_minute: number | null
+  quote: string; evidence: string; text: Record<Language, string>
 }

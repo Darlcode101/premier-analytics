@@ -161,6 +161,20 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
 | "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
 
+### Live fact-check (FC-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Only lines with a number (digits, Arabic digits, number words in EN/ES) are sent to the Claim agent | FC-2 | pytest |
+| Wrong player and team claims are flagged with the right number and the tool call behind it; correct ones pass | FC-2 | pytest |
+| "From a minute" claims; tolerances for xG (0.05) and possession (2 points) | FC-2 | pytest |
+| Claims the data can't settle (unknown names, counts not kept from a minute, minutes not yet played) are left alone | FC-2 | pytest |
+| Flag wording in EN/ES/AR with only the right and the claimed numbers | FC-2 | pytest |
+| Speech tokens are keyless Entra tokens tied to the resource (`aad#<id>#<token>`) | FC-0 | pytest |
+| Through the app: a desk's line is checked and only that desk gets the flag; fans can't send lines; nothing said is stored | FC-1, FC-2 | pytest |
+| Phrase list holds every full name, surname and club once; recognition language follows the desk | FC-1 | unit |
+| Desk: a typed wrong stat is flagged with the right number and its evidence; a correct one only adds to the count | FC-2, FC-3 | e2e |
+| Live microphone in a real browser | FC-1 | manual |
+
 ### Prep and storylines (PS-*)
 | Test | Covers | Layer |
 |---|---|---|

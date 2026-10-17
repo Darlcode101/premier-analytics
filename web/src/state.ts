@@ -1,4 +1,4 @@
-import type { AttackPoint, Brief, ContextCard, Cue, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, Brief, ContextCard, Cue, FactFlag, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 /** Moments that get a full-screen animation in the fan app (R-8). */
 export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
@@ -48,6 +48,9 @@ export interface State {
   brief: Brief | null          // PS-1
   storylines: Storyline[]      // PS-2, PS-3: shared by every desk on the match
   storylineError: string | null
+  factFlags: FactFlag[]          // FC-2: this desk's flags, newest first (never stored server-side)
+  factChecked: number
+  factStatus: 'ok' | 'unavailable' | 'error' | null
 }
 
 export const initialState: State = {
@@ -56,6 +59,7 @@ export const initialState: State = {
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
   possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
   cue: null, cueNote: null, used: new Set(), brief: null, storylines: [], storylineError: null,
+  factFlags: [], factChecked: 0, factStatus: null,
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -183,6 +187,8 @@ export function reducer(s: State, m: Action): State {
       return { ...s, storylines: m.storylines, storylineError: null }
     case 'storyline_error':
       return { ...s, storylineError: m.error }
+    case 'fact_check':
+      return { ...s, factFlags: [...m.flags, ...s.factFlags].slice(0, 10), factChecked: s.factChecked + m.checked, factStatus: m.status }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }
     case 'end':

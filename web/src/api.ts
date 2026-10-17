@@ -29,6 +29,15 @@ export async function createMatch(home: string, away: string, seed: number, spee
   return (await r.json()).match_id
 }
 
+/** FC-1: a short-lived, keyless Azure AI Speech token for the Listen button. */
+export async function fetchSpeechToken(): Promise<{ status: string; token?: string; region?: string }> {
+  try {
+    return await (await fetch('/api/speech/token')).json()
+  } catch {
+    return { status: 'error' }
+  }
+}
+
 /** PS-1: the desk kicks off a match it has prepared for. */
 export async function startMatch(matchId: string): Promise<void> {
   await fetch(`/api/matches/${matchId}/start`, { method: 'POST' }).catch(() => undefined)

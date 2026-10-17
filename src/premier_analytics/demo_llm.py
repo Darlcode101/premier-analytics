@@ -10,6 +10,7 @@ import re
 
 from .agents import Explanation, FakeLLM, Personalised
 from .context import ContextCard, Source, WebAnswer
+from .factcheck import Claim, Claims
 from .match_analyst import AskRoute, MatchAnswer
 from .producer import ProducerNote
 from .recap import RecapDraft
@@ -75,6 +76,12 @@ def scripted_llm(delay: float = 0.3) -> FakeLLM:
         return MatchAnswer(scope="match", answer=f"{s['home']} {s['score_home']}-{s['score_away']} {s['away']}.")
 
     llm.responders["match_analyst"] = match_analyst
+    def claims(prompt: str) -> Claims:  # "<Name> has <n> shots" is the one claim the scripted model hears
+        found = re.search(r"([A-Z][\w-]+) has (\d+) shots?", prompt)
+        return Claims(claims=[Claim(quote=found.group(0), subject=found.group(1), metric="shots",
+                                    value=float(found.group(2)))] if found else [])
+
+    llm.responders["claims"] = claims
     llm.responders["ask_router"] = lambda p: AskRoute(
         scope="real_world" if re.search(r"league|record|average|history|rule", p, re.I) else "match")
     return llm
@@ -96,4 +103,4 @@ def down_llm() -> FakeLLM:
         return RuntimeError("model unavailable (simulated outage)")
 
     return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap", "producer",
-                                         "ask_router", "match_analyst")}, name="down")
+                                         "ask_router", "match_analyst", "claims")}, name="down")

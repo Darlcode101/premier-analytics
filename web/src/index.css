@@ -652,3 +652,18 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 
 .hold-toggle { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-size: 14px; cursor: pointer; }
 .hold-toggle input { width: 16px; height: 16px; accent-color: #37003c; }
+
+/* live fact-check (FC-1..FC-3) */
+.cd-factcheck { margin: 4px 10px 6px; padding: 8px 10px; border: 1px solid var(--cd-line); border-radius: 6px; font-size: 12px; }
+.fc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-head .cd-used.on { color: var(--cd-red); border-color: var(--cd-red); }
+.fc-status { color: var(--cd-dim); }
+.fc-head .cd-count { margin-inline-start: auto; }
+.fc-heard { margin: 6px 0 0; color: var(--cd-dim); }
+.fc-heard i { color: var(--cd-text); }
+.cd-factcheck .cd-ask { margin-top: 6px; }
+.fc-flag { margin-top: 6px; padding: 6px 8px; border-inline-start: 3px solid var(--cd-yellow); background: color-mix(in srgb, var(--cd-yellow) 8%, transparent); border-radius: 0 4px 4px 0; }
+.fc-flag > div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.fc-flag small { display: block; color: var(--cd-dim); margin-top: 2px; }
+.fc-evidence code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; overflow-wrap: anywhere; }
+.fc-note { margin: 6px 0 0; color: var(--cd-faint); font-size: 11px; }

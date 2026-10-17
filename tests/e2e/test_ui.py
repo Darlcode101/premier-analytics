@@ -684,3 +684,20 @@ def test_landing_can_hold_kick_off_for_the_desk(server, page: Page):
     expect(page.get_by_test_id("clock")).not_to_contain_text("1'")
     page.get_by_test_id("kick-off").click()
     expect(page.get_by_test_id("kick-off")).to_have_count(0, timeout=10_000)
+
+
+# ---------- live fact-check (FC-*) ----------
+
+def test_desk_fact_checks_a_typed_line_and_flags_the_right_number(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=600, seed=292)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    panel = page.get_by_test_id("fact-check")
+    panel.get_by_test_id("say-input").fill("Kowalczyk has 3 shots since he came on")
+    panel.get_by_role("button", name="Check").click()
+    flag = panel.get_by_test_id("fact-flag").first
+    expect(flag).to_contain_text("Zane Kowalczyk: 1 shot, not 3", timeout=10_000)
+    expect(flag).to_contain_text("get_player_stats")
+    expect(panel.get_by_test_id("fact-count")).to_contain_text("1 checked · 1 flagged")
+    panel.get_by_test_id("say-input").fill("Kowalczyk has 1 shot")  # correct: no new flag
+    panel.get_by_role("button", name="Check").click()
+    expect(panel.get_by_test_id("fact-count")).to_contain_text("2 checked · 1 flagged", timeout=10_000)

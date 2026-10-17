@@ -14,6 +14,7 @@ import { dt, type DeskKey } from '../deskText'
 import { groupKey, subGroups } from '../subs'
 import { cardReasonText } from '../cardReasons'
 import { cueText, onAirMs, shownState, type LastOnAir } from '../cue'
+import { startListening, type ListenStatus } from '../listen'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
 import type { State } from '../state'
@@ -223,7 +224,7 @@ function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
   )
 }
 
-function TalkingPoints({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle: (ref: string) => void }) {
+function TalkingPoints({ state, ctx, toggle, send }: { state: State; ctx: Ctx; toggle: (ref: string) => void; send: (msg: object) => void }) {
   const [team, setTeam] = useState<string | null>(null)
   const used = state.used
   const feed = team ? state.feed.filter(o => o.team_id === team) : state.feed
@@ -248,6 +249,7 @@ function TalkingPoints({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle:
         </div>
       </header>
       <OnAirCard state={state} ctx={ctx} toggle={toggle} />
+      <FactCheckPanel state={state} ctx={ctx} send={send} />
       <div className="cd-scroll">
         {!feed.length && !alerts.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
         {items.map(item => item.type === 'alert' ? <PatternAlert key={item.a.pattern_id} a={item.a} ctx={ctx} /> : (
@@ -255,6 +257,64 @@ function TalkingPoints({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle:
             contexts={state.contexts.filter(c => c.moment_id === item.o.moment_id && c.language === ctx.lang)} />
         ))}
       </div>
+    </section>
+  )
+}
+
+/** FC-1..FC-3: listen to (or type) what the commentator says; flag only clear errors, with the right number. */
+function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (msg: object) => void }) {
+  const [status, setStatus] = useState<ListenStatus>('off')
+  const [heard, setHeard] = useState('')
+  const [text, setText] = useState('')
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const stop = useRef<(() => void) | null>(null)
+  useEffect(() => () => stop.current?.(), [])
+  const lang = ctx.lang
+  const say = (line: string) => send({ type: 'said', text: line })
+  const toggle = async () => {
+    if (stop.current) {
+      stop.current()
+      stop.current = null
+      return
+    }
+    setStatus('listening')
+    stop.current = await startListening(ctx.hello, lang, line => { setHeard(line); say(line) }, setStatus)
+  }
+  const flags = state.factFlags.filter(f => !dismissed.has(`${f.subject}|${f.metric}|${f.claimed}|${f.quote}`))
+  return (
+    <section className="cd-factcheck" data-testid="fact-check" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="fc-head">
+        <b>{dt(lang, 'factCheck')}</b>
+        <button className={`cd-used${status === 'listening' ? ' on' : ''}`} onClick={() => void toggle()} data-testid="listen"
+          aria-pressed={status === 'listening'}>
+          {status === 'listening' ? `■ ${dt(lang, 'stopListening')}` : `● ${dt(lang, 'listen')}`}
+        </button>
+        <span className="fc-status">
+          {status === 'listening' ? dt(lang, 'listening') : status === 'mic_error' ? dt(lang, 'micError')
+            : status === 'unavailable' || state.factStatus === 'unavailable' ? dt(lang, 'speechUnavailable') : ''}
+        </span>
+        <span className="cd-count" data-testid="fact-count">
+          {ctx.num(dt(lang, 'checkedCount').replace('{n}', String(state.factChecked)))} · {ctx.num(dt(lang, 'flaggedCount').replace('{n}', String(state.factFlags.length)))}
+        </span>
+      </div>
+      {heard && <p className="fc-heard"><span>{dt(lang, 'heard')}:</span> <i dir="auto">{heard}</i></p>}
+      <form className="cd-ask" onSubmit={e => { e.preventDefault(); if (text.trim()) { say(text.trim()); setText('') } }}>
+        <input data-testid="say-input" value={text} onChange={e => setText(e.target.value)} maxLength={500}
+          placeholder={dt(lang, 'sayPlaceholder')} aria-label={dt(lang, 'sayPlaceholder')} />
+        <button type="submit" disabled={!text.trim()}>{dt(lang, 'check')}</button>
+      </form>
+      {flags.slice(0, 3).map(f => {
+        const key = `${f.subject}|${f.metric}|${f.claimed}|${f.quote}`
+        return (
+          <div key={key} className="fc-flag" data-testid="fact-flag" role="status">
+            <div><b>⚑ {ctx.num(f.text[lang] ?? f.text.en)}</b>
+              <button className="cd-link" onClick={() => setDismissed(d => new Set(d).add(key))} aria-label={dt(lang, 'dismiss')}>×</button></div>
+            <small dir="auto">{dt(lang, 'youSaid')}: “{f.quote}”</small>
+            <small className="fc-evidence" dir="ltr"><code>{f.evidence}</code></small>
+          </div>
+        )
+      })}
+      <p className="fc-note">{dt(lang, 'factNote')}</p>
     </section>
   )
 }
@@ -892,7 +952,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
       <Header state={state} ctx={ctx} setLang={setLang} />
       <main className="cd-main">
         <Lineup club={h.home} side="home" state={state} ctx={ctx} season={h.season?.home} />
-        <TalkingPoints state={state} ctx={ctx} toggle={toggleUsed} />
+        <TalkingPoints state={state} ctx={ctx} toggle={toggleUsed} send={send} />
         <section className="cd-panel cd-tabs" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <div className="cd-tablist" role="tablist">
             {TABS.map((id, i) => (

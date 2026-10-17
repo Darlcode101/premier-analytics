@@ -25,7 +25,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM, _number_forms
+from .factcheck import MAX_LINE, ClaimAgent, FactChecker, flag_text, worth_checking
 from .match_analyst import MatchAnalyst
+from .mcp_server import MatchTools
+from .speech import DEFAULT_REGION, speech_token, token_getter_from_env
 from .context import AgentFrameworkWebSearch, AskDesk, ContextEntry, ResearcherAgent, load_library
 from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
@@ -170,6 +173,10 @@ class MatchSession:
         # AM-1: questions about this match. Tool-using answers need longer than a live caption's timeout.
         qa_llm = ResilientLLM(llm.primary, llm.fallback, timeout_s=20.0, retries=0) if isinstance(llm, ResilientLLM) else llm
         self.match_analyst = MatchAnalyst(qa_llm, critic, self.orch.state) if llm is not None else None
+        # Live fact-check (FC-2): the Claim agent reads the line, plain code checks it against the match.
+        self.claim_agent = ClaimAgent(llm) if llm is not None else None
+        self.fact_checker = FactChecker(MatchTools(self.orch.state))
+        self.background: set[asyncio.Task] = set()
 
     # ---------- viewers ----------
 
@@ -235,6 +242,28 @@ class MatchSession:
             viewer.queue.put_nowait({"type": "storyline_error", "error": str(err)})
             return
         self.orch.publish_storylines()
+
+    async def fact_check(self, line: str, viewer: Viewer) -> None:
+        """FC-2: check one line the commentator said or typed; flags only clear errors, to that desk only.
+        The line itself is never stored or logged (FC-1)."""
+        reply = {"type": "fact_check", "checked": 0, "flags": [], "status": "ok"}
+        if self.claim_agent is None:
+            reply["status"] = "unavailable"
+        elif worth_checking(line):
+            start = time.perf_counter()
+            try:
+                claims = await self.claim_agent.extract(line[:MAX_LINE], viewer.audience.language)
+            except Exception as err:
+                self.orch._trace("said", "*", "claims", "error", detail=repr(err)[:200])
+                reply["status"] = "error"
+                claims = []
+            verdicts = [v for v in (self.fact_checker.check(c) for c in claims) if v is not None]
+            flags = [v | {"text": {lang: flag_text(v, lang) for lang in ("en", "es", "ar")}}
+                     for v in verdicts if v["verdict"] == "wrong"]
+            reply |= {"checked": len(verdicts), "flags": flags}
+            self.orch._trace("said", "*", "fact_checker", "published" if flags else "ok", self.claim_agent.model,
+                             (time.perf_counter() - start) * 1000, detail=f"{len(verdicts)} claims checked, {len(flags)} flagged")
+        viewer.queue.put_nowait(reply)
 
     def _on_storylines(self, active: list[dict]) -> None:
         self._to_desks({"type": "storylines", "storylines": active})
@@ -559,6 +588,20 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
         s.start()
         return {"match_id": s.id, "status": s.status}
 
+    speech_tokens = token_getter_from_env()
+
+    @app.get("/api/speech/token")
+    async def speech(_: None = None) -> dict:
+        """FC-1: a short-lived, keyless token for the desk's Listen button (Azure AI Speech in the browser)."""
+        resource_id = os.environ.get("AZURE_SPEECH_RESOURCE_ID")
+        if not resource_id or speech_tokens is None:
+            return {"status": "unavailable"}
+        try:
+            return await speech_token(resource_id, os.environ.get("AZURE_SPEECH_REGION", DEFAULT_REGION), speech_tokens)
+        except Exception as err:
+            print(f"speech token failed: {err!r}"[:300], flush=True)
+            return {"status": "error"}
+
     @app.post("/api/matches/{match_id}/ask")
     async def ask(match_id: str, req: AskRequest) -> dict:
         """The desk's ask box: questions about this match go to the Match Analyst (AM-1); questions about
@@ -608,6 +651,10 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
                         s.mark_used(msg["ref"], bool(msg.get("used", True)))
                     elif msg.get("type") in ("storyline_add", "storyline_remove"):
                         s.storyline_action(msg, viewer)
+                    elif msg.get("type") == "said" and isinstance(msg.get("text"), str) and msg["text"].strip():
+                        task = asyncio.create_task(s.fact_check(msg["text"], viewer))
+                        s.background.add(task)  # keep a reference until it finishes
+                        task.add_done_callback(s.background.discard)
 
         tasks = {asyncio.create_task(pump()), asyncio.create_task(listen())}
         try:
