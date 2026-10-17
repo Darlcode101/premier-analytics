@@ -78,7 +78,8 @@ button, select, input { font: inherit; color: inherit; }
 .surfaces { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .surface { display: grid; justify-items: center; align-content: start; gap: 8px; padding: 18px; border-radius: 18px; text-decoration: none; color: inherit; text-align: center; transition: transform .15s; }
 .surface:hover { transform: translateY(-2px); }
-.surface.fan { background: #fff; color: var(--pl-purple); }
+.surface.tablet { background: #fff; color: var(--pl-purple); }
+.surface.tablet small { max-width: 180px; }
 .surface.desk { background: linear-gradient(160deg, #46004d, #170019); border: 1px solid rgba(255,255,255,.18); }
 .surface strong { font-family: var(--font-display); font-size: 20px; text-transform: uppercase; }
 .surface small { opacity: .7; }
@@ -667,3 +668,45 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .fc-flag small { display: block; color: var(--cd-dim); margin-top: 2px; }
 .fc-evidence code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; overflow-wrap: anywhere; }
 .fc-note { margin: 6px 0 0; color: var(--cd-faint); font-size: 11px; }
+
+/* one product: the desk (DK-2..DK-8) */
+.cd-poss { margin-inline-start: 6px; fill: var(--cd-text); stroke: var(--cd-bg); stroke-width: .9; vertical-align: -1px; }
+.cd-added { color: var(--cd-red); margin-inline-start: 4px; font-weight: 700; }
+.cd-block { padding: 6px 10px 2px; }
+.cd-block .cd-onair-card, .cd-block .cd-factcheck { margin: 4px 0 4px; }
+.cd-block-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 2px 0 0; font-size: 12px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--cd-dim); }
+.cd-block-hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--cd-faint); font-size: 12px; }
+.cd-help { margin: 8px 10px 0; padding: 6px 10px; border: 1px dashed var(--cd-line); border-radius: 6px; font-size: 12px; color: var(--cd-dim); }
+.cd-help.open { background: var(--cd-raise); border-style: solid; }
+.cd-help ol { margin: 6px 0; padding-inline-start: 18px; line-height: 1.5; }
+.cd-help li { margin: 2px 0; }
+.cd-help-toggle { font-size: 12px; }
+.cd-focus-chip { margin: 6px 10px 0; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, #8fb8ff 15%, transparent);
+  color: var(--cd-text); font-size: 12px; display: inline-flex; gap: 6px; align-items: center; align-self: flex-start; }
+.cd-point.focus, .cd-onair-card.focus { box-shadow: inset 3px 0 0 #8fb8ff; }
+.cd-timeline li.focus { background: color-mix(in srgb, #8fb8ff 12%, transparent); }
+.cd-row.focus { outline: 1px solid #8fb8ff; outline-offset: -1px; }
+.cd-focus-btn { margin: 0 0 8px; width: 100%; }
+.cd-simple { margin: 6px 0 2px; padding: 6px 10px 6px 24px; background: var(--cd-panel); border-radius: 4px; font-size: 13px; line-height: 1.45; }
+.cd-simple li { margin: 2px 0; }
+/* DK-8: comfortable targets for every desk control */
+.cd button { min-height: 32px; }
+.cd .cd-row { min-height: 32px; }
+.cd .cd-link { min-height: 28px; }
+
+/* DK-6/DK-8: compact main column so talking points keep room at 1280x720 */
+.cd-points { position: relative; }
+.cd-block-row { display: flex; align-items: baseline; gap: 8px; }
+.cd-block-row .cd-block-title { flex: 1; min-width: 0; }
+.cd-block-hint { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cd-help { margin: 0; padding: 0; border: 0; background: none; flex: none; }
+.cd-help.open { position: absolute; z-index: 6; top: 34px; inset-inline: 10px; padding: 10px 12px; border: 1px solid var(--cd-line);
+  background: var(--cd-raise); border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5); }
+.cd-help-toggle { white-space: nowrap; }
+.cd-onair-card p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cd-onair-card h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fc-head .cd-block-title { margin: 0; }
+.fc-form { flex: 1; min-width: 180px; margin: 0 !important; }
+.fc-form input { min-width: 0; }
+.cd-factcheck .fc-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

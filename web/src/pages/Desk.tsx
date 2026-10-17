@@ -7,13 +7,15 @@ import { AttackMomentumChart, Agents, forPeriod, HalfSwitch, Recaps, type Period
 import { Evidence, KindIcon, ZoneMap } from '../components/Shared'
 import { PatternPitch } from '../components/PatternPitch'
 import {
-  boardName, formation, formationLines, playerMarkers, scorers, subsUsed, timeline, topPerformers,
+  boardName, formation, formationLines, incidentInvolves, involves, playerMarkers, scorers, subsUsed, timeline, topPerformers,
   type Markers, type PerformerMetric,
 } from '../desk'
 import { dt, type DeskKey } from '../deskText'
 import { groupKey, subGroups } from '../subs'
 import { cardReasonText } from '../cardReasons'
 import { cueText, onAirMs, shownState, type LastOnAir } from '../cue'
+import { formatClock, useMatchClock } from '../clock'
+import { whyLines } from '../why'
 import { startListening, type ListenStatus } from '../listen'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
@@ -23,7 +25,7 @@ import type {
   TeamStats,
 } from '../types'
 
-const TABS = ['prep', 'stats', 'patterns', 'timeline', 'momentum', 'season', 'research', 'production', 'recap'] as const
+const TABS = ['prep', 'stats', 'patterns', 'timeline', 'ask', 'production'] as const  // DK-5
 type Tab = typeof TABS[number]
 type Side = 'home' | 'away'
 
@@ -33,6 +35,8 @@ interface Ctx {
   colors: Record<string, string>
   names: Record<string, string>
   num: (v: string | number) => string
+  focus: string | null                       // DK-4: the player in focus
+  setFocus: (id: string | null) => void
 }
 
 const Bar = ({ color }: { color: string }) => <i className="cd-bar" style={{ background: color }} aria-hidden />
@@ -59,11 +63,21 @@ const Card = ({ kind }: { kind: 'yellow' | 'red' }) => <i className={`cd-card ${
 
 // ---------- header (CD-4) ----------
 
-function TeamHead({ club, side, incidents, ctx }: { club: ClubInfo; side: Side; incidents: Incident[]; ctx: Ctx }) {
+function TeamHead({ club, side, incidents, ctx, possession }: {
+  club: ClubInfo; side: Side; incidents: Incident[]; ctx: Ctx; possession: boolean
+}) {
   const reds = incidents.filter(i => (i.kind === 'red' || i.kind === 'second_yellow') && i.team_id === club.id)
   return (
     <div className={`cd-team ${side}`}>
-      <div className="cd-team-name"><Bar color={ctx.colors[club.id]} /><span>{club.name}</span></div>
+      <div className="cd-team-name"><Bar color={ctx.colors[club.id]} /><span>{club.name}</span>
+        {possession && (  /* DK-3: a small ball beside the team on the ball */
+          <svg className="cd-poss" data-testid="possession-ball" viewBox="0 0 16 16" width="13" height="13" role="img"
+            aria-label={t(ctx.lang, 'inPossession')}>
+            <circle cx="8" cy="8" r="7" />
+            <path d="M8 4.2l2.6 1.9-1 3H6.4l-1-3z M8 1v3.2 M10.6 6.1l3.6-1 M9.6 9.1l2 2.9 M6.4 9.1l-2 2.9 M5.4 6.1l-3.6-1" />
+          </svg>
+        )}
+      </div>
       <ul className="cd-scorers" data-testid={`scorers-${side}`}>
         {scorers(incidents, club.id).map(s => (
           <li key={s.player_id}>
@@ -81,8 +95,15 @@ function TeamHead({ club, side, incidents, ctx }: { club: ClubInfo; side: Side; 
 
 function Header({ state, ctx, setLang }: { state: State; ctx: Ctx; setLang: (l: Language) => void }) {
   const { hello: h, lang } = ctx
-  const clock = state.status === 'finished' ? t(lang, 'fullTime')
-    : state.status === 'live' ? `${ctx.num(state.minute)}'` : t(lang, 'kickOffSoon')
+  // DK-3: minutes and seconds ticking between events; stoppage time in red, as on broadcast scorebugs.
+  const inPlay = state.status === 'live' && state.lastEvent?.kind !== 'period_end'
+  const clockMs = useMatchClock(state.clockMs, h.speed ?? 1, inPlay)
+  const { main, added } = formatClock(clockMs, state.period)
+  const halfTime = state.status === 'live' && state.lastEvent?.kind === 'period_end' && state.period === 1
+  const clock = state.status === 'finished' ? t(lang, 'fullTime') : halfTime ? t(lang, 'halfTime')
+    : state.status === 'live' && state.lastEvent
+      ? <>{ctx.num(main)}{added && <b className="cd-added" data-testid="added-time">{ctx.num(added)}</b>}</>
+      : state.status === 'live' ? '0:00' : t(lang, 'kickOffSoon')
   const period = state.status === 'live' ? dt(lang, state.period === 1 ? 'period1' : 'period2') : ''
   const wx = `w_${h.weather.condition}` as DeskKey
   return (
@@ -90,7 +111,7 @@ function Header({ state, ctx, setLang }: { state: State; ctx: Ctx; setLang: (l: 
       <div className="cd-top">
         <span className="cd-title">{t(lang, 'deskTitle')}</span>
         <div className="cd-scorebox" dir="ltr">
-          <TeamHead club={h.home} side="home" incidents={state.incidents} ctx={ctx} />
+          <TeamHead club={h.home} side="home" incidents={state.incidents} ctx={ctx} possession={state.status === 'live' && state.possession === h.home.id} />
           <div className="cd-scoreline">
             <span className="cd-score" data-testid="score">{ctx.num(state.score[0])} – {ctx.num(state.score[1])}</span>
             <span className="cd-clock-row">
@@ -99,7 +120,7 @@ function Header({ state, ctx, setLang }: { state: State; ctx: Ctx; setLang: (l: 
               {period && <span className="cd-period">{period}</span>}
             </span>
           </div>
-          <TeamHead club={h.away} side="away" incidents={state.incidents} ctx={ctx} />
+          <TeamHead club={h.away} side="away" incidents={state.incidents} ctx={ctx} possession={state.status === 'live' && state.possession === h.away.id} />
         </div>
         <div className="cd-lang" role="group" aria-label={t(lang, 'language')}>
           {(['en', 'es', 'ar'] as const).map(l => (
@@ -163,7 +184,7 @@ function Lineup({ club, side, state, ctx, season }: { club: ClubInfo; side: Side
     const open = selected === p.id
     return (
       <li key={p.id}>
-        <button className={`cd-row${m?.booked ? ' booked' : ''}${m?.red ? ' sent-off' : ''}${m?.off ? ' subbed' : ''}`}
+        <button className={`cd-row${m?.booked ? ' booked' : ''}${m?.red ? ' sent-off' : ''}${m?.off ? ' subbed' : ''}${ctx.focus === p.id ? ' focus' : ''}`}
           data-testid={testid} data-booked={m?.booked ? 'true' : 'false'} aria-expanded={open}
           onClick={() => setSelected(open ? null : p.id)} title={m?.booked ? dt(ctx.lang, 'booked') : undefined}>
           <span className="no">{ctx.num(p.number)}</span>
@@ -171,7 +192,13 @@ function Lineup({ club, side, state, ctx, season }: { club: ClubInfo; side: Side
           <span className="pos">{p.position}</span>
           <MarkerIcons m={m} ctx={ctx} />
         </button>
-        {open && <PlayerLineView line={state.players[p.id]} season={season?.players[p.id]} ctx={ctx} />}
+        {open && <>
+          <PlayerLineView line={state.players[p.id]} season={season?.players[p.id]} ctx={ctx} />
+          <button className="cd-used cd-focus-btn" data-testid="focus-player" aria-pressed={ctx.focus === p.id}
+            onClick={() => ctx.setFocus(ctx.focus === p.id ? null : p.id)}>
+            {ctx.focus === p.id ? dt(ctx.lang, 'clearFocus') : `◎ ${dt(ctx.lang, 'focusOn')}`}
+          </button>
+        </>}
       </li>
     )
   }
@@ -193,16 +220,47 @@ function Lineup({ club, side, state, ctx, season }: { club: ClubInfo; side: Side
   )
 }
 
+// ---------- how this desk works (DK-7) ----------
+
+const HELP_KEY = 'pa.deskHelp'
+
+function DeskHelp({ lang }: { lang: Language }) {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(HELP_KEY) !== 'closed' } catch { return true }
+  })
+  const set = (v: boolean) => {
+    setOpen(v)
+    try { localStorage.setItem(HELP_KEY, v ? 'open' : 'closed') } catch { /* not remembered */ }
+  }
+  return (
+    <div className={`cd-help${open ? ' open' : ''}`} data-testid="desk-help" data-open={open ? 'true' : 'false'}>
+      <button className="cd-link cd-help-toggle" onClick={() => set(!open)} aria-expanded={open}>
+        ⓘ {dt(lang, 'helpTitle')}
+      </button>
+      {open && <>
+        <ol>
+          <li>{dt(lang, 'help1')}</li><li>{dt(lang, 'help2')}</li><li>{dt(lang, 'help3')}</li>
+          <li>{dt(lang, 'help4')}</li><li>{dt(lang, 'help5')}</li>
+        </ol>
+        <button className="cd-used" onClick={() => set(false)} data-testid="help-close">{dt(lang, 'helpClose')}</button>
+      </>}
+    </div>
+  )
+}
+
 // ---------- talking points (CD-9, CD-10) ----------
 
 function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
   o: Overlay; used: boolean; next: boolean; toggle: () => void; ctx: Ctx; contexts: ContextCard[]
 }) {
   const [open, setOpen] = useState(false)
+  const [simple, setSimple] = useState(false)
+  const focused = involves(o, ctx.focus)
+  const plain = simple ? whyLines(o, ctx.names, ctx.hello.home.id, ctx.hello.away.id, ctx.lang) : []
   const team = o.team_id ? ctx.hello[o.team_id === ctx.hello.home.id ? 'home' : 'away'] : null
   return (
-    <article className={`cd-point${used ? ' used' : ''}${next ? ' next' : ''}`} dir={o.direction}
-      data-testid="feed-item" data-id={o.id} data-used={used ? 'true' : 'false'}>
+    <article className={`cd-point${used ? ' used' : ''}${next ? ' next' : ''}${focused ? ' focus' : ''}`} dir={o.direction}
+      data-testid="feed-item" data-id={o.id} data-used={used ? 'true' : 'false'} data-focus={focused ? 'true' : undefined}>
       <header>
         <span className="cd-min">{ctx.num(o.minute)}'</span>
         <span className="cd-kind"><KindIcon kind={o.kind} size={13} /> {KIND_LABELS[ctx.lang][o.kind] ?? o.kind}</span>
@@ -215,10 +273,14 @@ function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
       {contexts.map(c => <ContextBlock key={c.entry_id} c={c} lang={ctx.lang} />)}
       <footer>
         <button className="cd-link" onClick={() => setOpen(v => !v)} aria-expanded={open}>{t(ctx.lang, 'why')}</button>
+        <button className="cd-link" onClick={() => setSimple(v => !v)} aria-expanded={simple} data-testid="say-simply">{dt(ctx.lang, 'sayItSimply')}</button>
         <button className="cd-used" onClick={toggle} aria-pressed={used} aria-label={dt(ctx.lang, 'markUsed')}>
           <span aria-hidden>{used ? '✓' : '○'}</span> {used ? dt(ctx.lang, 'used') : dt(ctx.lang, 'markUsed')}
         </button>
       </footer>
+      {simple && (plain.length
+        ? <ul className="cd-simple" data-testid="simple-lines">{plain.map((l, i) => <li key={i} dir="auto">{ctx.num(l)}</li>)}</ul>
+        : <p className="cd-note">{ctx.num(o.body)}</p>)}
       {open && <Evidence overlay={o} names={ctx.names} lang={ctx.lang} />}
     </article>
   )
@@ -237,19 +299,34 @@ function TalkingPoints({ state, ctx, toggle, send }: { state: State; ctx: Ctx; t
     ...feed.map(o => ({ type: 'point' as const, o, at: o.elapsed_in_ms })),
   ].sort((x, y) => y.at - x.at)
   const { home, away } = ctx.hello
+  const lang = ctx.lang
   return (
     <section className="cd-panel cd-points" aria-labelledby="tp-title">
-      <header className="cd-panel-head">
-        <h2 id="tp-title">{t(ctx.lang, 'talkingPoints')}</h2>
-        <span className="cd-count">{ctx.num(openCount)} {dt(ctx.lang, 'open')}</span>
+      {ctx.focus && (
+        <p className="cd-focus-chip" data-testid="focus-chip">
+          ◎ {dt(lang, 'focusLabel')}: <b dir="auto">{ctx.names[ctx.focus]}</b>
+          <button className="cd-link" onClick={() => ctx.setFocus(null)} aria-label={dt(lang, 'clearFocus')}>×</button>
+        </p>
+      )}
+      <div className="cd-block" data-testid="block-cue">
+        <div className="cd-block-row">
+          <h2 className="cd-block-title">{dt(lang, 'cueTitle')} <span className="cd-block-hint">{dt(lang, 'cueHint')}</span></h2>
+          <DeskHelp lang={lang} />
+        </div>
+        <OnAirCard state={state} ctx={ctx} toggle={toggle} />
+      </div>
+      <div className="cd-block" data-testid="block-factcheck">
+        <FactCheckPanel state={state} ctx={ctx} send={send} />
+      </div>
+      <header className="cd-panel-head" data-testid="block-points">
+        <h2 id="tp-title">{t(lang, 'talkingPoints')}</h2>
+        <span className="cd-count">{ctx.num(openCount)} {dt(lang, 'open')}</span>
         <div className="cd-chips" role="group">
-          {[[null, dt(ctx.lang, 'bothTeams')], [home.id, home.short_name], [away.id, away.short_name]].map(([id, label]) => (
+          {[[null, dt(lang, 'bothTeams')], [home.id, home.short_name], [away.id, away.short_name]].map(([id, label]) => (
             <button key={id ?? 'all'} aria-pressed={team === id} onClick={() => setTeam(id)}>{label}</button>
           ))}
         </div>
       </header>
-      <OnAirCard state={state} ctx={ctx} toggle={toggle} />
-      <FactCheckPanel state={state} ctx={ctx} send={send} />
       <div className="cd-scroll">
         {!feed.length && !alerts.length && <p className="empty">{t(ctx.lang, 'emptyFeed')}</p>}
         {items.map(item => item.type === 'alert' ? <PatternAlert key={item.a.pattern_id} a={item.a} ctx={ctx} /> : (
@@ -284,7 +361,7 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
   return (
     <section className="cd-factcheck" data-testid="fact-check" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="fc-head">
-        <b>{dt(lang, 'factCheck')}</b>
+        <h2 className="cd-block-title">{dt(lang, 'factCheck')}</h2>
         <button className={`cd-used${status === 'listening' ? ' on' : ''}`} onClick={() => void toggle()} data-testid="listen"
           aria-pressed={status === 'listening'}>
           {status === 'listening' ? `■ ${dt(lang, 'stopListening')}` : `● ${dt(lang, 'listen')}`}
@@ -293,16 +370,13 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
           {status === 'listening' ? dt(lang, 'listening') : status === 'mic_error' ? dt(lang, 'micError')
             : status === 'unavailable' || state.factStatus === 'unavailable' ? dt(lang, 'speechUnavailable') : ''}
         </span>
-        <span className="cd-count" data-testid="fact-count">
-          {ctx.num(dt(lang, 'checkedCount').replace('{n}', String(state.factChecked)))} · {ctx.num(dt(lang, 'flaggedCount').replace('{n}', String(state.factFlags.length)))}
-        </span>
+        <form className="cd-ask fc-form" onSubmit={e => { e.preventDefault(); if (text.trim()) { say(text.trim()); setText('') } }}>
+          <input data-testid="say-input" value={text} onChange={e => setText(e.target.value)} maxLength={500}
+            placeholder={dt(lang, 'sayPlaceholder')} aria-label={dt(lang, 'sayPlaceholder')} />
+          <button type="submit" disabled={!text.trim()}>{dt(lang, 'check')}</button>
+        </form>
       </div>
       {heard && <p className="fc-heard"><span>{dt(lang, 'heard')}:</span> <i dir="auto">{heard}</i></p>}
-      <form className="cd-ask" onSubmit={e => { e.preventDefault(); if (text.trim()) { say(text.trim()); setText('') } }}>
-        <input data-testid="say-input" value={text} onChange={e => setText(e.target.value)} maxLength={500}
-          placeholder={dt(lang, 'sayPlaceholder')} aria-label={dt(lang, 'sayPlaceholder')} />
-        <button type="submit" disabled={!text.trim()}>{dt(lang, 'check')}</button>
-      </form>
       {flags.slice(0, 3).map(f => {
         const key = `${f.subject}|${f.metric}|${f.claimed}|${f.quote}`
         return (
@@ -314,7 +388,12 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
           </div>
         )
       })}
-      <p className="fc-note">{dt(lang, 'factNote')}</p>
+      <p className="fc-note">
+        <span className="cd-count" data-testid="fact-count">
+          {ctx.num(dt(lang, 'checkedCount').replace('{n}', String(state.factChecked)))} · {ctx.num(dt(lang, 'flaggedCount').replace('{n}', String(state.factFlags.length)))}
+        </span>{' '}
+        <span title={dt(lang, 'factNote')}>{dt(lang, 'factHint')} {dt(lang, 'factNote')}</span>
+      </p>
     </section>
   )
 }
@@ -343,9 +422,12 @@ function OnAirCard({ state, ctx, toggle }: { state: State; ctx: Ctx; toggle: (re
   const text = cueText(cue, state, lang)
   const team = cue.team_id ? (cue.team_id === ctx.hello.home.id ? ctx.hello.home : ctx.hello.away) : null
   const note = state.cueNote?.ref === cue.ref ? state.cueNote.text : null
+  const cueOverlay = cue.kind === 'moment' ? state.feed.find(x => x.moment_id === cue.ref) : undefined
+  const cueIncident = cue.kind === 'sub' ? state.incidents.find(i => i.id === cue.ref) : undefined
+  const focused = (cueOverlay && involves(cueOverlay, ctx.focus)) || (cueIncident && incidentInvolves(cueIncident, ctx.focus))
   const word = (key: string, fallback: string) => (dt(lang, key as DeskKey) as string | undefined) ?? fallback
   return (
-    <section className={`cd-onair-card ${shown.state}`} data-testid="cue-card" data-state={shown.state} data-ref={cue.ref}
+    <section className={`cd-onair-card ${shown.state}${focused ? ' focus' : ''}`} data-testid="cue-card" data-state={shown.state} data-ref={cue.ref}
       dir={lang === 'ar' ? 'rtl' : 'ltr'} aria-live="polite">
       <div className="oa-status">
         {shown.state === 'on_air'
@@ -552,7 +634,8 @@ function TimelineTab({ state, ctx, onOpenSub }: { state: State; ctx: Ctx; onOpen
       {items.map(i => {
         const team = i.team_id === ctx.hello.home.id ? ctx.hello.home : ctx.hello.away
         return (
-          <li key={i.id} data-testid="timeline-item" data-kind={i.kind} className={`k-${i.kind}`}>
+          <li key={i.id} data-testid="timeline-item" data-kind={i.kind} className={`k-${i.kind}${incidentInvolves(i, ctx.focus) ? ' focus' : ''}`}
+            data-focus={incidentInvolves(i, ctx.focus) ? 'true' : undefined}>
             <span className="tl-minute">{ctx.num(i.minute)}'</span>
             <span className="tl-icon">
               {i.kind === 'yellow' ? <Card kind="yellow" /> : i.kind === 'red' || i.kind === 'second_yellow' ? <Card kind="red" />
@@ -893,6 +976,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
   const profile: Profile = { mode: 'analyst', language: lang, club_id: null, player_id: null }
   const { state, send } = useMatch(matchId, profile)
   const [chosenTab, setTab] = useState<Tab | null>(null)
+  const [focus, setFocus] = useState<string | null>(null)  // DK-4
   const [asked, setAsked] = useState<Asked[]>([])
   const ask = (question: string) => {
     setAsked(prev => [...prev, { question, result: null }])
@@ -943,9 +1027,11 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
 
   if (!h) return <div className="cd" data-testid="desk"><p className="empty">{t(lang, 'kickOffSoon')}</p></div>
   const tab: Tab = chosenTab ?? (state.status === 'waiting' ? 'prep' : 'stats')  // PS-1: prep first until kick-off
-  const ctx: Ctx = { lang, hello: h, colors, names, num: v => localDigits(v, lang) }
-  const tabLabel = (id: Tab) => id === 'timeline' ? dt(lang, 'timeline') : id === 'season' ? dt(lang, 'season')
-    : id === 'production' ? dt(lang, 'production') : id === 'research' ? dt(lang, 'research') : id === 'patterns' ? dt(lang, 'patterns') : id === 'momentum' ? t(lang, 'momentumChart') : id === 'prep' ? dt(lang, 'prep') : t(lang, id)
+  const ctx: Ctx = { lang, hello: h, colors, names, num: v => localDigits(v, lang), focus, setFocus }
+  const tabLabel = (id: Tab) => ({
+    prep: dt(lang, 'prep'), stats: t(lang, 'stats'), patterns: dt(lang, 'patterns'), timeline: dt(lang, 'timeline'),
+    ask: dt(lang, 'askTab'), production: dt(lang, 'production'),
+  })[id]
 
   return (
     <div className="cd" dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="desk">
@@ -960,20 +1046,23 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
             ))}
           </div>
           <div className="cd-scroll" role="tabpanel">
-            {tab === 'prep' && <PrepTab state={state} ctx={ctx} send={send} />}
-            {tab === 'stats' && <StatsTab state={state} ctx={ctx} />}
-            {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} onOpenSub={id => setOpenSub(groupKey(groups, id))} />}
-            {tab === 'patterns' && <PatternsTab state={state} ctx={ctx} />}
-            {tab === 'momentum' && (
+            {tab === 'prep' && <><PrepTab state={state} ctx={ctx} send={send} /><SeasonTab ctx={ctx} /></>}
+            {tab === 'stats' && <>
+              <StatsTab state={state} ctx={ctx} />
+              <h3 className="cd-sub">{t(lang, 'momentumChart')}</h3>
               <div className="cd-momentum">
                 <AttackMomentumChart state={state} colors={colors} names={names} lang={lang} topTeam={null} />
                 <ZoneMap state={state} colors={colors} lang={lang} compact />
               </div>
-            )}
-            {tab === 'season' && <SeasonTab ctx={ctx} />}
-            {tab === 'research' && <ResearchTab state={state} ctx={ctx} asked={asked} onAsk={ask} />}
-            {tab === 'production' && <ProductionTab state={state} ctx={ctx} />}
-            {tab === 'recap' && <Recaps state={state} lang={lang} />}
+            </>}
+            {tab === 'timeline' && <TimelineTab state={state} ctx={ctx} onOpenSub={id => setOpenSub(groupKey(groups, id))} />}
+            {tab === 'patterns' && <PatternsTab state={state} ctx={ctx} />}
+            {tab === 'ask' && <ResearchTab state={state} ctx={ctx} asked={asked} onAsk={ask} />}
+            {tab === 'production' && <>
+              <h3 className="cd-sub">{dt(lang, 'recapsTitle')}</h3>
+              <Recaps state={state} lang={lang} />
+              <ProductionTab state={state} ctx={ctx} />
+            </>}
           </div>
         </section>
         <Lineup club={h.away} side="away" state={state} ctx={ctx} season={h.season?.away} />

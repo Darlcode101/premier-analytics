@@ -1,4 +1,4 @@
-// Substitution cards (SB-3, SB-5): which changes share a card, and whether a fan's followed player is in one.
+// Substitution cards (SB-3): which changes share a card.
 import type { Incident } from './types'
 
 /** Changes this close together (elapsed time) were made at the same stoppage. */
@@ -21,5 +21,3 @@ export const latestGroup = (incidents: Incident[]): Incident[] | null => subGrou
 export const groupKey = (groups: Incident[][], incidentId: string): string | null =>
   groups.find(g => g.some(i => i.id === incidentId))?.[0].id ?? null
 
-export const involvesSub = (i: Incident, playerId: string | null) =>
-  !!playerId && (i.player_in_id === playerId || i.player_out_id === playerId)

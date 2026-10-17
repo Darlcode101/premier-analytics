@@ -1,6 +1,6 @@
 // Commentator desk helpers (CD-4..CD-13). Pure functions over the deterministic incident feed and
 // live player lines, so everything here works with the AI off.
-import type { Incident, PlayerInfo, PlayerLine } from './types'
+import type { Incident, Overlay, PlayerInfo, PlayerLine } from './types'
 
 export interface Markers {
   goals: string[]      // minutes
@@ -91,4 +91,16 @@ export function bookings(incidents: Incident[], teamId: string, period: 'match' 
     .sort((a, b) => a.elapsed_ms - b.elapsed_ms)
     .map(i => ({ player_id: i.player_id as string, minute: i.minute, kind: i.kind as CardKind,
       reason: i.card_reason ?? null, victim: i.fouled_player_id ?? null }))
+}
+
+/** DK-4: is this talking point about the player in focus (its main player, or named in its facts)? */
+export function involves(o: Pick<Overlay, 'player_id' | 'data'>, playerId: string | null): boolean {
+  if (!playerId) return false
+  return o.player_id === playerId || Object.values(o.data ?? {}).includes(playerId)
+}
+
+/** DK-4: is this incident (goal, card, substitution …) about the player in focus? */
+export function incidentInvolves(i: Incident, playerId: string | null): boolean {
+  if (!playerId) return false
+  return [i.player_id, i.assist_id, i.player_in_id, i.player_out_id, i.fouled_player_id].includes(playerId)
 }

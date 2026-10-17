@@ -126,7 +126,7 @@ describe('context cards (CX-2, CX-5)', () => {
 
 describe('followed player (F-5)', () => {
   it('a card is about the player if they are its main player or appear in its facts', async () => {
-    const { involves } = await import('./scoreboard')
+    const { involves } = await import('./desk')
     const o = (player_id: string | null, data: Record<string, string | number | boolean> = {}) => ({ player_id, data }) as Overlay
     expect(involves(o('p9'), 'p9')).toBe(true)
     expect(involves(o(null, { assist: 'p9' }), 'p9')).toBe(true)

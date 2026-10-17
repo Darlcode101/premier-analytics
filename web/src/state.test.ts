@@ -115,7 +115,7 @@ describe('reducer', () => {
   })
 })
 
-describe('possession and animations', () => {
+describe('possession', () => {
   it('possession follows kickoffs, turnovers, passes and shots, but not defensive actions', () => {
     let s = run(hello, event({ kind: 'kickoff', team_id: 'ngc', x: null, y: null, end_x: null, end_y: null }))
     expect(s.possession).toBe('ngc')
@@ -125,28 +125,6 @@ describe('possession and animations', () => {
     expect(s.possession).toBe('har')
     s = reducer(s, event({ kind: 'pass', team_id: 'ngc' }))
     expect(s.possession).toBe('ngc')
-  })
-
-  it('each animated moment queues exactly one animation, even when the AI upgrades it', () => {
-    const goal = overlay({ kind: 'goal', moment_id: 'm1-mo0007' })
-    let s = run(hello, { type: 'overlay', overlay: goal })
-    expect(s.animations.map(a => a.kind)).toEqual(['goal'])
-    s = reducer(s, { type: 'overlay', overlay: { ...goal, version: 2, source: 'ai' } })
-    s = reducer(s, { type: 'overlay', overlay: { ...goal, id: 'other-audience', audience: 'x' } })
-    expect(s.animations).toHaveLength(1)
-    s = reducer(s, { type: 'animation_done' })
-    expect(s.animations).toHaveLength(0)
-  })
-
-  it('only big moments animate; backfilled history never does', () => {
-    let s = run(hello, { type: 'overlay', overlay: overlay({ kind: 'yellow_card', moment_id: 'a' }) })
-    expect(s.animations).toHaveLength(0)
-    for (const kind of ['red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time']) {
-      s = reducer(s, { type: 'overlay', overlay: overlay({ kind, moment_id: kind, id: kind }) })
-    }
-    expect(s.animations.map(a => a.kind)).toEqual(['red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
-    s = reducer(s, { type: 'backfill', overlays: [overlay({ kind: 'goal', moment_id: 'old', id: 'old' })] })
-    expect(s.animations.map(a => a.kind)).not.toContain('goal')
   })
 })
 

@@ -41,8 +41,9 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
     }
   }
 
-  const fanUrl = matchId ? `${location.origin}/fan?match=${matchId}&lang=${lang}` : ''
+  // DK-1: one product. The desk on this screen or (by QR) a tablet; the overlay for the broadcast.
   const deskUrl = matchId ? `/desk?match=${matchId}&lang=${lang}` : ''
+  const deskQrUrl = matchId ? `${location.origin}${deskUrl}` : ''
   const club = (id: string) => clubs.find(c => c.id === id)
 
   return (
@@ -109,15 +110,14 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
             <h2 id="ready-title">{t(lang, 'matchReady')}</h2>
             {club(home) && club(away) && <p className="fixture-line">{club(home)!.name} v {club(away)!.name}</p>}
             <div className="surfaces">
-              <a className="surface fan" href={fanUrl} data-testid="fan-link">
-                <QR url={fanUrl} />
-                <strong>{t(lang, 'openFan')}</strong>
-                <small>{t(lang, 'scanToOpen')}</small>
-              </a>
               <a className="surface desk" href={deskUrl} data-testid="desk-link">
                 <span className="desk-icon" aria-hidden />
                 <strong>{t(lang, 'openDesk')}</strong>
-                <small>{t(lang, 'deskTitle')}</small>
+                <small>{t(lang, 'deskWhat')}</small>
+              </a>
+              <a className="surface tablet" href={deskUrl} aria-label={t(lang, 'scanForDesk')}>
+                <QR url={deskQrUrl} />
+                <small>{t(lang, 'scanForDesk')}</small>
               </a>
             </div>
             <a className="overlay-link" href={`/overlay?match=${matchId}&lang=${lang}`} target="_blank" rel="noopener" data-testid="overlay-link">

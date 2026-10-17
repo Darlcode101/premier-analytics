@@ -1,11 +1,8 @@
 import type { AttackPoint, Brief, ContextCard, Cue, FactFlag, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
-/** Moments that get a full-screen animation in the fan app (R-8). */
-export const ANIMATED = new Set(['goal', 'red_card', 'big_chance', 'woodwork', 'momentum_shift', 'half_time', 'full_time'])
 const POSSESSION_EVENTS = new Set(['kickoff', 'possession_change', 'pass', 'shot'])
 
-export interface Animation { moment_id: string; kind: string; team_id: string | null; overlay: Overlay }
-export type Action = Message | { type: 'animation_done' }
+export type Action = Message
 
 const TRAIL = 12
 const FEED = 100
@@ -33,8 +30,6 @@ export interface State {
   counts: { published: number; rejected: number; stale: number; error: number }
   recaps: Partial<Record<Recap['kind'], Recap>>
   possession: string | null
-  animations: Animation[]
-  animatedMoments: Set<string>
   incidents: Incident[]
   players: Record<string, PlayerLine>
   contexts: ContextCard[]
@@ -57,7 +52,7 @@ export const initialState: State = {
   status: 'idle', hello: null, score: [0, 0], period: 1, minute: '0', lastEvent: null, ball: null, trail: [],
   feed: [], upgraded: new Set(), screen: [], stats: null, momentum: [], attack: [], trace: [],
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
-  possession: null, animations: [], animatedMoments: new Set(), incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
+  possession: null, incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
   cue: null, cueNote: null, used: new Set(), brief: null, storylines: [], storylineError: null,
   factFlags: [], factChecked: 0, factStatus: null,
 }
@@ -85,8 +80,6 @@ export function reducer(s: State, m: Action): State {
         clockMs: s.hello?.match_id === m.match_id ? s.clockMs : 0,
         period: s.hello?.match_id === m.match_id ? s.period : 1,
         possession: s.hello?.match_id === m.match_id ? s.possession : null,
-        // moments already celebrated stay celebrated when the viewer changes profile
-        animatedMoments: s.hello?.match_id === m.match_id ? s.animatedMoments : new Set(),
         incidents: m.incidents ?? [],
         contexts: m.context ?? [],
         recaps: Object.fromEntries((m.recaps ?? []).map(r => [r.kind, r])),
@@ -103,10 +96,7 @@ export function reducer(s: State, m: Action): State {
         storylines: m.storylines ?? [],
       }
     case 'backfill': {
-      // history is shown but never animated
-      const animatedMoments = new Set(s.animatedMoments)
-      for (const o of m.overlays) animatedMoments.add(o.moment_id)
-      return { ...s, feed: mergeFeed(s.feed, m.overlays), animatedMoments }
+      return { ...s, feed: mergeFeed(s.feed, m.overlays) }
     }
     case 'event': {
       const next: State = {
@@ -140,15 +130,8 @@ export function reducer(s: State, m: Action): State {
       const o = m.overlay
       const upgraded = new Set(s.upgraded)
       if (o.source === 'ai') upgraded.add(o.id)
-      let { animations, animatedMoments } = s
-      if (ANIMATED.has(o.kind) && !animatedMoments.has(o.moment_id)) {
-        animatedMoments = new Set(animatedMoments).add(o.moment_id)
-        animations = [...animations, { moment_id: o.moment_id, kind: o.kind, team_id: o.team_id, overlay: o }]
-      }
-      return { ...s, feed: mergeFeed(s.feed, [o]), upgraded, animations, animatedMoments }
+      return { ...s, feed: mergeFeed(s.feed, [o]), upgraded }
     }
-    case 'animation_done':
-      return { ...s, animations: s.animations.slice(1) }
     case 'screen':
       return { ...s, screen: m.overlays }
     case 'trace': {

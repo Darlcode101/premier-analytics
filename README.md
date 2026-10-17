@@ -1,22 +1,25 @@
 # Premier Analytics
 
-**Live match intelligence that explains *why*, not just *what*, for every fan in their own language.**
+**An AI production team for live football commentary: it tells the commentator what to say next, and checks what they said.**
 
-A team of AI agents watches a football match event by event and turns raw data into short on-screen
-explanations: why a goal matters, why momentum just swung, why a spell of pressure is dangerous. Fans get
-plain words on their phone; commentators get the numbers on a laptop desk. Every statement is checked
-against the data before it reaches a screen, and the match never waits for the AI: an instant template
-caption shows first and the AI version replaces it seconds later.
+A team of AI agents watches a match event by event and works like a broadcast gallery around the person on the
+mic. A **Producer** cues the best talking point at each natural break; agents explain *why* moments matter,
+spot how each team is playing, follow the commentator's storylines, answer questions about the live match,
+and **fact-check what the commentator says** as they say it. Every statement is checked against the match data
+before it reaches a screen, and the match never waits for the AI: an instant caption shows first and the AI
+version replaces it moments later. Big broadcasters have whole stats teams; this gives every match one.
 
 Built for the Microsoft × Premier League *Inside the Game* hackathon, Best Multi-Agent System category.
 
 **Try it:** https://premier-analytics.salmondune-d779c5b4.switzerlandnorth.azurecontainerapps.io
-Open it on a laptop for the commentator desk and scan the QR code to follow the same match on your phone.
-For broadcast, `/overlay?match=…` is a transparent page (scorebug and a lower third that pops up with each new graphic) to drop over video as a browser source, e.g. in OBS.
+Start a match and open the **commentator desk** (on a laptop, or scan the QR code for a tablet). For broadcast,
+`/overlay?match=…` is a transparent page (scorebug and a lower third for each new graphic, in plain fan wording or
+analyst wording) to drop over video as a browser source, e.g. in OBS: that is how viewers at home get the
+intelligence.
 
-| Fan app (phone) | Commentator desk (laptop) |
-|---|---|
-| Live score, a mini pitch showing where the ball is (tinted by who has it), animated goals, red cards and big chances, AI explanations in English, Spanish or Arabic, an attack-momentum chart that says *why* it leans one way, and your favourite club pinned. | A neutral broadcast console: both line-ups as a spotting board (bookings, subs, goals, each player's live numbers), a timeline of every goal, card and substitution, full-match vs last-10-minute stats, season form and table, a Pattern Analyst panel that draws how each team is playing on the pitch, AI talking points with their evidence that you tick off as you use them, sourced real-world context beside big moments, and an ask box that searches the web. |
+| The commentator desk |
+|---|
+| **Before kick-off:** a printable brief (earlier meetings, players to watch, known styles, table and form) and suggested storylines to follow. **During the match:** an *On air* cue at every natural break, a live fact-check of what you say (or type), talking points with their evidence and a *Say it simply* line for casual viewers, both line-ups as a spotting board (click a player for their numbers, or focus on them to highlight everything they do), a ticking clock with stoppage time and possession, stats by half with an attack-momentum chart, a Pattern Analyst panel that draws how each team is playing, a timeline with card reasons and substitution cards, and an *Ask* box for questions about the match or real football. Everything in English, Spanish or Arabic. |
 
 ## How it works
 
@@ -31,7 +34,7 @@ flowchart LR
     T --> V[Overlay Validator<br/>+ Scheduler]
     C3 --> V
     R --> V
-    V --> U[Fan app & commentator desk<br/>over WebSocket]
+    V --> U[Commentator desk & broadcast overlay<br/>over WebSocket]
 ```
 
 - **Stats engine**: running totals and rolling windows from each event: expected goals (xG), attack momentum, territory, pressing intensity.
@@ -50,7 +53,7 @@ flowchart LR
   - *Pattern Analyst*: spots how each team is playing: which flank they attack, where they win the ball, who makes them tick, counter-attacks, a switch since half-time. A pattern is only reported if an exact significance test says it isn't chance (tuned on 380 simulated matches: strong styles found in most matches, false alarms under 5 %), and each club's known style from the season is shown next to today's numbers. The agent turns them into one-line notes on the desk (with the pattern drawn on the pitch), "new pattern" alerts among the talking points, and a plain "How they're playing" card for fans.
   - *Producer*: the gallery's producer. Every other agent's output (explanations, pattern alerts, substitution cards) becomes a candidate talking point; rules rank them (importance × freshness, real-world context and storylines boosted, never repeating what the commentator has used) and put the best one **on air** at natural breaks, with how long the break usually lasts (measured from the simulation). An AI producer may add one Critic-checked line of angle, or stay silent. "Used" is shared by every desk on the match.
   - *Context agent*: beside big moments on the desk, adds one line of real-world context from that library ("Northgate's PPDA of 16.7 means they are pressing less than…"), with the source links. Its numbers are checked like everything else.
-- **Substitution cards** (no AI, so instant): the desk gets a pop-up for each change with what the player going off did today, both players' season numbers, subs used, the score and whether it was like-for-like or a more attacking or defensive change; fans get the same in plain words, marked if it's their followed player; the broadcast graphic adds one key stat.
+- **Substitution cards** (no AI, so instant): the desk gets a pop-up for each change with what the player going off did today, both players' season numbers, subs used, the score and whether it was like-for-like or a more attacking or defensive change; the broadcast graphic adds one key stat.
 - **Overlay Validator and Scheduler**: final checks (evidence present, length, freshness) and placement, so overlays never pile up on screen.
 
 ### Microsoft and Azure services
@@ -82,7 +85,7 @@ Evaluated on 3 matches × 4 audiences (142 AI captions, final check 15 Oct); ful
 | Published text that passes the Critic re-check | 100 % |
 | Groundedness (Azure AI Evaluation, 1–5) | 4.85 |
 | Output in the requested language | 100 % |
-| Analyst version carries more numbers than the fan version | 94 % |
+| Analyst wording carries more numbers than the fan (broadcast) wording | 94 % |
 | Explains *why* (custom judge, 1–5) | 4.22 (from 3.09 at the first evaluation): spells, missed chances and goals come with computed meaning |
 
 ## Run it locally
@@ -143,8 +146,8 @@ pytest tests/e2e
 ```
 
 - **Python (474 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, real-world context checks (sources, second source, invented numbers), tracing, evaluation metrics.
-- **Frontend (97 tests, Vitest)**: state, pitch zones, scoreboard, momentum explanations, line-up markers and formation, digits, translations, saved preferences.
-- **Browser (46 tests, Playwright)**: the real app with scripted agents: phone and desk flows, the desk staying neutral and fitting 1280×720 to 1920×1080, languages and right-to-left Arabic, favourite club, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
+- **Frontend (87 tests, Vitest)**: state, the Producer cue's timing and wording, storylines and fact-check flags, Listen's phrase list, pitch zones, momentum explanations, plain-words explanations, card reasons, line-up markers and formation, digits, translations, saved preferences.
+- **Browser (36 tests, Playwright)**: the real app with scripted agents: landing, the desk staying neutral and fitting 1280×720 to 1920×1080, the Producer cue, prep and storylines, Ask, fact-check, focus player, Say it simply, the broadcast overlay, languages and right-to-left Arabic, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
 - **Evaluations** against live models: `python scripts/run_evals.py` (≈ 15 min, under $1).
 
 CI (GitHub Actions) runs all three suites, builds the Docker image and checks the container starts, and scans for secrets.
@@ -159,7 +162,7 @@ then waits until `/api/health` reports the new version. Setup and the reasons be
 
 ```
 src/premier_analytics/   engine, scout, agents, orchestrator, MCP server, recaps, app, telemetry, evals
-web/                     React + TypeScript frontend (fan app, commentator desk)
+web/                     React + TypeScript frontend (commentator desk, broadcast overlay, landing)
 tests/                   pytest, Playwright (tests/e2e)
 scripts/                 demos, deploy, evaluations, calibration
 docs/                    realism targets, deployment, evaluation report

@@ -67,6 +67,31 @@ def server():
     _stop(proc)
 
 
+@pytest.fixture(autouse=True)
+def _desk_help_already_seen(request, context):
+    """DK-7 opens 'How this desk works' on a first visit; every test browser is a first visit, so mark it seen
+    (except in the test of that behaviour)."""
+    if "how_this_desk_works" not in request.node.name:
+        context.add_init_script("try { localStorage.setItem('pa.deskHelp', 'closed') } catch (e) {}")
+
+
+def _contrast(page: Page, selector: str) -> float:
+    return page.evaluate("""sel => {
+      const el = document.querySelector(sel), cs = getComputedStyle(el)
+      const rgb = c => c.match(/[\\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 })
+      const lum = c => { const [r, g, b] = rgb(c); return .2126 * r + .7152 * g + .0722 * b }
+      let bg = el; while (bg && getComputedStyle(bg).backgroundColor === 'rgba(0, 0, 0, 0)') bg = bg.parentElement
+      const [a, b] = [lum(cs.color), lum(getComputedStyle(bg).backgroundColor)].sort((x, y) => y - x)
+      return (a + .05) / (b + .05)
+    }""", selector)
+
+
+def pattern_match(base: str, speed: float = 600) -> str:
+    r = httpx.post(f"{base}/api/matches", json={"home": "har", "away": "kin", "seed": 42, "speed": speed})
+    r.raise_for_status()
+    return r.json()["match_id"]
+
+
 def new_match(base: str, speed: float = 300, seed: int = 42) -> str:
     r = httpx.post(f"{base}/api/matches", json={"home": "har", "away": "ngc", "seed": seed, "speed": speed})
     r.raise_for_status()
@@ -78,117 +103,31 @@ KIT = {"har": "rgb(11, 61, 145)", "ngc": "rgb(127, 183, 232)"}  # primary kit co
 
 # ---------- landing (R-10) ----------
 
-def test_landing_starts_a_match_and_offers_both_surfaces(server, page: Page):
+def test_landing_starts_a_match_and_offers_the_desk_and_overlay(server, page: Page):
     page.goto(server)
     expect(page.locator("#home option")).to_have_count(8)
     page.get_by_role("button", name="60×").click()
     page.get_by_role("button", name="Kick off").click()
     expect(page).to_have_url(re.compile(r"\?match=\w+"))
-    expect(page.get_by_test_id("fan-link")).to_have_attribute("href", re.compile(r"/fan\?match=\w+"))
     expect(page.get_by_test_id("desk-link")).to_have_attribute("href", re.compile(r"/desk\?match=\w+"))
-    expect(page.get_by_test_id("qr").locator("svg")).to_be_visible()
+    expect(page.get_by_test_id("overlay-link")).to_have_attribute("href", re.compile(r"/overlay\?match=\w+"))
+    expect(page.get_by_test_id("qr").locator("svg")).to_be_visible()  # opens the desk on a tablet
+    expect(page.get_by_test_id("fan-link")).to_have_count(0)  # DK-1: one product
 
 
-# ---------- fan app (R-2, R-7, R-8) ----------
-
-def test_possession_is_shown_low_key_with_a_ball_marker(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
-    hero = page.get_by_test_id("hero")
-    expect(hero).to_have_attribute("data-possession", re.compile(r"^(har|ngc)$"), timeout=15_000)
-    background = page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).backgroundImage")
-    first = hero.get_attribute("data-possession")
-    ball = page.get_by_test_id("possession-ball")
-    expect(ball).to_have_count(1)
-    side = "hero-left" if page.get_by_test_id("hero-left").get_by_test_id("possession-ball").count() else "hero-right"
-    expect(page.get_by_test_id(side)).to_contain_text("Harbourside" if first == "har" else "Northgate", ignore_case=True)
-    dot = page.evaluate("getComputedStyle(document.querySelector('.possession-line .dot')).backgroundColor")
-    assert dot == KIT[first]
-    other = "ngc" if first == "har" else "har"
-    expect(hero).to_have_attribute("data-possession", other, timeout=15_000)  # a turnover moves the marker...
-    expect(ball).to_have_count(1)
-    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=hero]')).backgroundImage") == background  # ...not the colours
-
-
-def test_fan_pitch_is_bare_and_centred_with_the_zone_as_its_label(server, page: Page):
+def test_the_old_fan_address_falls_back_to_the_landing_page(server, page: Page):
     page.goto(f"{server}/fan?match={new_match(server)}")
-    pitch = page.get_by_test_id("mini-pitch")
-    expect(pitch).to_have_attribute(
-        "aria-label", re.compile(r"(Harbourside|Northgate) · (defensive third|midfield|final third) · (left|centre|right)"),
-        timeout=15_000)
-    card = page.get_by_test_id("zone-map")
-    expect(card.locator(".zone-head")).to_have_count(0)
-    expect(card.get_by_test_id("zone-text")).to_have_count(0)
-    expect(card.locator(".attack-chevron")).to_have_count(0)
-    expect(card.get_by_test_id("ball")).to_be_visible()          # a football marks where the ball is…
-    expect(card.get_by_test_id("pitch-hue")).to_have_count(0)    # …instead of a coloured glow
-    p, c = pitch.bounding_box(), card.bounding_box()
-    assert abs((p["x"] + p["width"] / 2) - (c["x"] + c["width"] / 2)) < 2  # centred
-
-
-def test_goal_takes_over_the_screen_in_the_scorers_colours(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=400)}")
-    goal = page.locator("[data-testid=celebration][data-kind=goal]")
-    expect(goal).to_be_visible(timeout=40_000)
-    expect(goal).to_contain_text("GOAL!")
-    # names can be hyphenated or have apostrophes (Pablo Wakefield-Ames)
-    expect(goal.get_by_test_id("celebration-scorer")).to_have_text(re.compile(r"[\w'-]+ [\w'-]+ · [\d+]+'"))
-
-
-def test_fan_settings_switch_language_to_arabic(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server)}")
-    page.get_by_role("button", name="Me").click()
-    expect(page.get_by_test_id("me")).to_contain_text("Fictional league")
-    page.get_by_role("button", name="العربية").click()
-    expect(page.locator("html")).to_have_attribute("dir", "rtl")
-    expect(page.get_by_role("button", name="أنا")).to_be_visible()
-    expect(page.get_by_test_id("score")).to_have_text(re.compile(r"^[٠-٩]+–[٠-٩]+$"))  # Eastern Arabic digits
-    expect(page.get_by_test_id("clock")).not_to_contain_text(re.compile(r"[0-9]"))
+    expect(page.get_by_test_id("desk-link")).to_have_attribute("href", re.compile(r"/desk\?match=\w+"))  # that match's desk
 
 
 def test_language_choice_survives_a_reload(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server)}&lang=en")
-    page.get_by_role("button", name="Me").click()
+    page.goto(f"{server}/desk?match={new_match(server)}&lang=en")
     page.get_by_role("button", name="Español").click()
     expect(page).to_have_url(re.compile(r"lang=es"))
     page.reload()
-    expect(page.get_by_role("button", name="Yo")).to_be_visible()
-    page.goto(f"{server}/fan?match={new_match(server)}&lang=en")  # a new match link from an English laptop
-    expect(page.get_by_role("button", name="Yo")).to_be_visible()
-
-
-def test_fan_moment_cards_explain_why(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server)}")
-    item = page.get_by_test_id("feed-item").first
-    expect(item).to_be_visible(timeout=20_000)
-    item.get_by_role("button", name="Why?").click()
-    why = page.get_by_test_id("why")  # new cards may push it down the list
-    expect(why).to_have_count(1)
-    expect(why.locator(".why-lines li").first).to_be_visible()  # F-7: plain sentences first
-    assert not re.search(r"xG|%", why.locator(".why-lines").inner_text())
-    expect(why.locator("dl.evidence")).to_have_count(0)
-    why.get_by_role("button", name="See the numbers").click()  # F-8: the raw facts are one tap away
-    expect(why.locator("dl.evidence")).to_have_count(1)
-
-
-def test_fan_app_fits_a_phone(server, page: Page):
-    page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{server}/fan?match={new_match(server)}")
-    expect(page.get_by_test_id("fan-app")).to_be_visible()
-    page.wait_for_timeout(1500)
-    assert page.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
-
-
-# ---------- commentator desk (CD-*) ----------
-
-def _contrast(page: Page, selector: str) -> float:
-    return page.evaluate("""sel => {
-      const el = document.querySelector(sel), cs = getComputedStyle(el)
-      const rgb = c => c.match(/[\\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 })
-      const lum = c => { const [r, g, b] = rgb(c); return .2126 * r + .7152 * g + .0722 * b }
-      let bg = el; while (bg && getComputedStyle(bg).backgroundColor === 'rgba(0, 0, 0, 0)') bg = bg.parentElement
-      const [a, b] = [lum(cs.color), lum(getComputedStyle(bg).backgroundColor)].sort((x, y) => y - x)
-      return (a + .05) / (b + .05)
-    }""", selector)
+    expect(page.get_by_role("tab", name="Previa")).to_be_visible()
+    page.goto(f"{server}/desk?match={new_match(server)}&lang=en")  # a new match link from an English laptop
+    expect(page.get_by_role("tab", name="Previa")).to_be_visible()
 
 
 def test_desk_is_neutral_and_professional(server, page: Page):
@@ -255,7 +194,7 @@ def test_desk_works_with_ai_off(page: Page):
         expect(page.locator(".ai-tag")).to_have_count(0)
         page.get_by_role("tab", name="Timeline").click()
         expect(page.locator("[data-testid=timeline-item][data-kind=sub]").first).to_be_visible()
-        page.get_by_role("tab", name="Season").click()
+        page.get_by_role("tab", name="Prep").click()  # DK-5: the season sits in Prep
         expect(page.get_by_test_id("season-home")).to_contain_text(re.compile(r"[WDL]"))
     finally:
         _stop(proc)
@@ -279,18 +218,6 @@ def test_desk_in_arabic_is_right_to_left(server, page: Page):
     expect(page.get_by_role("tab", name="الإحصائيات")).to_be_visible()
 
 
-def test_fan_and_desk_on_the_same_match_differ(server, browser):
-    mid = new_match(server, speed=200)
-    fan, desk = browser.new_page(), browser.new_page()
-    fan.goto(f"{server}/fan?match={mid}")
-    desk.goto(f"{server}/desk?match={mid}")
-    expect(desk.get_by_test_id("feed-item").nth(3)).to_be_visible(timeout=30_000)
-    fan_n, desk_n = fan.get_by_test_id("feed-item").count(), desk.get_by_test_id("feed-item").count()
-    assert desk_n > fan_n, (desk_n, fan_n)  # commentators see more moments than fans
-    fan.close()
-    desk.close()
-
-
 def test_model_outage_keeps_graphics_flowing(page: Page):
     proc, base = _serve("down")
     try:
@@ -304,42 +231,11 @@ def test_model_outage_keeps_graphics_flowing(page: Page):
         _stop(proc)
 
 
-def test_favourite_club_is_pinned_left_with_a_badge(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=60)}")
-    left = page.get_by_test_id("hero-left")
-    expect(left).to_contain_text("Harbourside")          # home-left by default
-    expect(page.get_by_test_id("fav-badge")).to_have_count(0)
-    page.get_by_role("button", name="Me").click()
-    page.get_by_role("button", name="Northgate").click()  # away side
-    expect(left).to_contain_text("Northgate")
-    badge = page.get_by_test_id("fav-badge")
-    expect(badge).to_be_visible()
-    expect(badge).to_have_attribute("aria-label", "Your club")   # low-key star, but still announced
-    box = badge.bounding_box()
-    assert box and box["width"] <= 16 and box["height"] <= 16, box   # an icon, not a text pill
-    expect(page.get_by_test_id("hero-right")).to_contain_text("Harbourside")
-
-
-def test_favourite_flips_the_pitch_and_is_remembered(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=20)}")
-    pitch = page.get_by_test_id("mini-pitch")
-    expect(pitch).to_have_attribute("data-mirrored", "false")         # TV view: home attacks right
-    page.get_by_role("button", name="Me").click()
-    page.get_by_role("button", name="Northgate").click()             # away side attacks left in the first half
-    page.get_by_role("button", name="Live").click()
-    expect(pitch).to_have_attribute("data-mirrored", "true")          # so the pitch flips for them
-    page.reload()
-    expect(page.get_by_test_id("fav-badge")).to_be_visible()          # remembered after a refresh
-    expect(page.get_by_test_id("hero-left")).to_contain_text("Northgate")
-    expect(page.get_by_test_id("mini-pitch")).to_have_attribute("data-mirrored", "true")
-
-
 def test_attack_momentum_bars_explain_themselves(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=300)}")
-    expect(page.get_by_test_id("mini-pitch")).not_to_have_attribute("aria-label", "Ball out of play", timeout=15_000)
-    page.wait_for_timeout(4000)  # let a few minutes of bars build up
-    page.get_by_role("button", name="Stats").click()
-    chart = page.get_by_test_id("attack-momentum")
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
+    page.wait_for_timeout(5000)  # let a few minutes of bars build up
+    page.get_by_role("tab", name="Stats").click()
+    chart = page.get_by_test_id("attack-momentum")  # DK-5: momentum lives in Stats
     expect(chart).to_be_visible()
     assert page.get_by_test_id("attack-bar").count() >= 5
     page.get_by_test_id("attack-bar").nth(2).dispatch_event("click")
@@ -347,17 +243,6 @@ def test_attack_momentum_bars_explain_themselves(server, page: Page):
     expect(why).to_contain_text(re.compile(r"on top|Evenly balanced|Quiet spell"))
     expect(why).to_contain_text(re.compile(r"\d+'–\d+'"))
 
-
-def test_stats_follow_the_pinned_club(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
-    page.get_by_role("button", name="Me").click()
-    page.get_by_role("button", name="Northgate").click()
-    page.get_by_role("button", name="Stats").click()
-    expect(page.get_by_test_id("stats-left")).to_have_text("Northgate", timeout=15_000)
-    expect(page.get_by_test_id("stats-right")).to_have_text("Harbourside")
-
-
-# ---------- real-world context (CX-*) ----------
 
 def test_desk_shows_sourced_context_beside_moments(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
@@ -371,7 +256,7 @@ def test_desk_shows_sourced_context_beside_moments(server, page: Page):
 
 def test_ask_box_answers_with_a_source(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
-    page.get_by_role("tab", name="Research").click()
+    page.get_by_role("tab", name="Ask").click()
     page.get_by_test_id("ask-input").fill("What is the average xG per team in the Premier League?")
     page.get_by_role("button", name="Ask").click()
     answer = page.get_by_test_id("ask-answer").first
@@ -392,7 +277,7 @@ def test_search_outage_is_reported_and_nothing_else_breaks(page: Page):
     try:
         page.goto(f"{base}/desk?match={new_match(base, speed=300)}")
         expect(page.get_by_test_id("feed-item").first).to_be_visible(timeout=20_000)
-        page.get_by_role("tab", name="Research").click()
+        page.get_by_role("tab", name="Ask").click()
         page.get_by_test_id("ask-input").fill("Average xG?")
         page.get_by_role("button", name="Ask").click()
         expect(page.get_by_test_id("ask-answer").first).to_contain_text("couldn't", timeout=15_000)
@@ -402,60 +287,6 @@ def test_search_outage_is_reported_and_nothing_else_breaks(page: Page):
 
 
 # ---------- fan app polish (F-*) ----------
-
-def test_following_a_player_is_visible(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=60)}")
-    page.get_by_role("button", name="Me").click()
-    select = page.locator("select")
-    first = select.locator("optgroup").first.locator("option").nth(9)
-    value, label = first.get_attribute("value"), first.inner_text()
-    name = label.split(". ", 1)[1]
-    select.select_option(value)
-    expect(page.get_by_test_id("follow-confirm")).to_contain_text(name)
-    expect(page.get_by_test_id("following")).to_contain_text(name)
-    select.select_option("")
-    expect(page.get_by_test_id("following")).to_have_count(0)
-
-
-def test_latest_moment_is_visible_without_scrolling(server, page: Page):
-    page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{server}/fan?match={new_match(server, speed=120)}")
-    card = page.get_by_test_id("feed-item").first
-    expect(card).to_be_visible(timeout=30_000)
-    box = card.bounding_box()
-    tabbar = page.locator("nav.tabbar").bounding_box()
-    assert box["y"] + 60 < tabbar["y"], (box, tabbar)  # the headline of the latest card is above the tab bar
-
-
-def test_fan_header_is_flat_with_scorers_under_each_team(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=400)}")
-    hero = page.get_by_test_id("hero")
-    expect(hero).to_be_visible()
-    style = page.evaluate("""(() => { const h = document.querySelector('[data-testid=hero]');
-      return [getComputedStyle(h).backgroundImage, getComputedStyle(h).backgroundColor, getComputedStyle(h, '::after').content] })()""")
-    assert style[0] == "none" and style[1] == "rgb(55, 0, 60)" and style[2] in ("none", "normal"), style
-    expect(page.get_by_test_id("clock")).to_have_text(re.compile(r"^\d{1,2}:\d{2}"), timeout=15_000)  # minutes and seconds
-    box, digits = page.get_by_test_id("score").bounding_box(), page.evaluate("""(() => {
-      const el = document.querySelector('[data-testid=score]'), r = document.createRange(); r.selectNodeContents(el);
-      const b = r.getBoundingClientRect(); return {x: b.x, y: b.y, width: b.width, height: b.height} })()""")
-    assert abs((box["x"] + box["width"] / 2) - (digits["x"] + digits["width"] / 2)) < 2  # scoreline centred in its box
-    assert abs((box["y"] + box["height"] / 2) - (digits["y"] + digits["height"] / 2)) < 3
-    assert page.get_by_test_id("clock").bounding_box()["y"] < page.get_by_test_id("score").bounding_box()["y"]  # above the score
-    added = page.get_by_test_id("added-time")
-    expect(added).to_have_text(re.compile(r"^\+\d+:\d{2}$"), timeout=40_000)  # stoppage time, e.g. 45:00 +2:13
-    expect(page.get_by_test_id("clock")).to_contain_text(re.compile(r"^(45|90):00"))
-    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=added-time]')).backgroundColor") == "rgb(233, 0, 82)"
-    expect(hero.locator("[data-testid^=scorers-] li").first).to_be_visible(timeout=40_000)
-    expect(hero.locator("[data-testid^=scorers-] li").first).to_contain_text(re.compile(r"\w+ \d+'"))
-
-
-# ---------- Pattern Analyst (PA-*) ----------
-
-def pattern_match(base: str, speed: float = 600) -> str:
-    r = httpx.post(f"{base}/api/matches", json={"home": "har", "away": "kin", "seed": 42, "speed": speed})
-    r.raise_for_status()
-    return r.json()["match_id"]
-
 
 def test_desk_patterns_panel_shows_notes_and_their_pitch(server, page: Page):
     page.goto(f"{server}/desk?match={pattern_match(server)}")
@@ -478,33 +309,21 @@ def test_pattern_alerts_appear_among_talking_points(server, page: Page):
     expect(alert).to_contain_text("Harbourside keep going down the left")
 
 
-def test_fan_stats_show_how_each_team_is_playing(server, page: Page):
-    page.goto(f"{server}/fan?match={pattern_match(server, speed=300)}")
-    page.get_by_role("button", name="Stats").click()
-    card = page.get_by_test_id("how-they-play")
-    expect(card).to_be_visible(timeout=60_000)
-    expect(card).to_contain_text(re.compile(r"Harbourside attack mostly down the left|Jovanovic is running Harbourside"))
-    expect(card.locator(r"text=/\d/")).to_have_count(0)  # plain words, no numbers
-
-
 def test_desk_opened_after_full_time_still_has_recaps_and_agent_activity(server, browser):
     mid = new_match(server, speed=600)
     watcher = browser.new_page()
-    watcher.goto(f"{server}/fan?match={mid}")
+    watcher.goto(f"{server}/desk?match={mid}")
     expect(watcher.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
     watcher.wait_for_timeout(1500)  # let the full-time recap finish
     late = browser.new_page()
     late.goto(f"{server}/desk?match={mid}")
     expect(late.get_by_test_id("clock")).to_have_text("FT", timeout=15_000)
-    late.get_by_role("tab", name="Recap").click()
+    late.get_by_role("tab", name="Production").click()  # DK-5: recaps and agent activity together
     expect(late.get_by_test_id("recaps")).to_contain_text("recap", ignore_case=True)
-    late.get_by_role("tab", name="Production").click()
     expect(late.get_by_test_id("agents").locator(".trace-item").first).to_be_visible()
     watcher.close()
     late.close()
 
-
-# ---------- on-screen overlay (OV-*) ----------
 
 def test_overlay_page_is_transparent_with_a_scorebug(server, page: Page):
     page.goto(f"{server}/overlay?match={new_match(server, speed=60)}")
@@ -560,15 +379,7 @@ def test_stats_can_be_split_by_half(server, page: Page):
     page.get_by_role("button", name="2nd half").click()
     second = int(shots())
     assert first + second == total and first <= total
-    fan = page.context.new_page()
-    fan.goto(f"{server}/fan?match={mid}")
-    fan.get_by_role("button", name="Stats").click()
-    fan.get_by_role("button", name="2nd half").click()
-    expect(fan.get_by_test_id("stats")).to_have_attribute("data-period", "second_half")
-    fan.close()
 
-
-# ---------- substitution cards (SB-*) ----------
 
 def test_desk_pops_up_a_substitution_card_that_can_be_reopened(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=600)}")
@@ -585,44 +396,6 @@ def test_desk_pops_up_a_substitution_card_that_can_be_reopened(server, page: Pag
     page.get_by_test_id("open-sub-card").last.click()  # the earliest change
     expect(card).to_be_visible()
 
-
-def test_fan_feed_explains_substitutions_and_marks_a_followed_player(server, page: Page):
-    page.goto(f"{server}/fan?match={new_match(server, speed=600)}")
-    sub = page.get_by_test_id("sub-feed-item").last
-    expect(sub).to_be_visible(timeout=60_000)
-    swap = sub.locator("h3").inner_text()
-    on, off = re.match(r"(.+) comes on for (.+)", swap).groups()
-    expect(sub.locator(".sub-lines li").first).to_contain_text(re.compile(rf"{re.escape(off)}: .+ in \d+ minutes"))
-    assert not re.search(r"xG|%", sub.inner_text())
-    page.get_by_role("button", name="Me").click()
-    select = page.locator("select")
-    value = select.locator("option", has_text=off).first.get_attribute("value")
-    select.select_option(value)
-    page.get_by_role("button", name="Live").click()
-    expect(page.get_by_test_id("sub-feed-item").filter(has_text=swap)).to_have_attribute("data-mine", "true")
-
-
-def test_fan_stats_list_the_cards(server, page: Page):
-    from premier_analytics.generator import generate_match
-    from premier_analytics.league import load_league
-    events = generate_match("har", "ngc", 42, load_league()).events
-    cards = [e for e in events if e.type == "card"]
-    assert cards, "seed 42 should have at least one card"
-    page.goto(f"{server}/fan?match={new_match(server, speed=600)}")
-    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
-    page.get_by_role("button", name="Stats").click()
-    items = page.get_by_test_id("cards-list").locator("li")
-    expect(items).to_have_count(len(cards))
-    expect(items.first).to_contain_text(re.compile(r"\d+'"))
-    expect(page.get_by_test_id("cards-list")).not_to_contain_text("on a yellow")
-    items.first.get_by_test_id("card-row").click()  # F-6a: the › opens why
-    expect(items.first.get_by_test_id("card-why")).to_have_text(re.compile(
-        r"Late tackle|counter-attack|Pulled back|Holding|Handball|Dissent|Time-wasting|Dangerous|clear chance|Violent|Offensive"))
-    page.get_by_role("button", name="1st half").click()
-    expect(items).to_have_count(sum(e.period == 1 for e in cards))
-
-
-# ---------- the Producer (GP-*) ----------
 
 def test_desk_producer_cues_what_to_say_and_used_moves_it_on(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=120, seed=292)}")
@@ -643,7 +416,7 @@ def test_desk_producer_cues_what_to_say_and_used_moves_it_on(server, page: Page)
 def test_ask_box_answers_match_questions_from_the_match_data(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
     expect(page.get_by_test_id("clock")).not_to_have_text(re.compile("^0'?$"), timeout=20_000)
-    page.get_by_role("tab", name="Research").click()
+    page.get_by_role("tab", name="Ask").click()
     page.get_by_test_id("ask-input").fill("Who is winning?")
     page.get_by_role("button", name="Ask").click()
     answer = page.get_by_test_id("match-answer").first
@@ -701,3 +474,59 @@ def test_desk_fact_checks_a_typed_line_and_flags_the_right_number(server, page: 
     panel.get_by_test_id("say-input").fill("Kowalczyk has 1 shot")  # correct: no new flag
     panel.get_by_role("button", name="Check").click()
     expect(panel.get_by_test_id("fact-count")).to_contain_text("2 checked · 1 flagged", timeout=10_000)
+
+
+# ---------- one product: the desk (DK-*) ----------
+
+def test_desk_header_clock_ticks_and_shows_possession(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
+    clock = page.get_by_test_id("clock")
+    expect(clock).to_have_text(re.compile(r"^\d+:\d\d"), timeout=15_000)  # DK-3: minutes and seconds
+    first = clock.inner_text()
+    page.wait_for_timeout(1500)
+    assert clock.inner_text() != first  # it ticks between events
+    expect(page.get_by_test_id("possession-ball")).to_have_count(1)  # beside the team on the ball
+
+
+def test_say_it_simply_gives_plain_lines(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=600, seed=292)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    point = page.get_by_test_id("feed-item").filter(has_text="GOAL").first
+    point.get_by_test_id("say-simply").click()
+    lines = point.get_by_test_id("simple-lines")
+    expect(lines).to_contain_text(re.compile(r"puts .+ ahead|levels the game|bigger cushion|back in the game|penalty spot|chances like this"))
+    assert not re.search(r"xG", lines.inner_text())
+
+
+def test_focus_player_highlights_what_they_do(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=600, seed=292)}")
+    expect(page.get_by_test_id("clock")).to_have_text("FT", timeout=60_000)
+    page.get_by_test_id("lineup-home").get_by_test_id("starter").filter(has_text="Northcott").click()
+    page.get_by_test_id("focus-player").click()
+    expect(page.get_by_test_id("focus-chip")).to_contain_text("Reuben Northcott")
+    expect(page.locator("[data-testid=feed-item][data-focus=true]").first).to_be_visible()  # his goal
+    page.get_by_role("tab", name="Timeline").click()
+    expect(page.locator("[data-testid=timeline-item][data-focus=true]").first).to_be_visible()
+    page.get_by_test_id("focus-chip").get_by_role("button").click()
+    expect(page.get_by_test_id("focus-chip")).to_have_count(0)
+    expect(page.locator("[data-focus=true]")).to_have_count(0)
+
+
+def test_desk_has_six_tabs_and_a_clear_main_column(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server)}")
+    tabs = page.get_by_role("tab")
+    expect(tabs).to_have_count(6)
+    assert [t.inner_text().strip().lower() for t in tabs.all()] == ["prep", "stats", "patterns", "timeline", "ask", "production"]
+    tops = [page.get_by_test_id(t).bounding_box()["y"] for t in ("block-cue", "block-factcheck", "block-points")]
+    assert tops == sorted(tops)  # DK-6: cue, then fact-check, then talking points
+
+
+def test_how_this_desk_works_opens_once_and_stays_closed(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server)}")
+    help_ = page.get_by_test_id("desk-help")
+    expect(help_).to_have_attribute("data-open", "true")  # first visit
+    expect(help_).to_contain_text("Producer cue")
+    page.get_by_test_id("help-close").click()
+    expect(help_).to_have_attribute("data-open", "false")
+    page.reload()
+    expect(page.get_by_test_id("desk-help")).to_have_attribute("data-open", "false")

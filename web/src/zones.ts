@@ -29,8 +29,3 @@ export function describeZone(x: number, y: number, attackingRight: boolean): { t
     channel: (['left', 'centre', 'right'] as const)[row],
   }
 }
-
-/** Mirror the pitch so the viewer's favourite club always attacks to the right. */
-export function mirrorFor(favouriteId: string | null, period: number, homeId: string): boolean {
-  return favouriteId !== null && !attacksRight(favouriteId, period, homeId)
-}

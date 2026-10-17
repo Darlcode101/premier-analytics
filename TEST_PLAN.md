@@ -161,6 +161,19 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
 | "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
 
+### One product: the desk (DK-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Landing offers the desk (link and QR) and the overlay, no fan app; /fan falls back to the landing page | DK-1 | e2e |
+| Overlay still renders fan and analyst wording | DK-1 | e2e (existing) |
+| Say it simply: plain lines for each kind in EN/ES/AR, numbers only from the facts | DK-2 | unit (why.test) + e2e |
+| Header clock shows seconds and red stoppage time; possession marker beside the team on the ball | DK-3 | unit (clock.test) + e2e |
+| Focus player: picking one marks their talking points and timeline entries and shows a chip; clearing removes them | DK-4 | unit + e2e |
+| Six tabs in order; Momentum inside Stats, Season inside Prep, recap inside Production | DK-5 | e2e |
+| Main column order: cue, fact-check, talking points, each with a heading | DK-6 | e2e |
+| How this desk works: open on first visit, stays closed after closing (survives reload) | DK-7 | e2e |
+| Desk fits 1280×720 and 1920×1080 without page scroll | DK-8 | e2e (existing) |
+
 ### Live fact-check (FC-*)
 | Test | Covers | Layer |
 |---|---|---|

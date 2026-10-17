@@ -305,6 +305,22 @@ Build order, each step reusing the last: ① Producer, ② Ask about this match,
 | FC-2 | M | A Claim agent extracts checkable stat claims and a Fact-checker compares them with the match; a discreet flag appears only when a claim is clearly wrong |
 | FC-3 | S | A typed "say" box feeds the same checker, so the demo does not depend on a live mic |
 
+### 3.18 One product: the commentator desk (signed off 2026-10-18)
+
+The fan app is removed; its best features move to the desk. Casual viewers are still served, through the broadcast
+overlay's fan wording (the brief's stage (e) allows on-screen storytelling as the personalised experience).
+
+| ID | P | Requirement |
+|---|---|---|
+| DK-1 | M | The fan app is removed (page, fan-only code and tests). The landing page offers the commentator desk (link, and a QR code to open it on a tablet) and the broadcast overlay. The overlay keeps its fan and analyst wording |
+| DK-2 | M | **Say it simply**: each talking point offers a plain-words line built from its facts (no AI; chance quality as odds like "1 in 8"), in EN/ES/AR, for the commentator to use with casual viewers |
+| DK-3 | M | Header **clock** ticks with seconds between events, stoppage time in red; a **possession** marker sits beside the team on the ball |
+| DK-4 | M | **Focus player**: pick a player (from the line-ups); the cue, talking points and timeline entries involving them are highlighted, and a chip shows who is in focus until cleared |
+| DK-5 | M | **Six tabs**: Prep (brief, season, storylines), Stats (with the momentum chart and pitch), Patterns, Timeline, Ask, Production (overlay link, agent activity, recaps) |
+| DK-6 | M | The main column reads top to bottom: On air cue, fact-check, talking points, each with a short heading and a one-line hint |
+| DK-7 | S | **How this desk works**: a collapsible strip explaining the cue, fact-check, talking points, tabs and shortcuts; open on the first visit, remembered once closed |
+| DK-8 | S | Tidier layout: consistent spacing and labels, click targets at least 32 px, and the desk still fits 1280×720 to 1920×1080 without page scroll |
+
 ## 4. Non-functional requirements
 
 | ID | P | Requirement |
@@ -376,6 +392,7 @@ Build order, each step reusing the last: ① Producer, ② Ask about this match,
 | 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
+| 10-18 | One product (§3.18): the fan app removed after 200+ similar entries; its best features ported to the desk (Say it simply, ticking clock with possession, focus player). Kept the overlay's fan wording so casual viewers are served through the broadcast graphics (brief stage e). Desk reorganised: 9 tabs to 6, main column cue -> fact-check -> talking points with hints. At 1280×720 the help strip and a noted cue pushed the talking points off screen, so the help floats over the column, the cue clamps to three lines and the fact-check sits on one row |
 | 10-17 | FC-0 feasibility **passed**: Azure AI Speech works on the existing AIServices resource in Switzerland North (token 0.3 s, 0.8-0.95 s per line); keyless works with an Entra token (`aad#<resource id>#<token>`) under the existing Foundry User role, so no new grant. Risk found: fictional names misheard ("Kowalczyk" -> "Kowal 6", "Achterberg" -> "Actobird"); a phrase list of the match's players and clubs fixed every one. Design: the Claim agent (AI) turns speech into structured claims; the Fact-checker is deterministic code over the match tools (code computes, the model explains), flagging only clear errors |
 | 10-17 | Prep and storylines (PS-*): club storylines only follow moments that matter (severity ≥ 0.5; without the AI only big moments, ≥ 0.8), player storylines follow every moment involving the player (coming on included). The Prep tab comes first only until kick-off. Live check: an AI suggestion used "his" for a fictional player, so storylines and Watcher updates with gendered pronouns fall back to the plain wording |
 | 10-17 | Ask about this match (AM-*), from a live check with the real model on five questions: one agent that both routed and answered sent a records question to the match tools and answered with the score, so a separate **Ask Router** decides this match vs the real world; a router that also judged "not in the data" refused questions the tools answer, so that call is the Match Analyst's (it can see the data). Player stats say when a substitute came on (the model had guessed 90'); team stats gained "since minute" ("shots in the second half" had returned the match total); structured output takes the last complete JSON (a model answered twice) |
