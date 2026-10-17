@@ -624,9 +624,32 @@ function SeasonTab({ ctx }: { ctx: Ctx }) {
 
 interface Asked { question: string; result: AskResult | null }
 
+/** AM-1..AM-3: an answer from this match's data, with the tool calls behind it. */
+function MatchAnswer({ r, ctx }: { r: AskResult; ctx: Ctx }) {
+  const [open, setOpen] = useState(r.status === 'facts_only')
+  const evidence = r.evidence ?? []
+  return (
+    <div className="cd-match-answer" data-testid="match-answer" data-status={r.status}>
+      {r.status === 'ok' && <p dir="auto">{ctx.num(r.text)}</p>}
+      {r.status === 'not_in_data' && <p dir="auto">{ctx.num(r.text || dt(ctx.lang, 'ask_not_in_data'))}</p>}
+      {r.status === 'facts_only' && <p className="cd-note">{dt(ctx.lang, 'ask_facts_only')}</p>}
+      {!['ok', 'not_in_data', 'facts_only'].includes(r.status) && <p className="cd-note">{dt(ctx.lang, `ask_${r.status}` as DeskKey)}</p>}
+      {evidence.length > 0 && (
+        <>
+          <button className="cd-link" onClick={() => setOpen(v => !v)} aria-expanded={open} data-testid="how-i-know">{dt(ctx.lang, 'howIKnow')}</button>
+          {open && <ul className="cd-evidence" dir="ltr">{evidence.map((e, i) => <li key={i}><code>{e.summary}</code></li>)}</ul>}
+        </>
+      )}
+      {(r.status === 'ok' || r.status === 'facts_only') && r.as_of && (
+        <p className="cd-note">{dt(ctx.lang, 'fromMatch').replace('{m}', `${ctx.num(r.as_of)}'`)}</p>
+      )}
+    </div>
+  )
+}
+
 function ResearchTab({ state, ctx, asked, onAsk }: { state: State; ctx: Ctx; asked: Asked[]; onAsk: (q: string) => void }) {
   const [q, setQ] = useState('')
-  const remaining = [...asked].reverse().find(a => a.result)?.result?.remaining
+  const remaining = [...asked].reverse().find(a => a.result && a.result.source !== 'match')?.result?.remaining
   const pending = asked.some(a => !a.result)
   const cards = state.contexts.filter(c => c.language === ctx.lang)
   const explainers = Object.values(ctx.hello.explainers ?? {})
@@ -642,6 +665,7 @@ function ResearchTab({ state, ctx, asked, onAsk }: { state: State; ctx: Ctx; ask
         <article key={asked.length - i} className="cd-answer" data-testid="ask-answer">
           <h4 dir="auto">{a.question}</h4>
           {!a.result ? <p className="cd-note">{dt(ctx.lang, 'asking')}</p>
+            : a.result.source === 'match' ? <MatchAnswer r={a.result} ctx={ctx} />
             : a.result.status === 'ok' || a.result.status === 'cached' ? (
               <>
                 <p dir="auto">{ctx.num(a.result.text)}</p>

@@ -620,3 +620,9 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .oa-reason { padding: 1px 6px; border-radius: 3px; background: var(--cd-panel); color: var(--cd-faint); }
 .cd-onair-card .cd-used { margin-inline-start: auto; }
 @media (prefers-reduced-motion: reduce) { .oa-dot { animation: none; } }
+
+/* Ask about this match (AM-*) */
+.cd-match-answer p { margin: 4px 0; }
+.cd-evidence { margin: 4px 0 6px; padding: 6px 8px; list-style: none; background: var(--cd-panel); border-radius: 4px; font-size: 11px; color: var(--cd-dim); }
+.cd-evidence li { padding: 2px 0; overflow-wrap: anywhere; }
+.cd-evidence code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

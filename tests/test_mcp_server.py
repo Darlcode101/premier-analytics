@@ -9,7 +9,7 @@ from premier_analytics.mcp_server import MatchState, build_server
 from premier_analytics.overlay import Names
 from premier_analytics.scout import MomentScout
 
-TOOLS = {"get_score", "get_team_stats", "get_player_stats", "get_top_players", "get_key_moments"}
+TOOLS = {"get_score", "get_team_stats", "get_player_stats", "get_top_players", "get_key_moments", "get_cards_and_subs"}
 
 
 @pytest.fixture(scope="module")

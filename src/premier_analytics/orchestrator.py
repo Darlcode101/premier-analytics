@@ -161,6 +161,7 @@ class Orchestrator:
         self.pattern_tracker.observe(e)
         if e.elapsed_ms >= self._next_pattern_check or e.type == "period_end":
             self._check_patterns(e)
+        self.state.record(e)  # AM-1: totals as each minute starts, before this event counts
         moments = self.scout.observe(e)
         self.state.add_moments(moments)
         for m in moments:

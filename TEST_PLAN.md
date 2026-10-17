@@ -161,6 +161,19 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | xG to odds; goal, missed chance, cards and pressure sentences; every kind gives 1-3 clean sentences in EN/ES/AR with no xG or %; no number the facts don't support | F-7 | unit |
 | "Why?" opens sentences first; "See the numbers" reveals the facts | F-7, F-8 | e2e |
 
+### Ask about this match (AM-*)
+| Test | Covers | Layer |
+|---|---|---|
+| Player and team stats "since minute X" equal counts from the raw events (first and second half); substitutes show when they came on and went off | AM-1 | pytest |
+| Cards and substitutions tool: who, when, colour and the reason | AM-1 | pytest |
+| The Ask Router sends real-world questions to the Researcher without calling the match tools; a router failure falls back to the analyst | AM-1 | pytest |
+| A grounded answer carries its evidence (one line per distinct tool call) and "as of" | AM-3 | pytest |
+| Invented numbers or players: one retry told what was wrong, then the tool facts without a narrative | AM-2 | pytest |
+| The analyst says when the data does not hold the answer | AM-3 | pytest |
+| Structured output survives a model that answers twice | AM-2 | pytest |
+| Through the app: match and real-world questions reach the right agent; without models the box says it is unavailable | AM-1 | pytest |
+| Desk: a match question shows the answer, "From the match data, checked · as of …" and the tool calls under "How I know" | AM-3 | e2e |
+
 ### Producer (GP-*)
 | Test | Covers | Layer |
 |---|---|---|

@@ -300,3 +300,22 @@ def test_all_models_failed_message_says_why():
     with pytest.raises(AllModelsFailed) as failed:
         asyncio.run(llm.generate("explainer", "i", "p", Personalised))
     assert "429 Too Many Requests" in str(failed.value)
+
+
+def test_structured_output_survives_a_model_that_answers_twice():
+    """Live check 10-17: a model returned two JSON objects back to back; take the last complete one."""
+    from pydantic import BaseModel
+
+    from premier_analytics.agents import parse_structured
+
+    class Out(BaseModel):
+        scope: str
+        answer: str
+
+    assert parse_structured('{"scope":"match","answer":"a"}', Out).answer == "a"
+    two = '{"scope":"real_world","answer":""}\n{"scope":"not_in_data","answer":"Not in the feed."}'
+    assert parse_structured(two, Out).scope == "not_in_data"
+    glued = '{"scope":"real_world","answer":""}{"scope":"match","answer":"b"}'
+    assert parse_structured(glued, Out).answer == "b"
+    with pytest.raises(ValueError):
+        parse_structured("no json here", Out)

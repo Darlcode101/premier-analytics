@@ -636,3 +636,19 @@ def test_desk_producer_cues_what_to_say_and_used_moves_it_on(server, page: Page)
     expect(card).not_to_have_attribute("data-ref", ref, timeout=10_000)  # the producer moves on
     page.reload()  # used is shared server state, so it survives a reload
     expect(page.get_by_test_id("cue-card")).not_to_have_attribute("data-ref", ref, timeout=20_000)
+
+
+# ---------- Ask about this match (AM-*) ----------
+
+def test_ask_box_answers_match_questions_from_the_match_data(server, page: Page):
+    page.goto(f"{server}/desk?match={new_match(server, speed=60)}")
+    expect(page.get_by_test_id("clock")).not_to_have_text(re.compile("^0'?$"), timeout=20_000)
+    page.get_by_role("tab", name="Research").click()
+    page.get_by_test_id("ask-input").fill("Who is winning?")
+    page.get_by_role("button", name="Ask").click()
+    answer = page.get_by_test_id("match-answer").first
+    expect(answer).to_have_attribute("data-status", "ok", timeout=15_000)
+    expect(answer).to_contain_text(re.compile(r"Harbourside \d+-\d+ Northgate"))
+    expect(answer).to_contain_text("From the match data, checked · as of")
+    answer.get_by_test_id("how-i-know").click()
+    expect(answer.locator(".cd-evidence")).to_contain_text("get_score()")

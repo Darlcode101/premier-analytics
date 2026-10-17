@@ -9,6 +9,7 @@ against the moment's facts before anything can reach the screen (E-2, A-6).
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import time
@@ -105,6 +106,30 @@ class FakeLLM:
         return sum(c.role == role for c in self.calls)
 
 
+def parse_structured(text: str, schema: type[T]) -> T:
+    """A structured answer from model text. Models occasionally emit two JSON objects back to back (seen live
+    on 10-17); the last complete one that fits the schema is the answer."""
+    try:
+        return schema.model_validate_json(text)
+    except ValueError:
+        pass
+    decoder, found, i = json.JSONDecoder(), None, 0
+    while (start := text.find("{", i)) != -1:
+        try:
+            obj, end = decoder.raw_decode(text, start)
+        except ValueError:
+            i = start + 1
+            continue
+        try:
+            found = schema.model_validate(obj)
+        except ValueError:
+            pass
+        i = end
+    if found is None:
+        raise ValueError(f"no {schema.__name__} in the model's answer")
+    return found
+
+
 class AgentFrameworkLLM:
     """Runs each role as a Microsoft Agent Framework agent on a Foundry model deployment.
 
@@ -159,7 +184,7 @@ class AgentFrameworkLLM:
         )
         value = response.value
         if value is None:
-            value = schema.model_validate_json(response.text)
+            value = parse_structured(response.text, schema)
         return LLMResult(value=value, model=self.name, ms=(time.perf_counter() - start) * 1000)
 
 

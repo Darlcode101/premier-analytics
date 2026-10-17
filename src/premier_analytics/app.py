@@ -13,9 +13,11 @@ import contextlib
 import functools
 import json
 import os
+import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, WebSocket
@@ -23,6 +25,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM, _number_forms
+from .match_analyst import MatchAnalyst
 from .context import AgentFrameworkWebSearch, AskDesk, ContextEntry, ResearcherAgent, load_library
 from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
@@ -155,6 +158,9 @@ class MatchSession:
         )
         self.library = library or []
         self.ask_desk = AskDesk(researcher) if researcher else None
+        # AM-1: questions about this match. Tool-using answers need longer than a live caption's timeout.
+        qa_llm = ResilientLLM(llm.primary, llm.fallback, timeout_s=20.0, retries=0) if isinstance(llm, ResilientLLM) else llm
+        self.match_analyst = MatchAnalyst(qa_llm, critic, self.orch.state) if llm is not None else None
 
     # ---------- viewers ----------
 
@@ -505,10 +511,19 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
 
     @app.post("/api/matches/{match_id}/ask")
     async def ask(match_id: str, req: AskRequest) -> dict:
-        """The desk's ask box (CX-3): a live, sourced web answer, capped per match."""
+        """The desk's ask box: questions about this match go to the Match Analyst (AM-1); questions about
+        football beyond it to the Researcher's sourced web search (CX-3), capped per match."""
         s = sessions.get(match_id)
         if s is None:
             raise HTTPException(404, "no such match")
+        if s.match_analyst is not None:
+            as_of = display_minute(SimpleNamespace(clock_ms=s.clock_ms, period=s.period))
+            start = time.perf_counter()
+            res = await s.match_analyst.ask(req.question, req.language, as_of)
+            s.orch._trace("ask", "*", "match_analyst", res["status"], s.match_analyst.model,
+                          (time.perf_counter() - start) * 1000, detail=f"{len(res.get('evidence', []))} tool calls")
+            if res["status"] != "real_world":
+                return res
         if s.ask_desk is None:
             return {"status": "unavailable", "text": "", "sources": [], "remaining": 0}
         return await s.ask_desk.ask(req.question, req.language)

@@ -163,10 +163,13 @@ export interface ContextCard {
 export interface Explainer { topic: string; text: string; sources: SourceLink[] }
 
 export interface AskResult {
-  status: 'ok' | 'cached' | 'limit' | 'timeout' | 'off_topic' | 'no_source' | 'error' | 'unavailable'
+  status: 'ok' | 'cached' | 'limit' | 'timeout' | 'off_topic' | 'no_source' | 'error' | 'unavailable' | 'not_in_data' | 'facts_only'
   text: string
   sources: SourceLink[]
   remaining: number
+  source?: 'match'             // AM-1: answered from this match's tools (web answers have no source field)
+  evidence?: { tool: string; args: Record<string, unknown>; summary: string }[]
+  as_of?: string
 }
 
 /** Pattern Analyst (PA-*): one note about how a team is playing. scope 'season' = what they're known for. */

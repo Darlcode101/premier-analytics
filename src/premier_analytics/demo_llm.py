@@ -10,6 +10,7 @@ import re
 
 from .agents import Explanation, FakeLLM, Personalised
 from .context import ContextCard, Source, WebAnswer
+from .match_analyst import AskRoute, MatchAnswer
 from .producer import ProducerNote
 from .recap import RecapDraft
 
@@ -66,6 +67,20 @@ def scripted_search() -> _ScriptedSearch:
 
 
 def scripted_llm(delay: float = 0.3) -> FakeLLM:
+    llm = _scripted(delay)
+
+    def match_analyst(_prompt: str) -> MatchAnswer:  # really calls a tool, as the Agent Framework would
+        call = next(c for c in reversed(llm.calls) if c.role == "match_analyst")
+        s = {t.__name__: t for t in call.tools}["get_score"]()
+        return MatchAnswer(scope="match", answer=f"{s['home']} {s['score_home']}-{s['score_away']} {s['away']}.")
+
+    llm.responders["match_analyst"] = match_analyst
+    llm.responders["ask_router"] = lambda p: AskRoute(
+        scope="real_world" if re.search(r"league|record|average|history|rule", p, re.I) else "match")
+    return llm
+
+
+def _scripted(delay: float) -> FakeLLM:
     return FakeLLM({
         "explainer": _explainer,
         "personaliser": _personaliser,
@@ -80,4 +95,5 @@ def down_llm() -> FakeLLM:
     def fail(_prompt: str) -> Exception:
         return RuntimeError("model unavailable (simulated outage)")
 
-    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap", "producer")}, name="down")
+    return FakeLLM({role: fail for role in ("explainer", "personaliser", "translator", "context", "recap", "producer",
+                                         "ask_router", "match_analyst")}, name="down")
