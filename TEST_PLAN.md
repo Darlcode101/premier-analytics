@@ -144,6 +144,7 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Desk Patterns tab shows Today / Known-for notes and draws the selected one on the pitch; alerts appear among talking points; fan Stats shows plain lines without digits | PA-5..PA-7 | e2e |
 
 ### Fan app polish (F-*)
+> Retired with the fan app on 18 Oct; these tests were removed with it.
 | Test | Covers | Layer |
 |---|---|---|
 | Trend throttle: same team within 15' dropped, other team allowed, after 15' allowed; fans get fewer trend cards than commentators over a full match | F-1 | pytest |

@@ -195,6 +195,8 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 
 ### 3.11 Fan app polish (signed off 2026-10-11, from a full live run on a phone)
 
+> Retired with the fan app on 18 Oct (§3.18); kept here as a record.
+
 | ID | P | Requirement |
 |---|---|---|
 | F-1 | M | **Fewer trend cards for fans**: at most one momentum or pressure card per team every 15 match minutes, unless the other team takes over. Commentators still get every one. Late joiners see the same cards as viewers who were there |
@@ -320,6 +322,9 @@ overlay's fan wording (the brief's stage (e) allows on-screen storytelling as th
 | DK-6 | M | The main column reads top to bottom: On air cue, fact-check, talking points, each with a short heading and a one-line hint |
 | DK-7 | S | **How this desk works**: a collapsible strip explaining the cue, fact-check, talking points, tabs and shortcuts; open on the first visit, remembered once closed |
 | DK-8 | S | Tidier layout: consistent spacing and labels, click targets at least 32 px, and the desk still fits 1280×720 to 1920×1080 without page scroll |
+| DK-9 | M | **No fan anywhere visible** (user decision 10-24): the product, the live demo and the docs present only the commentator desk and its broadcast overlay, which uses plain broadcast wording with no mode choice. Fan-only strings, styles and docs are removed; the backend's internal audience code stays, so the evaluation results remain valid |
+| DK-10 | M | **Premier League look**: deep purple base, neon green / cyan / magenta accents, a white score box, Inter body text and Barlow Condensed display type. No Premier League logos, crests or marks (§4.4). Body text contrast at least 7:1, everything else at least 4.5:1 |
+| DK-11 | S | **Modern and usable**: rounded cards, consistent spacing, one accent per meaning (green: live and on air; cyan: AI and interactive; magenta: flags and red cards), visible keyboard focus |
 
 ## 4. Non-functional requirements
 
@@ -392,6 +397,7 @@ overlay's fan wording (the brief's stage (e) allows on-screen storytelling as th
 | 10-11 | Commentator desk v2 (§3.9) signed off: neutral dark graphite console (user chose dark over light), spotting-board line-ups, deterministic incident timeline, match vs last-10' stats, season context from a simulated 56-match season (user: include). Line-up names shown as initial + surname, as on spotting boards |
 | 10-11 | A-8 evaluations (docs/EVALS.md): groundedness 4.85, relevance 4.24, critic/language/length 100%; 'explains why' 3.76 vs bar 4 (trend moments weak, event moments pass). Round 3 prompt change reverted after it scored worse |
 | 10-09 | Effort: heavy this weekend (10–11 Oct), lower after, so the riskiest, core work goes first |
+| 10-24 | DK-9..DK-11: every visible trace of the fan app removed (the backend's audience code stays, invisible, so the evaluations stay valid; ripping it out would have been a day's risky refactor three days before the deadline). The desk moves from neutral graphite to a Premier League look, without any PL marks |
 | 10-18 | One product (§3.18): the fan app removed after 200+ similar entries; its best features ported to the desk (Say it simply, ticking clock with possession, focus player). Kept the overlay's fan wording so casual viewers are served through the broadcast graphics (brief stage e). Desk reorganised: 9 tabs to 6, main column cue -> fact-check -> talking points with hints. At 1280×720 the help strip and a noted cue pushed the talking points off screen, so the help floats over the column, the cue clamps to three lines and the fact-check sits on one row |
 | 10-17 | FC-0 feasibility **passed**: Azure AI Speech works on the existing AIServices resource in Switzerland North (token 0.3 s, 0.8-0.95 s per line); keyless works with an Entra token (`aad#<resource id>#<token>`) under the existing Foundry User role, so no new grant. Risk found: fictional names misheard ("Kowalczyk" -> "Kowal 6", "Achterberg" -> "Actobird"); a phrase list of the match's players and clubs fixed every one. Design: the Claim agent (AI) turns speech into structured claims; the Fact-checker is deterministic code over the match tools (code computes, the model explains), flagging only clear errors |
 | 10-17 | Prep and storylines (PS-*): club storylines only follow moments that matter (severity ≥ 0.5; without the AI only big moments, ≥ 0.8), player storylines follow every moment involving the player (coming on included). The Prep tab comes first only until kick-off. Live check: an AI suggestion used "his" for a fictional player, so storylines and Watcher updates with gendered pronouns fall back to the plain wording |

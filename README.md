@@ -13,8 +13,8 @@ Built for the Microsoft × Premier League *Inside the Game* hackathon, Best Mult
 
 **Try it:** https://premier-analytics.salmondune-d779c5b4.switzerlandnorth.azurecontainerapps.io
 Start a match and open the **commentator desk** (on a laptop, or scan the QR code for a tablet). For broadcast,
-`/overlay?match=…` is a transparent page (scorebug and a lower third for each new graphic, in plain fan wording or
-analyst wording) to drop over video as a browser source, e.g. in OBS: that is how viewers at home get the
+`/overlay?match=…` is a transparent page (scorebug and a lower third for each new graphic, in plain broadcast
+wording) to drop over video as a browser source, e.g. in OBS: that is how viewers at home get the
 intelligence.
 
 | The commentator desk |
@@ -30,7 +30,7 @@ flowchart LR
     E -. MCP tools .-> R[Recap agent]
     M --> O{Orchestrator}
     O -->|fast path, &lt;100 ms| T[Template captions<br/>EN / ES / AR]
-    O -->|AI path| X[Explainer] --> C1[Critic] --> P[Personaliser<br/>fan or analyst,<br/>favourite club & player] --> C2[Critic] --> L[Translator] --> C3[Critic]
+    O -->|AI path| X[Explainer] --> C1[Critic] --> P[Personaliser<br/>commentator or broadcast<br/>wording] --> C2[Critic] --> L[Translator] --> C3[Critic]
     T --> V[Overlay Validator<br/>+ Scheduler]
     C3 --> V
     R --> V
@@ -42,15 +42,15 @@ flowchart LR
 - **Orchestrator**: runs two paths at once. The fast path puts a template caption on screen immediately. The AI path upgrades it in place when it's ready, and is simply skipped if the models are slow or down. Work is shared across viewers: one explanation per moment, one personalisation per audience type, one translation per language.
 - **Agents** (Microsoft Agent Framework on Microsoft Foundry models):
   - *Explainer*: writes why the moment matters, citing fact IDs.
-  - *Personaliser*: rewrites it for a fan or an analyst, and for the viewer's club or player.
+  - *Personaliser*: rewrites it for its audience: the commentator desk (numbers and detail) or the broadcast overlay (plain words for viewers at home).
   - *Translator*: Spanish and Arabic. Player and club names are masked so they are never translated or transliterated.
-  - *Critic*: a deterministic checker run after every AI step. It rejects any number, player or club not in the facts, wrong goal context (calling an equaliser a "lead"), jargon in fan text, and anything too long for the screen. A rejected rewrite falls back to the last good version.
+  - *Critic*: a deterministic checker run after every AI step. It rejects any number, player or club not in the facts, wrong goal context (calling an equaliser a "lead"), jargon in broadcast text, and anything too long for the screen. A rejected rewrite falls back to the last good version.
   - *Recap agent*: writes half-time and full-time summaries by querying match data through an **MCP server** (`get_score`, `get_team_stats`, `get_player_stats`, `get_top_players`, `get_key_moments`).
   - *Researcher*: uses **Foundry web search** to find real Premier League benchmarks and tactics explainers with sources. Offline it builds a reviewed context library (every number must appear on a cited page and agree with a second source); live it answers the commentator's questions in the ask box.
   - *Storyline agent* and *Storyline Watcher*: before kick-off the desk gets a printable brief from the simulated season (earlier meetings, players to watch, known styles) and 3-5 suggested storylines, each worded from a computed fact and checked by the Critic. The commentator follows up to four, or types their own (it must name a player or club in the match). During the match the Watcher links moments to storylines and posts short updates; the Producer boosts moments that feed a storyline, and the cue says which.
   - *Claim agent* and *Fact-checker*: the desk's Listen button transcribes the commentator with **Azure AI Speech** in the browser (keyless token from the app's managed identity; a phrase list of the match's players and clubs, without which fictional names were misheard). Lines with a number go to the Claim agent, which only turns them into structured claims (who, which stat, what number, from when). The Fact-checker is plain code over the same match tools: it flags only clear errors, with the right number and the tool call behind it ("Zane Kowalczyk: 1 shot, not 3"). A typed box feeds the same check. Nothing said is stored.
   - *Ask Router* and *Match Analyst*: the desk's ask box. The router decides whether a question is about this match or football beyond it (which goes to the Researcher). The Match Analyst answers match questions by calling the same read-only tools the MCP server exposes (score, team and player stats from any minute, top players, key moments, cards and substitutions with reasons); every number and player in its answer must come from what the tools returned, with one retry, otherwise the commentator gets the tool facts without a narrative. Answers show "as of" the minute and the tool calls behind them; questions the data can't answer (offsides, distance run) are said to be outside the feed.
-  - *Pattern Analyst*: spots how each team is playing: which flank they attack, where they win the ball, who makes them tick, counter-attacks, a switch since half-time. A pattern is only reported if an exact significance test says it isn't chance (tuned on 380 simulated matches: strong styles found in most matches, false alarms under 5 %), and each club's known style from the season is shown next to today's numbers. The agent turns them into one-line notes on the desk (with the pattern drawn on the pitch), "new pattern" alerts among the talking points, and a plain "How they're playing" card for fans.
+  - *Pattern Analyst*: spots how each team is playing: which flank they attack, where they win the ball, who makes them tick, counter-attacks, a switch since half-time. A pattern is only reported if an exact significance test says it isn't chance (tuned on 380 simulated matches: strong styles found in most matches, false alarms under 5 %), and each club's known style from the season is shown next to today's numbers. The agent turns them into one-line notes on the desk (with the pattern drawn on the pitch), and "new pattern" alerts among the talking points.
   - *Producer*: the gallery's producer. Every other agent's output (explanations, pattern alerts, substitution cards) becomes a candidate talking point; rules rank them (importance × freshness, real-world context and storylines boosted, never repeating what the commentator has used) and put the best one **on air** at natural breaks, with how long the break usually lasts (measured from the simulation). An AI producer may add one Critic-checked line of angle, or stay silent. "Used" is shared by every desk on the match.
   - *Context agent*: beside big moments on the desk, adds one line of real-world context from that library ("Northgate's PPDA of 16.7 means they are pressing less than…"), with the source links. Its numbers are checked like everything else.
 - **Substitution cards** (no AI, so instant): the desk gets a pop-up for each change with what the player going off did today, both players' season numbers, subs used, the score and whether it was like-for-like or a more attacking or defensive change; the broadcast graphic adds one key stat.
@@ -85,7 +85,7 @@ Evaluated on 3 matches × 4 audiences (142 AI captions, final check 15 Oct); ful
 | Published text that passes the Critic re-check | 100 % |
 | Groundedness (Azure AI Evaluation, 1–5) | 4.85 |
 | Output in the requested language | 100 % |
-| Analyst wording carries more numbers than the fan (broadcast) wording | 94 % |
+| Commentator wording carries more numbers than broadcast wording (same moment) | 94 % |
 | Explains *why* (custom judge, 1–5) | 4.22 (from 3.09 at the first evaluation): spells, missed chances and goals come with computed meaning |
 
 ## Run it locally

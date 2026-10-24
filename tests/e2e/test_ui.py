@@ -130,13 +130,13 @@ def test_language_choice_survives_a_reload(server, page: Page):
     expect(page.get_by_role("tab", name="Previa")).to_be_visible()
 
 
-def test_desk_is_neutral_and_professional(server, page: Page):
+def test_desk_is_professional_and_readable(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=400)}")
     expect(page.get_by_test_id("goal-minute").first).to_be_visible(timeout=40_000)
     expect(page.get_by_test_id("celebration")).to_have_count(0)
     expect(page.get_by_test_id("fav-badge")).to_have_count(0)
     expect(page.locator("[data-possession]")).to_have_count(0)  # no possession colour wash
-    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=desk]')).backgroundColor") == "rgb(21, 24, 29)"
+    assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=desk]')).backgroundColor") == "rgb(27, 0, 33)"  # DK-10: PL purple
     assert _contrast(page, "[data-testid=desk]") >= 7
     page.get_by_role("tab", name="Timeline").click()
     assert _contrast(page, "[data-testid=timeline-item]") >= 4.5

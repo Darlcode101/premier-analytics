@@ -1,5 +1,7 @@
 # Evaluations (A-8)
 
+> The "fan" audience below is the plain wording now used by the broadcast overlay; the separate fan app was retired on 18 Oct (REQUIREMENTS §3.18). The "analyst" audience is the commentator desk.
+
 How good is the AI text that reaches the screen? We play **3 fixed matches** (seeds 42, 9, 7) through the
 real pipeline on Microsoft Foundry for **4 audiences** (English fan, English analyst, Spanish fan, Arabic
 fan), keep every published AI overlay with the facts it was given, and score it two ways:

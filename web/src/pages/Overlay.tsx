@@ -7,13 +7,13 @@ import { kitColors } from '../colors'
 import { localDigits } from '../digits'
 import { KIND_LABELS, t } from '../i18n'
 import { capFor, emptyThird, fitText, stepThird } from '../overlayQueue'
-import type { Language, Mode, Profile } from '../types'
+import type { Language, Profile } from '../types'
 
 export function Overlay({ matchId, lang }: { matchId: string; lang: Language }) {
   const params = new URLSearchParams(location.search)
-  const mode: Mode = params.get('mode') === 'analyst' ? 'analyst' : 'fan'
   const showBug = params.get('bug') !== '0'
-  const profile: Profile = { mode, language: lang, club_id: null, player_id: null }
+  // DK-9: viewers at home get plain broadcast wording (the backend's 'fan' audience); there is no mode choice.
+  const profile: Profile = { mode: 'fan', language: lang, club_id: null, player_id: null }
   const { state } = useMatch(matchId, profile)
   const h = state.hello
   const colors = useMemo(() => (h ? kitColors(h.home, h.away) : {}), [h])
