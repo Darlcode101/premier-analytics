@@ -156,6 +156,7 @@ def test_thirteen_languages_in_a_dropdown(server, page: Page):
     expect(page.get_by_role("tab", name="準備")).to_be_visible()
     page.goto(f"{server}/")
     expect(page.get_by_test_id("lang-select")).to_have_value("ja")  # remembered on the landing page too
+    assert page.get_by_test_id("lang-select").bounding_box()["width"] < 300  # a compact pill, not the landing form's full width
 
 
 @pytest.mark.parametrize("lang", ["en", "fr", "de", "ja"])
