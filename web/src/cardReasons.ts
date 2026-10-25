@@ -1,4 +1,5 @@
 // F-6a: why a card was shown, in plain words. The reason comes from the match data (never AI).
+import { fill, fromCatalogues } from './locales'
 import type { Language } from './types'
 
 export type CardReason = 'late_tackle' | 'tactical_foul' | 'holding' | 'handball' | 'dissent' | 'time_wasting'
@@ -6,7 +7,7 @@ export type CardReason = 'late_tackle' | 'tactical_foul' | 'holding' | 'handball
 
 type Phrase = [withVictim: (v: string) => string, alone: string]
 
-const REASONS: Record<Language, Record<CardReason, Phrase>> = {
+const HAND_WRITTEN: Record<'en' | 'es' | 'ar', Record<CardReason, Phrase>> = {
   en: {
     late_tackle: [v => `Late tackle on ${v}`, 'Late tackle'],
     tactical_foul: [v => `Fouled ${v} to stop a counter-attack`, 'Foul to stop a counter-attack'],
@@ -45,7 +46,14 @@ const REASONS: Record<Language, Record<CardReason, Phrase>> = {
   },
 }
 
-const SECOND: Record<Language, string> = { en: 'Second yellow', es: 'Segunda amarilla', ar: 'إنذار ثانٍ' }
+const REASONS: Record<Language, Record<CardReason, Phrase>> = {
+  ...HAND_WRITTEN,
+  ...fromCatalogues(c => Object.fromEntries(Object.entries(c.cards).map(
+    ([r, [withVictim, alone]]) => [r, [(v: string) => fill(withVictim, { v }), alone]])) as Record<CardReason, Phrase>),  // DK-12
+}
+
+const SECOND: Record<Language, string> = { en: 'Second yellow', es: 'Segunda amarilla', ar: 'إنذار ثانٍ',
+  ...fromCatalogues(c => c.secondYellow) }
 
 /** "Late tackle on Kai Greaves"; a second yellow says so first. Null when the reason is unknown. */
 export function cardReasonText(reason: string | null | undefined, victim: string | null, lang: Language,

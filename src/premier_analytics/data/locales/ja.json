@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["ゴール！ {home} {sh}-{sa} {away}", "{player} が {team} に得点（{minute}分）", "{player} {minute}分 · xG {xg}、{dist} m · {team}: シュート {tshots}本、xG {txg}"],
+    "milestone": ["{milestone}！ {player}", "{player} この試合 {pg} ゴール", "{player}: {pg} ゴール · {team}"],
+    "big_chance": ["決定機 · {team}", "{player}、{team} の惜しいチャンス！", "{player} {minute}分 · xG {xg}、{dist} m · {outcome}"],
+    "woodwork": ["ポスト直撃 · {team}", "{player} のシュートは枠に当たる！", "{player} {minute}分 · xG {xg}、{dist} m"],
+    "shot_on_target": ["セーブ · {opp}", "{player} のシュートをGKがセーブ", "{player} {minute}分 · xG {xg}、{dist} m"],
+    "rocket_shot": ["時速 {speed} KMの弾丸シュート", "{player} の強烈な一撃！", "{player} · 時速 {speed} km、{dist} m · xG {xg}"],
+    "yellow_card": ["イエローカード · {team}", "{player} に警告（{minute}分）", "{player} 警告 {minute}分 · {team}"],
+    "penalty": ["PK · {team}", "{team} にPK！ キッカーは {player}", "{team} にPK: キッカーは {player}（{minute}分）"],
+    "red_card": ["レッドカード · {team}", "{player} が退場！ {team} は {remaining} 人に", "{player} 退場 {minute}分 · {team} は {remaining} 人"],
+    "great_pass": ["キーパス · {player}", "{player} の見事なパス", "{player} · 難易度 {difficulty}、{pdist} m"],
+    "substitution": ["選手交代 · {team}", "{player_in} が {player_out} に代わって出場（{out_stat}）", "{minute}分 {player_in} が {player_out} と交代 · {out_stat}"],
+    "half_time": ["前半終了: {home} {sh}-{sa} {away}", "ハーフタイム {home} {sh}-{sa} {away}", "シュート {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · ボール支配率 {poss}%-{poss_away}%"],
+    "full_time": ["試合終了: {home} {sh}-{sa} {away}", "最終スコア: {home} {sh}-{sa} {away}", "シュート {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · ボール支配率 {poss}%-{poss_away}%"],
+    "momentum_shift": ["流れ · {team}", "今は {team} が主導権を握る", "直近 {wmin} 分: シュート {wshots}本、xG {wxg}、敵陣支配率 {tilt}%"],
+    "pressure_spell": ["猛攻 · {team}", "{team} が {opp} を押し込む", "直近 {wmin} 分: 敵陣支配率 {tilt}%、シュート {wshots}本、毎分 {tempo} パス"]
+  },
+  "labels": {"brace": "複数得点", "hat_trick": "ハットトリック", "goals": "止まらない", "saved": "セーブ", "off_target": "枠外", "blocked": "ブロック", "woodwork": "ポスト"},
+  "channels": {"left": "左サイド", "centre": "中央", "right": "右サイド"},
+  "patterns": {
+    "flank.match": "{team} は{ch}から攻め続ける: アタッキングサード進入 {total} 回中 {count} 回",
+    "switch.second_half": "{team} は後半から{ch}に攻撃をシフト: {total} 回中 {count} 回",
+    "high_regains.match": "{team} は高い位置でボールを奪う: ボール奪取 {total} 回中 {count} 回が敵陣深く",
+    "long_shots.match": "{team} はミドルシュートを多用: シュート {total} 本中 {count} 本がペナルティエリア外から",
+    "hub.match": "{player} が {team} の攻撃の起点: アタッキングサードへのパス {total} 本中 {count} 本",
+    "counters.match": "{team} はカウンターが鋭い: シュート {total} 本中 {count} 本がボール奪取から {seconds} 秒以内",
+    "unusual.match": "珍しく {team} は今日{ch}をあまり使わない: {total} 回中 {count} 回（今季は {season_share_pct}%）",
+    "flank.season": "{team} は普段{ch}から攻める（今季 {season_share_pct}%）。今日は {today_total} 回中 {today_count} 回",
+    "high_regains.season": "{team} は前線から激しくプレス: 今季のボール奪取の {season_share_pct}% が敵陣深く（リーグ {league_share_pct}%）。今日は {today_total} 回中 {today_count} 回",
+    "long_shots.season": "{team} は他のチームより遠めから打つ: 今季のシュートの {season_share_pct}%（リーグ {league_share_pct}%）。今日は {today_total} 本中 {today_count} 本",
+    "playmaker.season": "{player} は {team} の司令塔: 今季アタッキングサードへのパスの {season_share_pct}%。今日は {today_total} 本中 {today_count} 本"
+  },
+  "pattern_fan": {
+    "flank": "{team} は主に{ch}から攻める", "switch": "{team} は{ch}に攻撃を切り替えた",
+    "high_regains": "{team} は前線から激しくプレス", "long_shots": "{team} は遠めからのシュートが好き",
+    "hub": "{player} が {team} の攻撃を操る", "playmaker": "{player} が {team} の攻撃を操る",
+    "counters": "{team} はカウンターが鋭い"
+  },
+  "stat_words": {"goals": "ゴール", "assists": "アシスト", "shots": "シュート", "ball_wins": "ボール奪取", "passes": "パス"},
+  "sub_fan": {
+    "swap": "{on} が {off} に代わって出場", "today": "{off}（{minutes}分）· {stat}",
+    "goals": "{on} の今季ゴール: {n}", "assists": "{on} の今季アシスト: {n}",
+    "more_attacking": "より攻撃的な交代", "more_defensive": "より守備的な交代"
+  },
+  "storylines": {
+    "table": "{home}（{hpos}位、勝ち点 {hpts}）がホームで {away}（{apos}位、勝ち点 {apts}）と対戦",
+    "meeting": "今季の前回対戦: {score}",
+    "top_scorer": "{p} は今季 {club} で {g} ゴール",
+    "flank": "{club} は{side}から攻める: 今季の攻撃の {pct}%",
+    "long_shots": "{club} は遠めから打つ: シュートの {pct}%（リーグ {lg}%）",
+    "high_regains": "{club} は高い位置でプレス: ボール奪取の {pct}% が敵陣深く（リーグ {lg}%）",
+    "playmaker": "{p} が {club} の司令塔: アタッキングサードへのパスの {pct}%",
+    "form": "{club} は直近 {n} 試合で {w} 勝"
+  },
+  "factcheck": {
+    "metrics": {"goals": "ゴール", "assists": "アシスト", "shots": "シュート", "shots_on_target": "枠内シュート", "xg": "xG",
+      "passes": "パス", "passes_completed": "成功パス", "tackles_won": "タックル成功", "interceptions": "インターセプト",
+      "fouls": "ファウル", "corners": "コーナーキック", "yellow_cards": "イエローカード", "red_cards": "レッドカード", "possession_pct": "ボール支配率"},
+    "stated": "{subject}: {label} {value}{scope}",
+    "since": "（{m}分以降）",
+    "not": "{stated}（{claimed} ではない）"
+  }
+}

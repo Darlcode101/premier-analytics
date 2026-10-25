@@ -61,8 +61,10 @@ Tick *Hold kick-off for the desk* to prepare before the match starts.
   wording for viewers at home) to drop over video, e.g. in OBS; recaps at half-time and full-time; and the live
   activity of every agent.
 
-The desk works in **English, Spanish and Arabic** (right to left). A short *How this desk works* guide opens on
-the first visit.
+The desk works in **13 languages**: English, Spanish, Arabic (right to left), French, German, Italian, Portuguese,
+Dutch, Turkish, Chinese, Japanese, Korean and Hindi. Every caption, card reason, fact-check verdict and explainer has
+written wording in each, so the desk works in any of them with the AI off, and *Listen* uses that language's speech
+model. A short *How this desk works* guide opens on the first visit.
 
 ## How it works
 
@@ -93,7 +95,7 @@ always on screen.
 |---|---|---|
 | **Producer** | rules + AI note | Ranks everything the other agents produce (importance × freshness, boosts for real-world context and storylines, never repeating what was used) and puts the best point on air at natural breaks. An AI producer may add one checked line of angle, or stay silent |
 | **Explainer** | AI | Why a moment matters, citing fact IDs |
-| **Personaliser / Translator** | AI | Commentator or broadcast wording; Spanish and Arabic with player and club names masked so they are never translated |
+| **Personaliser / Translator** | AI | Commentator or broadcast wording; the other 12 languages with player and club names masked so they are never translated |
 | **Critic** | code | Checks every AI line against the facts before it is shown |
 | **Claim agent** + **Fact-checker** | AI + code | The Claim agent only turns what the commentator said into structured claims (who, which stat, what number, from when); the Fact-checker compares them with the match in plain code |
 | **Ask Router** + **Match Analyst** | AI | The router separates questions about this match from real-world ones; the analyst answers from read-only match tools, every number checked, with the tool calls shown |
@@ -109,7 +111,7 @@ always on screen.
 | **Microsoft Foundry** | `gpt-4.1-mini` for live work, `gpt-5-mini` for recaps and as automatic fallback |
 | **Microsoft Agent Framework** | Agents, structured outputs, tool calling (the Match Analyst), hosted web search |
 | **Foundry web search** | The Researcher's sourced answers about real football |
-| **Azure AI Speech** | The desk's *Listen* button (in the browser, with a phrase list of the match's names; without it fictional names were misheard) |
+| **Azure AI Speech** | The desk's *Listen* button in all 13 languages (in the browser, with a phrase list of the match's names; without it fictional names were misheard) |
 | **Azure Container Apps** | Hosting (one container: FastAPI + React build) |
 | **Managed identity (Microsoft Entra ID)** | Keyless access to Foundry, Speech and the container registry; no keys in the app or the browser |
 | **Application Insights** (OpenTelemetry) | A trace per moment with a span per agent step (GenAI semantic conventions) |
@@ -190,14 +192,14 @@ npm --prefix web test
 pytest tests/e2e
 ```
 
-- **Python (479 tests)**: data realism against season targets, stats engine, Moment Scout, Critic, every agent
+- **Python (661 tests)**: data realism against season targets, stats engine, Moment Scout, Critic, every agent
   with scripted models (including timeouts, outages and models that make things up), Producer, fact-check,
   Match Analyst, storylines, orchestrator, MCP tools, recaps, WebSocket app, tracing, evaluation metrics.
-- **Frontend (88 tests, Vitest)**: state, the cue's timing, storylines, fact-check log, Listen's phrase list,
-  plain-words explanations, card reasons, line-ups, translations.
-- **Browser (36 tests, Playwright)**: the real app with scripted agents: prep and kick-off, the Producer cue,
-  fact-check, Ask, focus player, Say it simply, the overlay, fitting 1280×720 to 1920×1080, contrast, languages
-  and right-to-left Arabic, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
+- **Frontend (115 tests, Vitest)**: state, the cue's timing, storylines, fact-check log, Listen's phrase list,
+  plain-words explanations, card reasons, line-ups, every language's catalogue.
+- **Browser (41 tests, Playwright)**: the real app with scripted agents: prep and kick-off, the Producer cue,
+  fact-check, Ask, focus player, Say it simply, the overlay, fitting 1280×720 to 1920×1080 (in French, German and Japanese too), contrast,
+  the language dropdown and right-to-left Arabic, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
 - **Evaluations** against live models: `python scripts/run_evals.py` (about 15 min, under $1).
 
 CI (GitHub Actions) runs the suites, builds the Docker image and checks it starts, and scans for secrets.

@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["DOELPUNT! {home} {sh}-{sa} {away}", "{player} scoort voor {team} ({minute}')", "{player} {minute}' · xG {xg} van {dist} m · {team}: {tshots} schoten, {txg} xG"],
+    "milestone": ["{milestone}! {player}", "{player}: {pg} goals vandaag", "{player}: {pg} goals · {team}"],
+    "big_chance": ["GROTE KANS · {team}", "{player} heel dichtbij voor {team}!", "{player} {minute}' · xG {xg} van {dist} m · {outcome}"],
+    "woodwork": ["OP HET ALUMINIUM · {team}", "{player} raakt paal of lat!", "{player} {minute}' · xG {xg} van {dist} m"],
+    "shot_on_target": ["REDDING · {opp}", "{player} dwingt een redding af", "{player} {minute}' · xG {xg} van {dist} m"],
+    "rocket_shot": ["SCHOT VAN {speed} KM/U", "Wat een knal van {player}!", "{player} · {speed} km/u van {dist} m · xG {xg}"],
+    "yellow_card": ["GELE KAART · {team}", "Geel voor {player} ({minute}')", "{player} geel {minute}' · {team}"],
+    "penalty": ["STRAFSCHOP · {team}", "Strafschop voor {team}! {player} legt aan", "Strafschop voor {team}: {player} neemt hem ({minute}')"],
+    "red_card": ["RODE KAART · {team}", "{player} eruit! {team} met {remaining} man", "{player} rood {minute}' · {team} met {remaining} spelers"],
+    "great_pass": ["SLEUTELPASS · {player}", "Schitterende pass van {player}", "{player} · moeilijkheid {difficulty} over {pdist} m"],
+    "substitution": ["WISSEL · {team}", "{player_in} komt in voor {player_out} ({out_stat})", "{minute}' {player_in} vervangt {player_out} · {out_stat}"],
+    "half_time": ["RUST: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} bij rust", "Schoten {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · balbezit {poss}%-{poss_away}%"],
+    "full_time": ["AFGELOPEN: {home} {sh}-{sa} {away}", "Eindstand: {home} {sh}-{sa} {away}", "Schoten {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · balbezit {poss}%-{poss_away}%"],
+    "momentum_shift": ["OVERWICHT · {team}", "{team} is nu de bovenliggende partij", "Laatste {wmin} min: {wshots} schoten, {wxg} xG, terreinoverwicht {tilt}%"],
+    "pressure_spell": ["DRUK · {team}", "{team} drukt {opp} terug op eigen helft", "Laatste {wmin} min: terreinoverwicht {tilt}%, {wshots} schoten, {tempo} passes/min"]
+  },
+  "labels": {"brace": "TWEE GOALS", "hat_trick": "HATTRICK", "goals": "NIET TE STOPPEN", "saved": "gered", "off_target": "naast", "blocked": "geblokt", "woodwork": "aluminium"},
+  "channels": {"left": "over links", "centre": "door het centrum", "right": "over rechts"},
+  "patterns": {
+    "flank.match": "{team} komt steeds {ch}: {count} van de {total} aanvallen naar het laatste derde",
+    "switch.second_half": "{team} komt sinds de rust {ch}: {count} van {total} aanvallen",
+    "high_regains.match": "{team} verovert de bal hoog: {count} van de {total} balveroveringen in het aanvallende derde",
+    "long_shots.match": "{team} schiet vaak van afstand: {count} van {total} schoten van buiten de zestien",
+    "hub.match": "{player} laat {team} draaien: {count} van de {total} passes naar het laatste derde",
+    "counters.match": "{team} is gevaarlijk in de omschakeling: {count} van {total} schoten binnen {seconds} seconden na balverovering",
+    "unusual.match": "Opvallend: {team} komt vandaag nauwelijks {ch}, {count} van {total} aanvallen (dit seizoen {season_share_pct}%)",
+    "flank.season": "{team} valt meestal aan {ch} ({season_share_pct}% dit seizoen); vandaag {today_count} van {today_total}",
+    "high_regains.season": "{team} zet hoog druk: {season_share_pct}% van de balveroveringen in het aanvallende derde dit seizoen (competitie {league_share_pct}%); vandaag {today_count} van {today_total}",
+    "long_shots.season": "{team} schiet vaker van afstand dan de meeste ploegen: {season_share_pct}% van de schoten dit seizoen (competitie {league_share_pct}%); vandaag {today_count} van {today_total}",
+    "playmaker.season": "{player} is de spelmaker van {team}: {season_share_pct}% van de passes naar het laatste derde dit seizoen; vandaag {today_count} van {today_total}"
+  },
+  "pattern_fan": {
+    "flank": "{team} valt vooral aan {ch}", "switch": "{team} komt nu {ch}",
+    "high_regains": "{team} zet hoog druk", "long_shots": "{team} schiet graag van afstand",
+    "hub": "{player} leidt de aanvallen van {team}", "playmaker": "{player} leidt de aanvallen van {team}",
+    "counters": "{team} is gevaarlijk in de omschakeling"
+  },
+  "stat_words": {"goals": "Goals", "assists": "Assists", "shots": "Schoten", "ball_wins": "Balveroveringen", "passes": "Passes"},
+  "sub_fan": {
+    "swap": "{on} komt in voor {off}", "today": "{off} ({minutes} min) · {stat}",
+    "goals": "Goals van {on} dit seizoen: {n}", "assists": "Assists van {on} dit seizoen: {n}",
+    "more_attacking": "Een aanvallendere wissel", "more_defensive": "Een verdedigendere wissel"
+  },
+  "storylines": {
+    "table": "{home} ({hpos}e, {hpts} ptn) ontvangt {away} ({apos}e, {apts} ptn)",
+    "meeting": "Eerder dit seizoen: {score}",
+    "top_scorer": "{p}: {g} goals dit seizoen voor {club}",
+    "flank": "{club} valt aan {side}: {pct}% van de aanvallen dit seizoen",
+    "long_shots": "{club} schiet van afstand: {pct}% van de schoten (competitie {lg}%)",
+    "high_regains": "{club} zet hoog druk: {pct}% van de balveroveringen in het aanvallende derde (competitie {lg}%)",
+    "playmaker": "{p} laat {club} draaien: {pct}% van de passes naar het laatste derde",
+    "form": "{club}: {w} zeges uit de laatste {n} wedstrijden"
+  },
+  "factcheck": {
+    "metrics": {"goals": "goals", "assists": "assists", "shots": "schoten", "shots_on_target": "schoten op doel", "xg": "xG",
+      "passes": "passes", "passes_completed": "geslaagde passes", "tackles_won": "gewonnen tackles", "interceptions": "onderscheppingen",
+      "fouls": "overtredingen", "corners": "hoekschoppen", "yellow_cards": "gele kaarten", "red_cards": "rode kaarten", "possession_pct": "balbezit"},
+    "stated": "{subject} – {label}: {value}{scope}",
+    "since": " sinds de {m}e minuut",
+    "not": "{stated}, niet {claimed}"
+  }
+}

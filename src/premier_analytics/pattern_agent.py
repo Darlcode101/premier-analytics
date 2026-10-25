@@ -14,6 +14,7 @@ import re
 from pydantic import BaseModel, Field
 
 from .agents import LLM, CriticAgent, _number_forms
+from .languages import GENERATED, catalogue
 from .overlay import Names
 from .patterns import Pattern
 
@@ -79,6 +80,10 @@ FAN = {
            "hub": "{player} يقود هجمات {team}", "playmaker": "{player} يقود هجمات {team}",
            "counters": "{team} خطير في المرتدات"},
 }
+# DK-12: the catalogued languages ("kind.scope" keys in the catalogue).
+CHANNEL_WORDS.update({lang: catalogue(lang)["channels"] for lang in GENERATED})
+TEXT.update({lang: {tuple(k.split(".")): v for k, v in catalogue(lang)["patterns"].items()} for lang in GENERATED})
+FAN.update({lang: catalogue(lang)["pattern_fan"] for lang in GENERATED})
 # What a fan should hear first about a team: today's own patterns, then what they're known for.
 FAN_ORDER = ("switch", "flank", "counters", "high_regains", "long_shots", "hub", "playmaker")
 

@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from .agents import LLMResult, _normalise_numbers, _number_forms, describe_facts
 from opentelemetry.trace import StatusCode
 
+from .languages import LANGUAGE_NAMES
 from .overlay import Names, display_minute
 from .scout import Moment
 from .telemetry import tracer
@@ -184,7 +185,6 @@ class WebSearch(Protocol):
     async def search(self, question: str, instructions: str) -> WebAnswer: ...
 
 
-LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "ar": "Arabic"}
 
 BUILD_INSTRUCTIONS = (
     "You research real football facts for a TV commentator's notes. Search the web. Reply with one sentence "

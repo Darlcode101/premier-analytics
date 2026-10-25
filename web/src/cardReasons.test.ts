@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cardReasonText } from './cardReasons'
+import { LANGUAGES } from './languages'
 
 const REASONS = ['late_tackle', 'tactical_foul', 'holding', 'handball', 'dissent', 'time_wasting',
   'serious_foul_play', 'denied_goal_chance', 'violent_conduct', 'offensive_language']
@@ -17,7 +18,7 @@ describe('card reasons (F-6a)', () => {
     expect(cardReasonText(undefined, null, 'en')).toBeNull()
     expect(cardReasonText('made_up', null, 'en')).toBeNull()
   })
-  it.each(['en', 'es', 'ar'] as const)('every reason has wording in %s', lang => {
+  it.each(LANGUAGES)('every reason has wording in %s', lang => {
     for (const r of REASONS) {
       for (const v of ['Kai Greaves', null]) {
         const text = cardReasonText(r, v, lang)

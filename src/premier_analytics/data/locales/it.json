@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["GOL! {home} {sh}-{sa} {away}", "{player} segna per {team} ({minute}')", "{player} {minute}' · xG {xg} da {dist} m · {team}: {tshots} tiri, {txg} xG"],
+    "milestone": ["{milestone}! {player}", "{player}: {pg} gol oggi", "{player}: {pg} gol · {team}"],
+    "big_chance": ["GRANDE OCCASIONE · {team}", "{player} a un passo dal gol per {team}!", "{player} {minute}' · xG {xg} da {dist} m · {outcome}"],
+    "woodwork": ["LEGNO · {team}", "{player} colpisce il legno!", "{player} {minute}' · xG {xg} da {dist} m"],
+    "shot_on_target": ["PARATA · {opp}", "{player} costringe il portiere alla parata", "{player} {minute}' · xG {xg} da {dist} m"],
+    "rocket_shot": ["TIRO A {speed} KM/H", "Che botta di {player}!", "{player} · {speed} km/h da {dist} m · xG {xg}"],
+    "yellow_card": ["CARTELLINO GIALLO · {team}", "{player} viene ammonito ({minute}')", "{player} ammonito {minute}' · {team}"],
+    "penalty": ["RIGORE · {team}", "Rigore per {team}! Sul dischetto {player}", "Rigore per {team}: calcia {player} ({minute}')"],
+    "red_card": ["CARTELLINO ROSSO · {team}", "{player} espulso! {team} in {remaining}", "{player} espulso {minute}' · {team} in {remaining} giocatori"],
+    "great_pass": ["PASSAGGIO CHIAVE · {player}", "Passaggio splendido di {player}", "{player} · difficoltà {difficulty} su {pdist} m"],
+    "substitution": ["CAMBIO · {team}", "Entra {player_in}, esce {player_out} ({out_stat})", "{minute}' {player_in} sostituisce {player_out} · {out_stat}"],
+    "half_time": ["INTERVALLO: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} all'intervallo", "Tiri {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · possesso {poss}%-{poss_away}%"],
+    "full_time": ["FINALE: {home} {sh}-{sa} {away}", "Risultato finale: {home} {sh}-{sa} {away}", "Tiri {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · possesso {poss}%-{poss_away}%"],
+    "momentum_shift": ["INERZIA · {team}", "Ora è {team} a fare la partita", "Ultimi {wmin} min: {wshots} tiri, {wxg} xG, predominio territoriale {tilt}%"],
+    "pressure_spell": ["PRESSIONE · {team}", "{team} schiaccia {opp} nella sua metà campo", "Ultimi {wmin} min: predominio territoriale {tilt}%, {wshots} tiri, {tempo} passaggi/min"]
+  },
+  "labels": {"brace": "DOPPIETTA", "hat_trick": "TRIPLETTA", "goals": "INARRESTABILE", "saved": "parato", "off_target": "fuori", "blocked": "respinto", "woodwork": "legno"},
+  "channels": {"left": "a sinistra", "centre": "per vie centrali", "right": "a destra"},
+  "patterns": {
+    "flank.match": "{team} insiste {ch}: {count} delle sue {total} azioni nell'ultimo terzo",
+    "switch.second_half": "{team} attacca {ch} dall'intervallo: {count} azioni su {total}",
+    "high_regains.match": "{team} recupera palla alta: {count} dei suoi {total} recuperi nella trequarti offensiva",
+    "long_shots.match": "{team} calcia spesso da fuori: {count} tiri su {total} da fuori area",
+    "hub.match": "{player} fa girare {team}: {count} dei {total} passaggi nell'ultimo terzo",
+    "counters.match": "{team} è pericoloso in contropiede: {count} tiri su {total} entro {seconds} secondi dal recupero",
+    "unusual.match": "Insolito: {team} attacca poco {ch} oggi, {count} azioni su {total} (in stagione {season_share_pct}%)",
+    "flank.season": "{team} di solito attacca {ch} ({season_share_pct}% in stagione); oggi {today_count} su {today_total}",
+    "high_regains.season": "{team} pressa alto: {season_share_pct}% dei recuperi nella trequarti offensiva in stagione (campionato {league_share_pct}%); oggi {today_count} su {today_total}",
+    "long_shots.season": "{team} tira da fuori più degli altri: {season_share_pct}% dei tiri in stagione (campionato {league_share_pct}%); oggi {today_count} su {today_total}",
+    "playmaker.season": "{player} è il regista di {team}: {season_share_pct}% dei passaggi nell'ultimo terzo in stagione; oggi {today_count} su {today_total}"
+  },
+  "pattern_fan": {
+    "flank": "{team} attacca soprattutto {ch}", "switch": "{team} ora attacca {ch}",
+    "high_regains": "{team} pressa molto alto", "long_shots": "A {team} piace tirare da lontano",
+    "hub": "{player} guida gli attacchi di {team}", "playmaker": "{player} guida gli attacchi di {team}",
+    "counters": "{team} è pericoloso in contropiede"
+  },
+  "stat_words": {"goals": "Gol", "assists": "Assist", "shots": "Tiri", "ball_wins": "Palloni recuperati", "passes": "Passaggi"},
+  "sub_fan": {
+    "swap": "Entra {on}, esce {off}", "today": "{off} ({minutes} min) · {stat}",
+    "goals": "Gol stagionali di {on}: {n}", "assists": "Assist stagionali di {on}: {n}",
+    "more_attacking": "Un cambio più offensivo", "more_defensive": "Un cambio più difensivo"
+  },
+  "storylines": {
+    "table": "{home} ({hpos}º posto, {hpts} punti) ospita {away} ({apos}º posto, {apts} punti)",
+    "meeting": "Precedente in stagione: {score}",
+    "top_scorer": "{p}: {g} gol in stagione con {club}",
+    "flank": "{club} attacca {side}: {pct}% delle sue azioni in stagione",
+    "long_shots": "{club} tira da lontano: {pct}% dei tiri (campionato {lg}%)",
+    "high_regains": "{club} pressa alto: {pct}% dei recuperi nella trequarti offensiva (campionato {lg}%)",
+    "playmaker": "{p} fa girare {club}: {pct}% dei passaggi nell'ultimo terzo",
+    "form": "{club}: {w} vittorie nelle ultime {n} partite"
+  },
+  "factcheck": {
+    "metrics": {"goals": "gol", "assists": "assist", "shots": "tiri", "shots_on_target": "tiri in porta", "xg": "xG",
+      "passes": "passaggi", "passes_completed": "passaggi riusciti", "tackles_won": "contrasti vinti", "interceptions": "intercetti",
+      "fouls": "falli", "corners": "calci d'angolo", "yellow_cards": "cartellini gialli", "red_cards": "cartellini rossi", "possession_pct": "possesso palla"},
+    "stated": "{subject} – {label}: {value}{scope}",
+    "since": " dal {m}'",
+    "not": "{stated}, non {claimed}"
+  }
+}

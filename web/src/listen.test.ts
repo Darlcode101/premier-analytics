@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { phrasesFor, speechLanguage } from './listen'
 import { initialState, reducer } from './state'
-import type { FactFlag, Hello } from './types'
+import type { FactFlag, Hello, Language } from './types'
 
 const hello = {
   home: { short_name: 'Harbourside', name: 'Harbourside Athletic', lineup: [{ name: 'Zane Kowalczyk' }], bench: [{ name: 'Leandro Ashworth' }] },
@@ -18,6 +18,8 @@ describe('Listen (FC-1)', () => {
     expect(speechLanguage('en')).toBe('en-GB')
     expect(speechLanguage('es')).toBe('es-ES')
     expect(speechLanguage('ar')).toBe('ar-SA')
+    expect(speechLanguage('pt')).toBe('pt-BR')
+    expect(speechLanguage('zh')).toBe('zh-CN')
   })
 })
 
@@ -39,7 +41,7 @@ describe('fact-check log (FC-2, 10-25)', () => {
     s = reducer(s, { type: 'said_local', id: 'l2', line: 'What a game' })
     expect(s.factLog.map(l => [l.id, l.status])).toEqual([['l2', 'checking'], ['l1', 'checking']])
     s = reducer(s, { type: 'fact_check', id: 'l1', checked: 1, flags: [], status: 'ok',
-      results: [{ verdict: 'correct', text: { en: 'Zane Kowalczyk: 1 shot', es: '', ar: '' } }] })
+      results: [{ verdict: 'correct', text: { en: 'Zane Kowalczyk: 1 shot' } as Record<Language, string> }] })
     s = reducer(s, { type: 'fact_check', id: 'l2', checked: 0, flags: [], status: 'ok', results: [] })
     expect(s.factLog.find(l => l.id === 'l1')?.results[0].verdict).toBe('correct')
     expect(s.factLog.map(l => l.status)).toEqual(['done', 'done'])

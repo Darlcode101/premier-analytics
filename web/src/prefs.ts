@@ -1,9 +1,7 @@
 // Per-browser preferences. Storage can be blocked (private mode), so every access is guarded.
-import type { Language } from './types'
+import { isLanguage, type Language } from './languages'
 
 const LANG_KEY = 'pa.language'
-const LANGUAGES: readonly Language[] = ['en', 'es', 'ar']
-const isLanguage = (l: string | null): l is Language => l !== null && (LANGUAGES as readonly string[]).includes(l)
 
 export function saveLanguage(lang: Language): void {
   try {

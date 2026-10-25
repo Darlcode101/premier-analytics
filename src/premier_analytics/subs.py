@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .desk import SUBS_ALLOWED
+from .languages import GENERATED, LANGS, catalogue
 from .overlay import display_minute
 from .schema import Event
 
@@ -49,8 +50,8 @@ def key_stat(n: dict, language: str) -> str:
     elif not keys or n["passes"] > 0:
         keys.append("passes")
     words = _STAT_WORDS[language]
-    if language == "ar":
-        return "، ".join(f"{words[k]}: {n[k]}" for k in keys)
+    if isinstance(words[keys[0]], str):  # "label: n" in Arabic and the catalogued languages
+        return ("، " if language == "ar" else ", ").join(f"{words[k]}: {n[k]}" for k in keys)
     return ", ".join(f"{n[k]} {words[k][0] if n[k] == 1 else words[k][1]}" for k in keys)
 
 
@@ -68,6 +69,12 @@ _FAN = {
            "assists": ("صناعة {on} للأهداف هذا الموسم: {n}",) * 2,
            "more_attacking": "تبديل هجومي", "more_defensive": "تبديل دفاعي"},
 }
+# DK-12: the catalogued languages. A stat is [singular, plural] where a number reads naturally before it (Turkish
+# keeps the noun singular), otherwise a label for "label: n", so one form serves every count.
+_STAT_WORDS.update({lang: {k: tuple(v) if isinstance(v, list) else v for k, v in catalogue(lang)["stat_words"].items()}
+                    for lang in GENERATED})
+_FAN.update({lang: {k: (tuple(v) if isinstance(v, list) else (v, v)) if k in ("goals", "assists") else v
+                    for k, v in catalogue(lang)["sub_fan"].items()} for lang in GENERATED})
 
 
 def ball_wins(line: dict) -> int:
@@ -134,5 +141,5 @@ class SubCards:
                    "season": self._season(team, p_on.id)},
         }
         self.came_on[p_on.id] = e.clock_ms
-        card["fan"] = {lang: fan_lines(card, self.names, lang) for lang in ("en", "es", "ar")}
+        card["fan"] = {lang: fan_lines(card, self.names, lang) for lang in LANGS}
         return card

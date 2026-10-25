@@ -14,13 +14,13 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from .agents import _NUMBER, LLM, CriticAgent, _number_forms
+from .languages import LANGUAGE_NAMES
 from .mcp_server import MatchState, MatchTools
 from .telemetry import tracer
 
 __all__ = ["AskRoute", "MatchAnalyst", "MatchAnswer", "MatchTools"]
 
 MAX_ANSWER = 300
-LANGUAGES = {"en": "English", "es": "Spanish", "ar": "Arabic"}
 
 
 class AskRoute(BaseModel):
@@ -130,7 +130,7 @@ class MatchAnalyst:
                 "as_of": as_of, "remaining": self.limit - self.used}
 
     async def _generate(self, prompt: str, language: str, tools: list) -> MatchAnswer:
-        instructions = INSTRUCTIONS.format(language=LANGUAGES.get(language, "English"))
+        instructions = INSTRUCTIONS.format(language=LANGUAGE_NAMES.get(language, "English"))
         res = await asyncio.wait_for(self.llm.generate(self.role, instructions, prompt, MatchAnswer, tools=tools),
                                      self.timeout_s)
         self.model = res.model

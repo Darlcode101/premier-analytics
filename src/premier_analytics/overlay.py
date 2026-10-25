@@ -13,13 +13,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from .languages import GENERATED, Language, catalogue, direction
 from .scout import ANALYST_THRESHOLD, FAN_THRESHOLD, Moment
 
 MAX_HEADLINE = 60
 MAX_BODY = 180
 STALE_MS = 8_000
 
-Language = Literal["en", "es", "ar"]
 Slot = Literal["lower_third", "corner", "ticker"]
 
 KINDS = (
@@ -225,6 +225,9 @@ LABELS: dict[str, dict[str, str]] = {
     "ar": {"brace": "ثنائية", "hat_trick": "هاتريك", "goals": "لا يتوقف", "saved": "تصدٍّ",
            "off_target": "خارج المرمى", "blocked": "صدّها الدفاع", "woodwork": "القائم"},
 }
+# DK-12: the catalogued languages.
+TEMPLATES.update({lang: {k: tuple(v) for k, v in catalogue(lang)["overlay"].items()} for lang in GENERATED})
+LABELS.update({lang: catalogue(lang)["labels"] for lang in GENERATED})
 
 
 def display_minute(m: Moment) -> str:
@@ -291,7 +294,7 @@ def fast_overlay(m: Moment, a: Audience, names: Names) -> Overlay:
         clock_in_ms=m.clock_ms, clock_out_ms=m.clock_ms + duration, minute=display_minute(m),
         elapsed_in_ms=m.elapsed_ms,
         headline=headline_t.format(**ctx).strip(), body=(analyst_t if a.mode == "analyst" else fan_t).format(**ctx).strip(),
-        language=a.language, direction="rtl" if a.language == "ar" else "ltr",
+        language=a.language, direction=direction(a.language),
         source="template", version=1, evidence=[fact.id for fact in m.facts],
         data={fact.label: fact.value for fact in m.facts},
     )

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { odds, whyLines } from './why'
 import type { Language, Overlay } from './types'
+import { LANGUAGES } from './languages'
 
 const names = { har: 'Harbourside', ngc: 'Northgate', p9: 'Ezra Jovanovic', p20: 'Kai Greaves' }
 const ov = (kind: string, data: Overlay['data'], extra: Partial<Overlay> = {}): Overlay => ({
@@ -50,7 +51,7 @@ describe('plain-words Why? (F-7)', () => {
       'They scored 1 goal in that spell.',
     ])
   })
-  it.each(['en', 'es', 'ar'] as const)('every kind has 1-3 clean sentences in %s', lang => {
+  it.each(LANGUAGES)('every kind has 1-3 clean sentences in %s', lang => {
     for (const o of ALL) {
       const lines = why(o, lang)
       expect(lines.length, o.kind).toBeGreaterThanOrEqual(1)
@@ -67,7 +68,9 @@ describe('plain-words Why? (F-7)', () => {
         const { n, outOf } = odds(v); allowed.add(String(n)); allowed.add(String(outOf))
       }
       for (const n of ['8', '10']) allowed.add(n)  // penalty odds
-      for (const m of why(o).join(' ').match(/\d+/g) ?? []) expect(allowed, `${o.kind}: ${m}`).toContain(m)
+      for (const lang of LANGUAGES) {
+        for (const m of why(o, lang).join(' ').match(/\d+/g) ?? []) expect(allowed, `${lang} ${o.kind}: ${m}`).toContain(m)
+      }
     }
   })
 })

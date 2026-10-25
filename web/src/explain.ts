@@ -1,17 +1,20 @@
 // Plain-language reasons behind an attack-momentum bar. Built only from the bar's own counts,
 // so every number shown is one the statistics engine produced.
+import { fill, fromCatalogues, plural } from './locales'
 import type { AttackCounts, AttackPoint, Language, Overlay } from './types'
 
 const EVEN = 0.15
 
-const TEXT: Record<Language, {
+interface Words {
   onTop: (team: string) => string
   even: string
   quiet: string
   shots: (n: number, xg: string) => string
   passes: (n: number) => string
   regains: (n: number) => string
-}> = {
+}
+
+const HAND_WRITTEN: Record<'en' | 'es' | 'ar', Words> = {
   en: {
     onTop: team => `${team} on top`, even: 'Evenly balanced', quiet: 'Quiet spell',
     shots: (n, xg) => `${n} ${n === 1 ? 'shot' : 'shots'} (${xg} xG)`,
@@ -30,6 +33,17 @@ const TEXT: Record<Language, {
     passes: n => `${n} تمريرة إلى الثلث الأخير`,
     regains: n => `استعاد الكرة ${n} مرات في نصف الخصم`,
   },
+}
+
+// DK-12: the catalogued languages.
+const TEXT: Record<Language, Words> = {
+  ...HAND_WRITTEN,
+  ...fromCatalogues(({ explain: e }, lang) => ({
+    onTop: (team: string) => fill(e.onTop, { team }), even: e.even, quiet: e.quiet,
+    shots: (n: number, xg: string) => fill(plural(e.shots, n, lang), { n, xg }),
+    passes: (n: number) => fill(plural(e.passes, n, lang), { n }),
+    regains: (n: number) => fill(plural(e.regains, n, lang), { n }),
+  })),
 }
 
 function reasons(c: AttackCounts, lang: Language): string[] {

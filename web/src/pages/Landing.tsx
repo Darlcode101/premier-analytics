@@ -1,7 +1,8 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { createMatch, fetchClubs, type ClubSummary } from '../api'
-import { LANGUAGE_NAMES, t } from '../i18n'
+import { LanguageSelect } from '../components/LanguageSelect'
+import { t } from '../i18n'
 import type { Language } from '../types'
 
 const SPEEDS: [number, string][] = [[1, '1×'], [10, '10×'], [30, '30×'], [60, '60×']]
@@ -50,11 +51,7 @@ export function Landing({ lang, setLang }: { lang: Language; setLang: (l: Langua
     <div className="landing">
       <header className="landing-top">
         <div className="wordmark"><span className="mark" aria-hidden /> {t(lang, 'appTitle')}</div>
-        <div className="lang-switch" role="group" aria-label={t(lang, 'language')}>
-          {(['en', 'es', 'ar'] as const).map(l => (
-            <button key={l} aria-pressed={lang === l} onClick={() => setLang(l)}>{LANGUAGE_NAMES[l]}</button>
-          ))}
-        </div>
+        <LanguageSelect className="lang-switch" lang={lang} setLang={setLang} />
       </header>
 
       <main className="landing-main">

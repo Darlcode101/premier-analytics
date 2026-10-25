@@ -1,6 +1,7 @@
 import type { Language } from './types'
+import { fromCatalogues } from './locales'
 
-// Every UI string in every language. i18n.test.ts checks the three dictionaries match.
+// Every UI string in every language: EN/ES/AR here, the other ten in ./locales (DK-12). Tests check they match.
 const en = {
   appTitle: 'Premier Analytics',
   tagline: 'Your AI production team for live commentary',
@@ -202,13 +203,13 @@ const ar: Dict = {
   tapBar: "اضغط على عمود لمعرفة السبب",
 }
 
-export const dictionaries: Record<Language, Dict> = { en, es, ar }
+export const dictionaries: Record<Language, Dict> = { en, es, ar, ...fromCatalogues(c => c.ui) }
 
 export function t(language: Language, key: StringKey): string {
   return dictionaries[language][key]
 }
 
-export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', es: 'Español', ar: 'العربية' }
+export { LANGUAGE_NAMES } from './languages'
 
 // Labels for evidence facts shown under "Why?".
 export const FACT_LABELS: Record<Language, Record<string, string>> = {
@@ -242,6 +243,7 @@ export const FACT_LABELS: Record<Language, Record<string, string>> = {
     window_xg: 'xG الفترة', window_minutes: 'الفترة (د)', tempo_passes_per_min: 'تمريرات في الدقيقة', ppda: 'PPDA',
     milestone: 'إنجاز', player_in: 'دخول', player_out: 'خروج', off_goals: 'أهداف (الخارج)', off_assists: 'صناعة أهداف (الخارج)', off_passes: 'تمريرات (الخارج)', off_shots: 'تسديدات (الخارج)', off_ball_wins: 'استعادة الكرة (الخارج)', card_reason: 'السبب', fouled_player: 'اللاعب المتعرض للخطأ',
   },
+  ...fromCatalogues(c => c.facts),
 }
 
 export const KIND_LABELS: Record<Language, Record<string, string>> = {
@@ -263,10 +265,12 @@ export const KIND_LABELS: Record<Language, Record<string, string>> = {
     substitution: 'تبديل', half_time: 'استراحة', full_time: 'النهاية', momentum_shift: 'أفضلية',
     pressure_spell: 'ضغط',
   },
+  ...fromCatalogues(c => c.kinds),
 }
 
 export const CONTEXT_LABELS: Record<Language, Record<string, string>> = {
   en: { equaliser: 'Equaliser', takes_lead: 'Takes the lead', extends_lead: 'Extends the lead', pulls_one_back: 'Pulls one back' },
   es: { equaliser: 'Empate', takes_lead: 'Se adelanta', extends_lead: 'Amplía la ventaja', pulls_one_back: 'Recorta distancias' },
   ar: { equaliser: 'تعادل', takes_lead: 'يتقدم', extends_lead: 'يوسع الفارق', pulls_one_back: 'يقلص الفارق' },
+  ...fromCatalogues(c => c.contexts),
 }

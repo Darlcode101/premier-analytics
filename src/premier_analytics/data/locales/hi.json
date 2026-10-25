@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["गोल! {home} {sh}-{sa} {away}", "{player} ने {team} के लिए गोल किया ({minute}')", "{player} {minute}' · xG {xg}, {dist} मी से · {team}: {tshots} शॉट, {txg} xG"],
+    "milestone": ["{milestone}! {player}", "{player} के आज {pg} गोल", "{player}: {pg} गोल · {team}"],
+    "big_chance": ["बड़ा मौका · {team}", "{team} के लिए {player} का शॉट, गोल होते-होते रह गया!", "{player} {minute}' · xG {xg}, {dist} मी से · {outcome}"],
+    "woodwork": ["गोलपोस्ट · {team}", "{player} का शॉट गोलपोस्ट से टकराया!", "{player} {minute}' · xG {xg}, {dist} मी से"],
+    "shot_on_target": ["बचाव · {opp}", "{player} के शॉट पर गोलकीपर का बचाव", "{player} {minute}' · xG {xg}, {dist} मी से"],
+    "rocket_shot": ["{speed} किमी/घंटा का शॉट", "{player} का ज़बरदस्त शॉट!", "{player} · {speed} किमी/घंटा, {dist} मी से · xG {xg}"],
+    "yellow_card": ["पीला कार्ड · {team}", "{player} को पीला कार्ड ({minute}')", "{player} को पीला कार्ड {minute}' · {team}"],
+    "penalty": ["पेनल्टी · {team}", "{team} को पेनल्टी! स्पॉट पर {player}", "{team} को पेनल्टी: स्पॉट पर {player} ({minute}')"],
+    "red_card": ["लाल कार्ड · {team}", "{player} को लाल कार्ड! {team} के अब {remaining} खिलाड़ी", "{player} को लाल कार्ड {minute}' · {team} के {remaining} खिलाड़ी"],
+    "great_pass": ["अहम पास · {player}", "{player} का शानदार पास", "{player} · कठिनाई {difficulty}, {pdist} मी"],
+    "substitution": ["बदलाव · {team}", "{player_out} की जगह {player_in} ({out_stat})", "{minute}' {player_out} की जगह {player_in} · {out_stat}"],
+    "half_time": ["हाफ़-टाइम: {home} {sh}-{sa} {away}", "मध्यांतर पर {home} {sh}-{sa} {away}", "शॉट {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · कब्ज़ा {poss}%-{poss_away}%"],
+    "full_time": ["फ़ुल-टाइम: {home} {sh}-{sa} {away}", "अंतिम स्कोर: {home} {sh}-{sa} {away}", "शॉट {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · कब्ज़ा {poss}%-{poss_away}%"],
+    "momentum_shift": ["दबदबा · {team}", "इस समय {team} का पलड़ा भारी", "पिछले {wmin} मिनट: {wshots} शॉट, {wxg} xG, फ़ील्ड टिल्ट {tilt}%"],
+    "pressure_spell": ["दबाव · {team}", "{team} ने {opp} को पीछे धकेला", "पिछले {wmin} मिनट: फ़ील्ड टिल्ट {tilt}%, {wshots} शॉट, {tempo} पास/मिनट"]
+  },
+  "labels": {"brace": "दो गोल", "hat_trick": "हैट्रिक", "goals": "बेमिसाल", "saved": "बचाया गया", "off_target": "निशाने से बाहर", "blocked": "रोका गया", "woodwork": "गोलपोस्ट"},
+  "channels": {"left": "बाएँ", "centre": "बीच", "right": "दाएँ"},
+  "patterns": {
+    "flank.match": "{team} बार-बार {ch} से हमला कर रहा है: फ़ाइनल थर्ड में {total} में से {count} हमले",
+    "switch.second_half": "हाफ़-टाइम के बाद से {team} {ch} से हमला कर रहा है: {total} में से {count} हमले",
+    "high_regains.match": "{team} आगे गेंद जीत रहा है: {total} में से {count} बार गेंद आक्रमण वाले तिहाई में जीती",
+    "long_shots.match": "{team} दूर से शॉट लगा रहा है: {total} में से {count} शॉट बॉक्स के बाहर से",
+    "hub.match": "{team} का खेल {player} के इर्द-गिर्द: फ़ाइनल थर्ड में {total} में से {count} पास",
+    "counters.match": "{team} काउंटर पर ख़तरनाक: {total} में से {count} शॉट गेंद जीतने के {seconds} सेकंड के भीतर",
+    "unusual.match": "असामान्य: {team} आज {ch} से कम हमला कर रहा है, {total} में से {count} (इस सीज़न {season_share_pct}%)",
+    "flank.season": "{team} आमतौर पर {ch} से हमला करता है (इस सीज़न {season_share_pct}%); आज {today_total} में से {today_count}",
+    "high_regains.season": "{team} ऊँचा प्रेस करता है: इस सीज़न {season_share_pct}% गेंद आक्रमण वाले तिहाई में जीती (लीग {league_share_pct}%); आज {today_total} में से {today_count}",
+    "long_shots.season": "{team} ज़्यादातर टीमों से ज़्यादा दूर से शॉट लगाता है: इस सीज़न {season_share_pct}% शॉट (लीग {league_share_pct}%); आज {today_total} में से {today_count}",
+    "playmaker.season": "{team} के खेल की धुरी {player}: इस सीज़न फ़ाइनल थर्ड में {season_share_pct}% पास; आज {today_total} में से {today_count}"
+  },
+  "pattern_fan": {
+    "flank": "{team} ज़्यादातर {ch} से हमला करता है", "switch": "{team} अब {ch} से हमला कर रहा है",
+    "high_regains": "{team} आगे बढ़कर दबाव बना रहा है", "long_shots": "{team} को दूर से शॉट लगाना पसंद है",
+    "hub": "{team} के हमलों की कमान {player} के पास", "playmaker": "{team} के हमलों की कमान {player} के पास",
+    "counters": "{team} काउंटर पर ख़तरनाक है"
+  },
+  "stat_words": {"goals": "गोल", "assists": "असिस्ट", "shots": "शॉट", "ball_wins": "गेंद जीती", "passes": "पास"},
+  "sub_fan": {
+    "swap": "{off} की जगह {on}", "today": "{off} ({minutes} मिनट) · {stat}",
+    "goals": "इस सीज़न {on} के गोल: {n}", "assists": "इस सीज़न {on} के असिस्ट: {n}",
+    "more_attacking": "ज़्यादा आक्रामक बदलाव", "more_defensive": "ज़्यादा रक्षात्मक बदलाव"
+  },
+  "storylines": {
+    "table": "घरेलू मैदान पर {home} (स्थान {hpos}, {hpts} अंक) बनाम {away} (स्थान {apos}, {apts} अंक)",
+    "meeting": "इस सीज़न पहले: {score}",
+    "top_scorer": "इस सीज़न {club} के लिए {p} के {g} गोल",
+    "flank": "{club} {side} से हमला करता है: इस सीज़न {pct}% हमले",
+    "long_shots": "{club} दूर से शॉट लगाता है: {pct}% शॉट (लीग {lg}%)",
+    "high_regains": "{club} ऊँचा प्रेस करता है: {pct}% गेंद आक्रमण वाले तिहाई में जीती (लीग {lg}%)",
+    "playmaker": "{club} के खेल की धुरी {p}: फ़ाइनल थर्ड में {pct}% पास",
+    "form": "{club} ने पिछले {n} में से {w} मैच जीते"
+  },
+  "factcheck": {
+    "metrics": {"goals": "गोल", "assists": "असिस्ट", "shots": "शॉट", "shots_on_target": "निशाने पर शॉट", "xg": "xG",
+      "passes": "पास", "passes_completed": "सफल पास", "tackles_won": "सफल टैकल", "interceptions": "इंटरसेप्शन",
+      "fouls": "फ़ाउल", "corners": "कॉर्नर", "yellow_cards": "पीले कार्ड", "red_cards": "लाल कार्ड", "possession_pct": "कब्ज़ा"},
+    "stated": "{subject}: {label} {value}{scope}",
+    "since": " ({m}' से)",
+    "not": "{stated}, {claimed} नहीं"
+  }
+}

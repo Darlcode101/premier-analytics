@@ -2,7 +2,7 @@
 
 Before kick-off the desk gets a **brief** computed from the simulated season (earlier meetings, players to watch,
 known styles; the table and form are already in the season context) and a handful of **storyline seeds**: short
-facts in three languages, each tied to the players and clubs it is about. A Storyline agent may pick 3-5 and
+facts in every language, each tied to the players and clubs it is about. A Storyline agent may pick 3-5 and
 word them as storylines (Critic-checked against the seed's own numbers; the plain seed otherwise).
 
 The commentator picks up to four, or types their own (which must name a player or club in the match, so it can
@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
 from .agents import LLM, CriticAgent, _number_forms
+from .languages import GENERATED, LANGS, catalogue
 from .overlay import Audience, Names, display_minute, fast_overlay
 from .pattern_agent import CHANNEL_WORDS
 from .scout import Moment
@@ -30,7 +31,17 @@ MIN_SUGGESTIONS = 3
 MAX_STORY_TEXT = 120
 CLUB_MOMENT = 0.5      # club storylines follow moments that matter, not every pass
 CLUB_PLAIN_UPDATE = 0.8  # without the AI, club storylines only hear about big moments
-LANGS = ("en", "es", "ar")
+# DK-12: seed wording for the catalogued languages, and the fields each kind of seed fills.
+STORY_FIELDS = {"table": {"home", "hpos", "hpts", "away", "apos", "apts"}, "meeting": {"score"},
+                "top_scorer": {"p", "g", "club"}, "flank": {"club", "side", "pct"}, "long_shots": {"club", "pct", "lg"},
+                "high_regains": {"club", "pct", "lg"}, "playmaker": {"p", "club", "pct"}, "form": {"club", "w", "n"}}
+STORY_TEMPLATES = {lang: catalogue(lang)["storylines"] for lang in GENERATED}
+
+
+def _more(kind: str, **values) -> dict[str, str]:
+    """A seed in the catalogued languages; a callable value is worded per language."""
+    return {lang: STORY_TEMPLATES[lang][kind].format(**{k: v(lang) if callable(v) else v for k, v in values.items()})
+            for lang in GENERATED}
 
 
 PRONOUNS = re.compile(r"\b(he|him|his|himself|she|her|hers|herself)\b", re.IGNORECASE)
@@ -92,7 +103,7 @@ def build_brief(season, league, profiles: dict, names: Names) -> dict:
 
 
 def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
-    """Storyline seeds, most useful first: each a fact in three languages, with its numbers and subjects."""
+    """Storyline seeds, most useful first: each a fact in every language, with its numbers and subjects."""
     home, away = names.home_id, names.away_id
     rows = {r.club_id: r for r in season.table()}
     h, a = rows[home], rows[away]
@@ -101,6 +112,7 @@ def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
         "en": f"{club(home)} ({_ordinal(h.position)}, {h.points} pts) host {club(away)} ({_ordinal(a.position)}, {a.points} pts)",
         "es": f"El {club(home)} ({h.position}.º, {h.points} pts) recibe al {club(away)} ({a.position}.º, {a.points} pts)",
         "ar": f"{club(home)} (المركز {h.position}، {h.points} نقطة) يستضيف {club(away)} (المركز {a.position}، {a.points} نقطة)",
+        **_more("table", home=club(home), hpos=h.position, hpts=h.points, away=club(away), apos=a.position, apts=a.points),
     }, _numbers(h.position, h.points, a.position, a.points), clubs=[home, away])]
 
     meetings = [r for r in season.results if {r.home, r.away} == {home, away}]
@@ -109,7 +121,7 @@ def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
         score = f"{club(r.home)} {r.home_goals}-{r.away_goals} {club(r.away)}"
         out.append(Seed("meeting", "meeting", {
             "en": f"Earlier this season: {score}", "es": f"Antes esta temporada: {score}",
-            "ar": f"في وقت سابق هذا الموسم: {score}",
+            "ar": f"في وقت سابق هذا الموسم: {score}", **_more("meeting", score=score),
         }, _numbers(r.home_goals, r.away_goals), clubs=[home, away]))
 
     for cid in (home, away):
@@ -121,6 +133,7 @@ def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
                 "en": f"{p} has {g} goals this season for {club(cid)}",
                 "es": f"{p} lleva {g} goles esta temporada con el {club(cid)}",
                 "ar": f"سجّل {p} {g} أهداف هذا الموسم مع {club(cid)}",
+                **_more("top_scorer", p=p, g=g, club=club(cid)),
             }, _numbers(g), players=[top["player_id"]], clubs=[cid]))
 
     for cid in (home, away):
@@ -130,20 +143,24 @@ def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
                 side = {lang: CHANNEL_WORDS[lang][s["value"]] for lang in LANGS}
                 text = {"en": f"{club(cid)} attack down the {side['en']}: {pct}% of their entries this season",
                         "es": f"El {club(cid)} ataca por {side['es']}: {pct}% de sus llegadas esta temporada",
-                        "ar": f"{club(cid)} يهاجم عبر {side['ar']}: {pct}% من هجماته هذا الموسم"}
+                        "ar": f"{club(cid)} يهاجم عبر {side['ar']}: {pct}% من هجماته هذا الموسم",
+                        **_more("flank", club=club(cid), side=side.get, pct=pct)}
             elif s["kind"] == "long_shots":
                 text = {"en": f"{club(cid)} shoot from distance: {pct}% of their shots (league {lg}%)",
                         "es": f"El {club(cid)} dispara de lejos: {pct}% de sus tiros (liga {lg}%)",
-                        "ar": f"{club(cid)} يسدد من بعيد: {pct}% من تسديداته (الدوري {lg}%)"}
+                        "ar": f"{club(cid)} يسدد من بعيد: {pct}% من تسديداته (الدوري {lg}%)",
+                        **_more("long_shots", club=club(cid), pct=pct, lg=lg)}
             elif s["kind"] == "high_regains":
                 text = {"en": f"{club(cid)} press high: {pct}% of their ball wins in the attacking third (league {lg}%)",
                         "es": f"El {club(cid)} presiona arriba: {pct}% de sus recuperaciones en campo rival (liga {lg}%)",
-                        "ar": f"{club(cid)} يضغط عاليًا: {pct}% من استعاداته في الثلث الهجومي (الدوري {lg}%)"}
+                        "ar": f"{club(cid)} يضغط عاليًا: {pct}% من استعاداته في الثلث الهجومي (الدوري {lg}%)",
+                        **_more("high_regains", club=club(cid), pct=pct, lg=lg)}
             elif s["kind"] == "playmaker":
                 p = names.player(s["value"])
                 text = {"en": f"{p} makes {club(cid)} tick: {pct}% of their passes into the final third",
                         "es": f"{p} es el motor del {club(cid)}: {pct}% de sus pases al último tercio",
-                        "ar": f"{p} محرك {club(cid)}: {pct}% من تمريراته نحو الثلث الأخير"}
+                        "ar": f"{p} محرك {club(cid)}: {pct}% من تمريراته نحو الثلث الأخير",
+                        **_more("playmaker", p=p, club=club(cid), pct=pct)}
                 out.append(Seed(f"playmaker:{cid}", "playmaker", text, _numbers(pct), players=[s["value"]], clubs=[cid]))
                 continue
             else:
@@ -158,7 +175,7 @@ def seeds(season, league, profiles: dict, names: Names) -> list[Seed]:
             out.append(Seed(f"form:{cid}", "form", {
                 "en": f"{club(cid)} have won {w} of their last {n}",
                 "es": f"El {club(cid)} ha ganado {w} de sus últimos {n}",
-                "ar": f"فاز {club(cid)} في {w} من آخر {n} مباريات",
+                "ar": f"فاز {club(cid)} في {w} من آخر {n} مباريات", **_more("form", club=club(cid), w=w, n=n),
             }, _numbers(w, n), clubs=[cid]))
     return out
 

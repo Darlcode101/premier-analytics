@@ -12,6 +12,7 @@ from premier_analytics.pattern_agent import (
     AlertGate, PatternAnalystAgent, PatternNote, PatternNotes, fan_line, pattern_text,
 )
 from premier_analytics.patterns import Pattern
+from premier_analytics.languages import LANGS
 
 from test_app import collect, start
 
@@ -38,7 +39,7 @@ ALL = [
 ]
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 def test_every_pattern_has_wording_in_every_language(language):
     for p in ALL:
         text = pattern_text(p, NAMES, language)
@@ -49,7 +50,7 @@ def test_every_pattern_has_wording_in_every_language(language):
             assert "Ezra Jovanovic" in text
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 def test_fan_lines_are_plain(language):
     for p in ALL:
         line = fan_line(p, NAMES, language)

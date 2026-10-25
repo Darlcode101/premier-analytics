@@ -4,7 +4,10 @@
 import { fetchSpeechToken } from './api'
 import type { Hello, Language } from './types'
 
-const SPEECH_LANGUAGES: Record<Language, string> = { en: 'en-GB', es: 'es-ES', ar: 'ar-SA' }
+const SPEECH_LANGUAGES: Record<Language, string> = {
+  en: 'en-GB', es: 'es-ES', ar: 'ar-SA', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-BR', nl: 'nl-NL', tr: 'tr-TR',
+  zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', hi: 'hi-IN',
+}
 export const speechLanguage = (lang: Language) => SPEECH_LANGUAGES[lang]
 
 /** Every player's full name and surname, and both clubs, once each. */

@@ -44,9 +44,11 @@ button, select, input { font: inherit; color: inherit; }
 .segmented button { border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; color: inherit; opacity: .75; }
 .segmented button[aria-pressed='true'] { background: var(--pl-green); color: var(--pl-purple); opacity: 1; }
 .segmented.light { background: var(--sheet-2); }
-.lang-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,.1); border-radius: 999px; padding: 3px; }
-.lang-switch button { border: 0; background: transparent; padding: 5px 11px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 13px; opacity: .8; }
-.lang-switch button[aria-pressed='true'] { background: #fff; color: var(--pl-purple); opacity: 1; }
+.lang-switch, .cd-lang { appearance: none; -webkit-appearance: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
+  color: #fff; background: rgba(255,255,255,.1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px; padding: 6px 32px 6px 14px; min-height: 32px; }
+[dir='rtl'] .lang-switch, [dir='rtl'] .cd-lang { background-position: left 12px center; padding: 6px 14px 6px 32px; }
+.lang-switch option, .cd-lang option { color: #1b0021; background: #fff; }
 .pill-btn { border: 1px solid rgba(255,255,255,.3); background: transparent; border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 600; }
 .cta { background: var(--pl-green); color: var(--pl-purple); border: 0; border-radius: 999px; padding: 14px 22px; font-weight: 800; font-size: 17px; cursor: pointer; font-family: var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
 .cta:disabled { opacity: .6; cursor: wait; }
@@ -150,9 +152,7 @@ button, select, input { font: inherit; color: inherit; }
 .cd-clock { font-weight: 700; font-size: 16px; }
 .cd-period { color: var(--cd-dim); }
 .cd-live { width: 8px; height: 8px; border-radius: 50%; background: var(--cd-accent); }
-.cd-lang { justify-self: end; display: inline-flex; border: 1px solid var(--cd-line); border-radius: 6px; overflow: hidden; }
-.cd-lang button { border: 0; background: none; padding: 5px 10px; font-size: 12px; color: var(--cd-dim); }
-.cd-lang button[aria-pressed='true'] { background: var(--cd-raise); color: var(--cd-text); font-weight: 600; }
+.cd-lang { justify-self: end; }
 .cd-details { display: flex; flex-wrap: wrap; gap: 4px 22px; padding: 6px 18px; border-top: 1px solid var(--cd-line); font-size: 12px; color: var(--cd-dim); }
 .cd-details b { font-weight: 600; color: var(--cd-faint); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; margin-inline-end: 4px; }
 .cd-fictional { margin-inline-start: auto; color: var(--cd-faint); }
@@ -572,9 +572,7 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .cd-live { background: var(--cd-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cd-accent) 25%, transparent); }
 .cd-added { background: var(--cd-magenta); color: #fff; border-radius: 4px; padding: 0 5px; font-size: 14px; }
 .cd-poss { fill: #fff; stroke: var(--cd-purple); }
-.cd-lang { border-color: rgba(255,255,255,.22); border-radius: 999px; background: rgba(0,0,0,.18); }
-.cd-lang button { border-radius: 999px; padding: 6px 12px; }
-.cd-lang button[aria-pressed='true'] { background: #fff; color: var(--cd-purple); }
+.cd-lang { background-color: rgba(0,0,0,.18); }
 .cd-details { background: rgba(0,0,0,.22); border-top: 0; }
 
 /* layout: panels on the purple base, separated by space not lines */
@@ -585,9 +583,11 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 .cd-sub { color: var(--cd-accent); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: .1em; }
 
 /* tabs: clean, with a green underline for the open one */
-.cd-tablist { gap: 2px; padding: 0 10px; border-bottom: 1px solid var(--cd-line); }
+/* DK-12: six tabs share the row in every language; a long label wraps at a space rather than scrolling out of sight */
+.cd-tablist { gap: 0; padding: 0 6px; border-bottom: 1px solid var(--cd-line); }
 .cd-tablist button { border: 0; background: none; color: var(--cd-faint); font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-  font-size: 15px; letter-spacing: .06em; text-transform: uppercase; padding: 10px 12px; border-radius: 0; box-shadow: inset 0 -3px 0 transparent; }
+  font-size: 13.5px; letter-spacing: .03em; text-transform: uppercase; padding: 6px 5px; border-radius: 0; box-shadow: inset 0 -3px 0 transparent;
+  min-width: 0; white-space: normal; line-height: 1.05; text-align: center; }
 .cd-tablist button:hover { color: #fff; }
 .cd-tablist button[aria-selected='true'] { color: #fff; box-shadow: inset 0 -3px 0 var(--cd-accent); background: none; }
 

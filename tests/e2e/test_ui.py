@@ -122,7 +122,7 @@ def test_the_old_fan_address_falls_back_to_the_landing_page(server, page: Page):
 
 def test_language_choice_survives_a_reload(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server)}&lang=en")
-    page.get_by_role("button", name="Español").click()
+    page.get_by_test_id("lang-select").select_option("es")
     expect(page).to_have_url(re.compile(r"lang=es"))
     page.reload()
     expect(page.get_by_role("tab", name="Previa")).to_be_visible()
@@ -141,6 +141,35 @@ def test_desk_is_professional_and_readable(server, page: Page):
     page.get_by_role("tab", name="Timeline").click()
     assert _contrast(page, "[data-testid=timeline-item]") >= 4.5
     assert page.evaluate("getComputedStyle(document.querySelector('[data-testid=score]')).fontVariantNumeric").startswith("tabular")
+
+
+def test_thirteen_languages_in_a_dropdown(server, page: Page):
+    """DK-12: each language named in itself; the choice sets the address, the page language and direction."""
+    page.goto(f"{server}/desk?match={new_match(server)}&lang=en")
+    select = page.get_by_test_id("lang-select")
+    expect(select.locator("option")).to_have_count(13)
+    expect(select.locator("option[value=ja]")).to_have_text("日本語")
+    select.select_option("ja")
+    expect(page).to_have_url(re.compile(r"lang=ja"))
+    expect(page.locator("html")).to_have_attribute("lang", "ja")
+    expect(page.locator("html")).to_have_attribute("dir", "ltr")
+    expect(page.get_by_role("tab", name="準備")).to_be_visible()
+    page.goto(f"{server}/")
+    expect(page.get_by_test_id("lang-select")).to_have_value("ja")  # remembered on the landing page too
+
+
+@pytest.mark.parametrize("lang", ["en", "fr", "de", "ja"])
+def test_desk_fits_in_long_words_and_wide_scripts(server, page: Page, lang):
+    """DK-12, DK-8: French and German have the longest labels, Japanese the widest glyphs. All six tabs stay in view
+    (live check 10-25: at 1280 px the last tab had scrolled out of sight, even in English)."""
+    page.set_viewport_size({"width": 1280, "height": 720})
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}&lang={lang}")
+    expect(page.get_by_test_id("lineup-home")).to_be_visible(timeout=15_000)
+    expect(page.get_by_test_id("feed-item").first).to_be_visible(timeout=20_000)
+    over = page.evaluate("[document.scrollingElement.scrollHeight - innerHeight, document.scrollingElement.scrollWidth - innerWidth]")
+    assert over[0] <= 1 and over[1] <= 1, over
+    tabs = page.evaluate("(() => { const t = document.querySelector('[role=tablist]'); return t.scrollWidth - t.clientWidth })()")
+    assert tabs <= 1, tabs
 
 
 @pytest.mark.parametrize("size", [(1280, 720), (1920, 1080)])

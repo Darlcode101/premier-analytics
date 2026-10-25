@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["进球！{home} {sh}-{sa} {away}", "{player} 为 {team} 破门（{minute}'）", "{player} {minute}' · xG {xg}，距离 {dist} 米 · {team}：{tshots} 次射门，{txg} xG"],
+    "milestone": ["{milestone}！{player}", "{player} 本场已进 {pg} 球", "{player}：{pg} 球 · {team}"],
+    "big_chance": ["绝佳机会 · {team}", "{player} 差一点为 {team} 破门！", "{player} {minute}' · xG {xg}，距离 {dist} 米 · {outcome}"],
+    "woodwork": ["击中门框 · {team}", "{player} 的射门击中门框！", "{player} {minute}' · xG {xg}，距离 {dist} 米"],
+    "shot_on_target": ["扑救 · {opp}", "{player} 迫使门将做出扑救", "{player} {minute}' · xG {xg}，距离 {dist} 米"],
+    "rocket_shot": ["时速 {speed} 公里的重炮", "{player} 这脚射门势大力沉！", "{player} · 时速 {speed} 公里，距离 {dist} 米 · xG {xg}"],
+    "yellow_card": ["黄牌 · {team}", "{player} 吃到黄牌（{minute}'）", "{player} {minute}' 黄牌 · {team}"],
+    "penalty": ["点球 · {team}", "{team} 获得点球！{player} 主罚", "{team} 获得点球：{player} 主罚（{minute}'）"],
+    "red_card": ["红牌 · {team}", "{player} 被罚下！{team} 只剩 {remaining} 人", "{player} {minute}' 被罚下 · {team} 剩 {remaining} 人"],
+    "great_pass": ["关键传球 · {player}", "{player} 送出精妙传球", "{player} · 难度 {difficulty}，传球距离 {pdist} 米"],
+    "substitution": ["换人 · {team}", "{player_in} 替下 {player_out}（{out_stat}）", "{minute}' {player_in} 替下 {player_out} · {out_stat}"],
+    "half_time": ["半场：{home} {sh}-{sa} {away}", "半场战罢 {home} {sh}-{sa} {away}", "射门 {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · 控球率 {poss}%-{poss_away}%"],
+    "full_time": ["全场结束：{home} {sh}-{sa} {away}", "最终比分：{home} {sh}-{sa} {away}", "射门 {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · 控球率 {poss}%-{poss_away}%"],
+    "momentum_shift": ["场上优势 · {team}", "{team} 目前占据上风", "最近 {wmin} 分钟：{wshots} 次射门，{wxg} xG，场地倾斜度 {tilt}%"],
+    "pressure_spell": ["压迫 · {team}", "{team} 把 {opp} 压在半场", "最近 {wmin} 分钟：场地倾斜度 {tilt}%，{wshots} 次射门，每分钟 {tempo} 次传球"]
+  },
+  "labels": {"brace": "梅开二度", "hat_trick": "帽子戏法", "goals": "势不可挡", "saved": "被扑出", "off_target": "射偏", "blocked": "被封堵", "woodwork": "击中门框"},
+  "channels": {"left": "左路", "centre": "中路", "right": "右路"},
+  "patterns": {
+    "flank.match": "{team} 持续从{ch}推进：{total} 次攻入最后三分之一区域中有 {count} 次",
+    "switch.second_half": "{team} 下半场改走{ch}：{total} 次进攻中有 {count} 次",
+    "high_regains.match": "{team} 高位夺回球权：{total} 次夺回球权中有 {count} 次在前场",
+    "long_shots.match": "{team} 频频远射：{total} 次射门中有 {count} 次来自禁区外",
+    "hub.match": "{player} 是 {team} 的进攻枢纽：{total} 次传入最后三分之一区域的传球中有 {count} 次",
+    "counters.match": "{team} 反击极具威胁：{total} 次射门中有 {count} 次在夺回球权后 {seconds} 秒内完成",
+    "unusual.match": "反常：{team} 今天很少走{ch}，{total} 次进攻中仅 {count} 次（本赛季 {season_share_pct}%）",
+    "flank.season": "{team} 通常从{ch}进攻（本赛季 {season_share_pct}%）；今天 {today_total} 次中有 {today_count} 次",
+    "high_regains.season": "{team} 擅长高位逼抢：本赛季 {season_share_pct}% 的夺回球权在前场（联赛 {league_share_pct}%）；今天 {today_total} 次中有 {today_count} 次",
+    "long_shots.season": "{team} 远射多于大多数球队：本赛季 {season_share_pct}% 的射门来自禁区外（联赛 {league_share_pct}%）；今天 {today_total} 次中有 {today_count} 次",
+    "playmaker.season": "{player} 是 {team} 的组织核心：本赛季占全队传入最后三分之一区域传球的 {season_share_pct}%；今天 {today_total} 次中有 {today_count} 次"
+  },
+  "pattern_fan": {
+    "flank": "{team} 主要从{ch}进攻", "switch": "{team} 改为从{ch}进攻",
+    "high_regains": "{team} 在前场高位逼抢", "long_shots": "{team} 喜欢远射",
+    "hub": "{player} 主导 {team} 的进攻", "playmaker": "{player} 主导 {team} 的进攻",
+    "counters": "{team} 反击很有威胁"
+  },
+  "stat_words": {"goals": "进球", "assists": "助攻", "shots": "射门", "ball_wins": "夺回球权", "passes": "传球"},
+  "sub_fan": {
+    "swap": "{on} 替下 {off}", "today": "{off}（{minutes} 分钟）· {stat}",
+    "goals": "{on} 本赛季进球：{n}", "assists": "{on} 本赛季助攻：{n}",
+    "more_attacking": "更偏进攻的换人", "more_defensive": "更偏防守的换人"
+  },
+  "storylines": {
+    "table": "{home}（第 {hpos} 名，{hpts} 分）主场迎战 {away}（第 {apos} 名，{apts} 分）",
+    "meeting": "本赛季此前交手：{score}",
+    "top_scorer": "{p} 本赛季为 {club} 打进 {g} 球",
+    "flank": "{club} 主攻{side}：本赛季 {pct}% 的进攻",
+    "long_shots": "{club} 喜欢远射：{pct}% 的射门（联赛 {lg}%）",
+    "high_regains": "{club} 高位逼抢：{pct}% 的夺回球权在前场（联赛 {lg}%）",
+    "playmaker": "{p} 是 {club} 的组织核心：占全队传入最后三分之一区域传球的 {pct}%",
+    "form": "{club} 近 {n} 场赢了 {w} 场"
+  },
+  "factcheck": {
+    "metrics": {"goals": "进球", "assists": "助攻", "shots": "射门", "shots_on_target": "射正", "xg": "xG",
+      "passes": "传球", "passes_completed": "成功传球", "tackles_won": "成功抢断", "interceptions": "拦截",
+      "fouls": "犯规", "corners": "角球", "yellow_cards": "黄牌", "red_cards": "红牌", "possession_pct": "控球率"},
+    "stated": "{subject}：{label} {value}{scope}",
+    "since": "（自第 {m} 分钟起）",
+    "not": "{stated}，不是 {claimed}"
+  }
+}

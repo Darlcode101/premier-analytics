@@ -174,6 +174,13 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Main column order: cue, fact-check, talking points, each with a heading | DK-6 | e2e |
 | How this desk works: open on first visit, stays closed after closing (survives reload) | DK-7 | e2e |
 | Desk fits 1280×720 and 1920×1080 without page scroll | DK-8 | e2e (existing) |
+| Every language has every desk, landing, label, Say it simply, card-reason and momentum string, non-empty, with the same {placeholders} as English | DK-12 | unit (languages.test) |
+| Backend catalogues: every template, label, pattern note, substitution line, storyline seed and fact-check word exists in every language with English's placeholders; tactics explainers keep their numbers | DK-12 | pytest (test_languages) |
+| A whole match in every language: every template caption, pattern note, substitution card, storyline seed and fact-check verdict formats with no braces left and the names unchanged | DK-12 | pytest (test_languages) |
+| Plural forms: one/other picked by the language's rules (French 0 and 1 singular), plain strings where a language has none | DK-12 | unit (languages.test) |
+| Speech locale for every language; the language dropdown lists 13, each in its own name, and switching sets lang= in the address, the page language and direction | DK-12 | unit + e2e |
+| Desk in English, French, German (longest words) and Japanese fits 1280×720 without page scroll, all six tabs in view | DK-12, DK-8 | e2e |
+| Every data file (catalogues included) is covered by the package data the image installs | DK-12 | pytest |
 
 ### Live fact-check (FC-*)
 | Test | Covers | Layer |

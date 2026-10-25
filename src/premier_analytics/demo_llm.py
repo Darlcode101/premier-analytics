@@ -11,6 +11,7 @@ import re
 from .agents import Explanation, FakeLLM, Personalised
 from .context import ContextCard, Source, WebAnswer
 from .factcheck import Claim, Claims
+from .languages import LANGUAGE_NAMES
 from .match_analyst import AskRoute, MatchAnswer
 from .producer import ProducerNote
 from .recap import RecapDraft
@@ -45,10 +46,10 @@ def _personaliser(prompt: str) -> Personalised:
 
 
 def _translator(prompt: str) -> Personalised:
-    language = "ar" if "Arabic" in prompt else "es"
+    language = next((code for code, name in LANGUAGE_NAMES.items() if f"Target language: {name}." in prompt), "es")
     headline = re.search(r"Headline: (.*)", prompt).group(1)
     body = re.search(r"Body: (.*)", prompt, re.S).group(1).strip()
-    table = _PHRASES[language]
+    table = _PHRASES.get(language, {})  # scripted phrases exist for Spanish and Arabic only
     return Personalised(headline=table.get(headline, headline), body=table.get(body, body))
 
 

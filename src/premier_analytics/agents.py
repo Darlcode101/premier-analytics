@@ -19,12 +19,12 @@ from typing import Any, Generic, Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
+from .languages import LANGUAGE_NAMES
 from .overlay import MAX_BODY, MAX_HEADLINE, Audience, Names, display_minute
 from .scout import Moment
 
 T = TypeVar("T", bound=BaseModel)
 
-LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "ar": "Arabic"}
 FOUNDRY_SCOPE = "https://ai.azure.com/.default"  # project endpoints reject the cognitiveservices audience
 FAN_JARGON = ("xg", "ppda", "field tilt", "progressive", "expected goals", "tempo", "final third", "final-third")
 

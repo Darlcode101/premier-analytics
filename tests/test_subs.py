@@ -11,10 +11,10 @@ from premier_analytics.overlay import TEMPLATES, Audience, Names, fast_overlay
 from premier_analytics.scout import MomentScout
 from premier_analytics.season import season_summary, simulate_season
 from premier_analytics.subs import SubCards, change_type, key_stat
+from premier_analytics.languages import LANGS
 
 from test_app import collect, start
 
-LANGS = ("en", "es", "ar")
 
 
 def replay(league, home="har", away="ngc", seed=42, season=None):

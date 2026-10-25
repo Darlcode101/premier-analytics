@@ -1,0 +1,65 @@
+{
+  "overlay": {
+    "goal": ["GOL! {home} {sh}-{sa} {away}", "Gol {team} takımından: {player} ({minute}')", "{player} {minute}' · xG {xg}, {dist} m · {team}: {tshots} şut, {txg} xG"],
+    "milestone": ["{milestone}! {player}", "{player} bugün {pg} gol attı", "{player}: {pg} gol · {team}"],
+    "big_chance": ["BÜYÜK FIRSAT · {team}", "{team} golü kıl payı kaçırdı: {player}!", "{player} {minute}' · xG {xg}, {dist} m · {outcome}"],
+    "woodwork": ["DİREK · {team}", "Direkten döndü! Şutu çeken {player}", "{player} {minute}' · xG {xg}, {dist} m"],
+    "shot_on_target": ["KURTARIŞ · {opp}", "Kaleci kurtarışa zorlandı: {player}", "{player} {minute}' · xG {xg}, {dist} m"],
+    "rocket_shot": ["{speed} KM/SA HIZINDA ŞUT", "Ne vuruş! {player}", "{player} · {speed} km/sa, {dist} m · xG {xg}"],
+    "yellow_card": ["SARI KART · {team}", "Sarı kart: {player} ({minute}')", "Sarı kart: {player} {minute}' · {team}"],
+    "penalty": ["PENALTI · {team}", "{team} lehine penaltı! Topun başında {player}", "{team} lehine penaltı: atış {player} ({minute}')"],
+    "red_card": ["KIRMIZI KART · {team}", "Kırmızı kart: {player}! {team} {remaining} kişi kaldı", "Kırmızı kart: {player} {minute}' · {team} {remaining} oyuncuyla"],
+    "great_pass": ["KİLİT PAS · {player}", "Harika pas: {player}", "{player} · zorluk {difficulty}, {pdist} m"],
+    "substitution": ["DEĞİŞİKLİK · {team}", "Giren: {player_in}, çıkan: {player_out} ({out_stat})", "{minute}' giren {player_in}, çıkan {player_out} · {out_stat}"],
+    "half_time": ["İLK YARI SONU: {home} {sh}-{sa} {away}", "Devre arası: {home} {sh}-{sa} {away}", "Şut {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · topla oynama %{poss}-%{poss_away}"],
+    "full_time": ["MAÇ SONU: {home} {sh}-{sa} {away}", "Maç sonucu: {home} {sh}-{sa} {away}", "Şut {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · topla oynama %{poss}-%{poss_away}"],
+    "momentum_shift": ["ÜSTÜNLÜK · {team}", "Şu an oyunun hâkimi {team}", "Son {wmin} dk: {wshots} şut, {wxg} xG, saha üstünlüğü %{tilt}"],
+    "pressure_spell": ["BASKI · {team}", "{team} baskıda, rakip {opp} kendi yarı sahasında", "Son {wmin} dk: saha üstünlüğü %{tilt}, {wshots} şut, dakikada {tempo} pas"]
+  },
+  "labels": {"brace": "İKİ GOL", "hat_trick": "HAT-TRICK", "goals": "DURDURULAMIYOR", "saved": "kurtarıldı", "off_target": "auta gitti", "blocked": "bloke edildi", "woodwork": "direk"},
+  "channels": {"left": "sol kanat", "centre": "merkez", "right": "sağ kanat"},
+  "patterns": {
+    "flank.match": "{team} ısrarla {ch} üzerinden geliyor: son üçte bire {total} atağın {count} tanesi",
+    "switch.second_half": "{team} devre arasından beri {ch} üzerinden oynuyor: {total} atağın {count} tanesi",
+    "high_regains.match": "{team} topu önde kazanıyor: {total} top kazanımının {count} tanesi hücum bölgesinde",
+    "long_shots.match": "{team} uzaktan deniyor: {total} şutun {count} tanesi ceza sahası dışından",
+    "hub.match": "{team} oyununu {player} kuruyor: son üçte bire {total} pasın {count} tanesi",
+    "counters.match": "{team} kontrada tehlikeli: {total} şutun {count} tanesi top kazanımından sonraki {seconds} saniye içinde",
+    "unusual.match": "Alışılmadık: {team} bugün {ch} üzerinden pek gelmiyor, {total} atağın {count} tanesi (bu sezon %{season_share_pct})",
+    "flank.season": "{team} genelde {ch} üzerinden hücum eder (bu sezon %{season_share_pct}); bugün {today_total} atağın {today_count} tanesi",
+    "high_regains.season": "{team} önde baskı yapar: bu sezon top kazanımlarının %{season_share_pct} kadarı hücum bölgesinde (lig %{league_share_pct}); bugün {today_total} kazanımın {today_count} tanesi",
+    "long_shots.season": "{team} çoğu takımdan fazla uzaktan şut çeker: bu sezon şutların %{season_share_pct} kadarı (lig %{league_share_pct}); bugün {today_total} şutun {today_count} tanesi",
+    "playmaker.season": "{team} takımının oyun kurucusu {player}: bu sezon son üçte bire pasların %{season_share_pct} kadarı; bugün {today_total} pasın {today_count} tanesi"
+  },
+  "pattern_fan": {
+    "flank": "{team} çoğunlukla {ch} üzerinden hücum ediyor", "switch": "{team} artık {ch} üzerinden hücum ediyor",
+    "high_regains": "{team} çok önde baskı yapıyor", "long_shots": "{team} uzaktan şut çekmeyi seviyor",
+    "hub": "{team} hücumlarını {player} yönetiyor", "playmaker": "{team} hücumlarını {player} yönetiyor",
+    "counters": "{team} kontrada tehlikeli"
+  },
+  "stat_words": {"goals": ["gol", "gol"], "assists": ["asist", "asist"], "shots": ["şut", "şut"], "ball_wins": ["top kazanma", "top kazanma"], "passes": ["pas", "pas"]},
+  "sub_fan": {
+    "swap": "Giren: {on}, çıkan: {off}", "today": "{off}: {minutes} dakikada {stat}",
+    "goals": "{on} bu sezon {n} gol attı", "assists": "{on} bu sezon {n} asist yaptı",
+    "more_attacking": "Daha hücumcu bir değişiklik", "more_defensive": "Daha savunmacı bir değişiklik"
+  },
+  "storylines": {
+    "table": "{home} ({hpos}. sıra, {hpts} puan) evinde {away} ({apos}. sıra, {apts} puan) ile karşılaşıyor",
+    "meeting": "Bu sezon daha önce: {score}",
+    "top_scorer": "{p}, {club} formasıyla bu sezon {g} gol attı",
+    "flank": "{club} {side} üzerinden hücum ediyor: bu sezon atakların %{pct} kadarı",
+    "long_shots": "{club} uzaktan şut çekiyor: şutların %{pct} kadarı (lig %{lg})",
+    "high_regains": "{club} önde baskı yapıyor: top kazanımlarının %{pct} kadarı hücum bölgesinde (lig %{lg})",
+    "playmaker": "{club} oyununu {p} kuruyor: son üçte bire pasların %{pct} kadarı",
+    "form": "{club} son {n} maçın {w} tanesini kazandı"
+  },
+  "factcheck": {
+    "metrics": {"goals": "gol", "assists": "asist", "shots": "şut", "shots_on_target": "isabetli şut", "xg": "xG",
+      "passes": "pas", "passes_completed": "isabetli pas", "tackles_won": "başarılı müdahale", "interceptions": "pas arası",
+      "fouls": "faul", "corners": "korner", "yellow_cards": "sarı kart", "red_cards": "kırmızı kart", "possession_pct": "topla oynama"},
+    "stated": "{subject}: {value} {label}{scope}",
+    "since": " ({m}. dakikadan beri)",
+    "not": "{stated}, {claimed} değil",
+    "percent": "%{n}"
+  }
+}

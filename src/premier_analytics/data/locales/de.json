@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["TOR! {home} {sh}-{sa} {away}", "{player} trifft für {team} ({minute}')", "{player} {minute}' · xG {xg} aus {dist} m · {team}: {tshots} Schüsse, {txg} xG"],
+    "milestone": ["{milestone}! {player}", "{player}: {pg} Tore heute", "{player}: {pg} Tore · {team}"],
+    "big_chance": ["GROSSCHANCE · {team}", "{player} ganz knapp für {team}!", "{player} {minute}' · xG {xg} aus {dist} m · {outcome}"],
+    "woodwork": ["ALUMINIUM · {team}", "{player} trifft nur das Gebälk!", "{player} {minute}' · xG {xg} aus {dist} m"],
+    "shot_on_target": ["PARADE · {opp}", "{player} prüft den Torwart", "{player} {minute}' · xG {xg} aus {dist} m"],
+    "rocket_shot": ["SCHUSS MIT {speed} KM/H", "Was für ein Hammer von {player}!", "{player} · {speed} km/h aus {dist} m · xG {xg}"],
+    "yellow_card": ["GELBE KARTE · {team}", "Gelb für {player} ({minute}')", "{player} verwarnt {minute}' · {team}"],
+    "penalty": ["ELFMETER · {team}", "Elfmeter für {team}! {player} tritt an", "Elfmeter für {team}: {player} schießt ({minute}')"],
+    "red_card": ["ROTE KARTE · {team}", "Rot für {player}! {team} nur noch zu {remaining}", "{player} vom Platz {minute}' · {team} mit {remaining} Spielern"],
+    "great_pass": ["SCHLÜSSELPASS · {player}", "Glänzender Pass von {player}", "{player} · Schwierigkeit {difficulty} über {pdist} m"],
+    "substitution": ["WECHSEL · {team}", "{player_in} kommt für {player_out} ({out_stat})", "{minute}' {player_in} ersetzt {player_out} · {out_stat}"],
+    "half_time": ["HALBZEIT: {home} {sh}-{sa} {away}", "{home} {sh}-{sa} {away} zur Pause", "Schüsse {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · Ballbesitz {poss}%-{poss_away}%"],
+    "full_time": ["ABPFIFF: {home} {sh}-{sa} {away}", "Endstand: {home} {sh}-{sa} {away}", "Schüsse {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · Ballbesitz {poss}%-{poss_away}%"],
+    "momentum_shift": ["OBERWASSER · {team}", "{team} hat gerade die Oberhand", "Letzte {wmin} Min.: {wshots} Schüsse, {wxg} xG, Feldvorteil {tilt}%"],
+    "pressure_spell": ["DRUCKPHASE · {team}", "{team} schnürt {opp} ein", "Letzte {wmin} Min.: Feldvorteil {tilt}%, {wshots} Schüsse, {tempo} Pässe/Min."]
+  },
+  "labels": {"brace": "DOPPELPACK", "hat_trick": "HATTRICK", "goals": "NICHT ZU STOPPEN", "saved": "gehalten", "off_target": "daneben", "blocked": "geblockt", "woodwork": "Aluminium"},
+  "channels": {"left": "über links", "centre": "durch die Mitte", "right": "über rechts"},
+  "patterns": {
+    "flank.match": "{team} kommt immer wieder {ch}: {count} von {total} Angriffen ins letzte Drittel",
+    "switch.second_half": "{team} greift seit der Pause {ch} an: {count} von {total} Angriffen",
+    "high_regains.match": "{team} erobert den Ball weit vorne: {count} von {total} Ballgewinnen im Angriffsdrittel",
+    "long_shots.match": "{team} schießt oft aus der Distanz: {count} von {total} Schüssen von außerhalb des Strafraums",
+    "hub.match": "{player} lenkt das Spiel von {team}: {count} von {total} Pässen ins letzte Drittel",
+    "counters.match": "{team} ist gefährlich im Konter: {count} von {total} Schüssen binnen {seconds} Sekunden nach Ballgewinn",
+    "unusual.match": "Ungewöhnlich: {team} greift heute kaum {ch} an, {count} von {total} Angriffen (in dieser Saison {season_share_pct}%)",
+    "flank.season": "{team} greift meist {ch} an ({season_share_pct}% in dieser Saison); heute {today_count} von {today_total}",
+    "high_regains.season": "{team} presst hoch: {season_share_pct}% der Ballgewinne im Angriffsdrittel in dieser Saison (Liga {league_share_pct}%); heute {today_count} von {today_total}",
+    "long_shots.season": "{team} schießt öfter aus der Distanz als die meisten: {season_share_pct}% der Schüsse in dieser Saison (Liga {league_share_pct}%); heute {today_count} von {today_total}",
+    "playmaker.season": "{player} ist der Spielmacher von {team}: {season_share_pct}% der Pässe ins letzte Drittel in dieser Saison; heute {today_count} von {today_total}"
+  },
+  "pattern_fan": {
+    "flank": "{team} greift meist {ch} an", "switch": "{team} greift jetzt {ch} an",
+    "high_regains": "{team} presst weit vorne", "long_shots": "{team} schießt gern aus der Distanz",
+    "hub": "{player} lenkt die Angriffe von {team}", "playmaker": "{player} lenkt die Angriffe von {team}",
+    "counters": "{team} ist gefährlich im Konter"
+  },
+  "stat_words": {"goals": "Tore", "assists": "Vorlagen", "shots": "Schüsse", "ball_wins": "Ballgewinne", "passes": "Pässe"},
+  "sub_fan": {
+    "swap": "{on} kommt für {off}", "today": "{off} ({minutes} Min.) · {stat}",
+    "goals": "Saisontore von {on}: {n}", "assists": "Saisonvorlagen von {on}: {n}",
+    "more_attacking": "Ein offensiverer Wechsel", "more_defensive": "Ein defensiverer Wechsel"
+  },
+  "storylines": {
+    "table": "{home} (Platz {hpos}, {hpts} Pkt.) empfängt {away} (Platz {apos}, {apts} Pkt.)",
+    "meeting": "Früher in dieser Saison: {score}",
+    "top_scorer": "{p}: {g} Saisontore für {club}",
+    "flank": "{club} greift {side} an: {pct}% der Angriffe in dieser Saison",
+    "long_shots": "{club} schießt aus der Distanz: {pct}% der Schüsse (Liga {lg}%)",
+    "high_regains": "{club} presst hoch: {pct}% der Ballgewinne im Angriffsdrittel (Liga {lg}%)",
+    "playmaker": "{p} lenkt das Spiel von {club}: {pct}% der Pässe ins letzte Drittel",
+    "form": "{club}: {w} Siege aus den letzten {n} Spielen"
+  },
+  "factcheck": {
+    "metrics": {"goals": "Tore", "assists": "Vorlagen", "shots": "Schüsse", "shots_on_target": "Schüsse aufs Tor", "xg": "xG",
+      "passes": "Pässe", "passes_completed": "angekommene Pässe", "tackles_won": "gewonnene Tacklings", "interceptions": "abgefangene Bälle",
+      "fouls": "Fouls", "corners": "Ecken", "yellow_cards": "Gelbe Karten", "red_cards": "Rote Karten", "possession_pct": "Ballbesitz"},
+    "stated": "{subject} – {label}: {value}{scope}",
+    "since": " seit der {m}. Minute",
+    "not": "{stated}, nicht {claimed}"
+  }
+}

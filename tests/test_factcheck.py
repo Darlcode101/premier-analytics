@@ -14,6 +14,7 @@ from premier_analytics.mcp_server import MatchState, MatchTools
 from premier_analytics.overlay import Names
 from premier_analytics.scout import MomentScout
 from premier_analytics.speech import speech_token
+from premier_analytics.languages import LANGS
 
 from test_app import collect, start
 
@@ -90,7 +91,7 @@ def test_claims_the_data_cannot_settle_are_left_alone(checker):
     assert checker.check(claim("Northgate", "goals", 1, since=200)) is None    # not played yet
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 def test_flags_say_the_right_number_plainly(checker, language):
     for c in (claim("Kowalczyk", "shots", 3), claim("Northgate", "shots", 7, since=46)):
         v = checker.check(c)
@@ -99,7 +100,7 @@ def test_flags_say_the_right_number_plainly(checker, language):
         assert set(re.findall(r"\d+", text)) <= {str(v["actual"]), str(int(c.value)), "46"}
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 def test_correct_claims_get_a_short_confirmation(checker, language):
     """Live check 10-25: correct claims were silent, so the desk looked unresponsive."""
     v = checker.check(claim("Kowalczyk", "goals", 1))

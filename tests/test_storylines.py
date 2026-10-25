@@ -13,10 +13,10 @@ from premier_analytics.season import HISTORY_SEASONS, simulate_season
 from premier_analytics.storylines import (
     MAX_STORYLINES, StorylineAgent, StorylineIdeas, Storylines, StorylineUpdate, WatcherAgent, build_brief, seeds,
 )
+from premier_analytics.languages import LANGS
 
 from test_app import collect, start
 
-LANGS = ("en", "es", "ar")
 
 
 @pytest.fixture(scope="module")

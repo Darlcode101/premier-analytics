@@ -3,7 +3,7 @@ import { Desk } from './pages/Desk'
 import { Landing } from './pages/Landing'
 import { Overlay } from './pages/Overlay'
 import { initialLanguage, saveLanguage, withLanguage } from './prefs'
-import type { Language } from './types'
+import { dirOf, type Language } from './languages'
 
 /** Three surfaces: landing (start a match), /desk (the commentator's desk), /overlay (broadcast graphics). */
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = lang
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
+    document.documentElement.dir = dirOf(lang)
   }, [lang])
 
   if (path === '/desk' && matchId) return <Desk matchId={matchId} lang={lang} setLang={setLang} />

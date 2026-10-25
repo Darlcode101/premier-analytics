@@ -1,6 +1,7 @@
 // F-7: "Why?" in plain words for fans. Built only from the moment's own facts (no AI), so it is instant
 // and every number is one the statistics engine produced. Chance quality (xG) becomes everyday odds.
 import { cardReasonText } from './cardReasons'
+import { CATALOGUES, fill, fromCatalogues, plural, type CataloguedLanguage } from './locales'
 import type { Language, Overlay } from './types'
 
 /** "1 in 8" style odds for a scoring chance. */
@@ -33,7 +34,7 @@ interface Words {
   moreBall: (team: string) => string
 }
 
-const W: Record<Language, Words> = {
+const HAND_WRITTEN: Record<'en' | 'es' | 'ar', Words> = {
   en: {
     chance: (d, n, o) => `From ${d} m out, chances like this go in about ${n} ${n === 1 ? 'time' : 'times'} in ${o}.`,
     penalty: (n, o) => `Penalties are scored about ${n} times in ${o}.`,
@@ -107,6 +108,35 @@ const W: Record<Language, Words> = {
     moreBall: t => `استحوذ ${t} على الكرة أكثر.`,
   },
 }
+
+/** DK-12: a catalogued language's templates as the same functions. */
+function fromTemplates(lang: CataloguedLanguage): Words {
+  const c = CATALOGUES[lang].why
+  const n = (p: typeof c.chance, count: number, vars: Record<string, string | number>) => fill(plural(p, count, lang), vars)
+  return {
+    chance: (d, k, o) => n(c.chance, k, { d, n: k, o }),
+    penalty: (k, o) => n(c.penalty, k, { n: k, o }),
+    ifScored: s => fill(c.ifScored, { s }),
+    outcome: c.outcome,
+    goal: Object.fromEntries(Object.entries(c.goal).map(([ctx, t]) => [ctx, (team: string, s: string) => fill(t, { t: team, s })])),
+    setPiece: c.setPiece,
+    brace: (p, k) => n(c.brace, k, { p, n: k }),
+    speed: k => fill(c.speed, { k }),
+    yellow: p => fill(c.yellow, { p }),
+    red: (t, k) => n(c.red, k, { t, n: k }),
+    pass: d => fill(c.pass, { d }),
+    shots: (t, k, m) => n(c.shots, k, { t, n: k, m }),
+    territory: (t, o) => fill(c.territory, { t, o }),
+    goalsInSpell: k => n(c.goalsInSpell, k, { n: k }),
+    sub: (on, off) => fill(c.sub, { on, off }),
+    halfShots: (h, a, sh, sa) => fill(c.halfShots, { h, a, sh, sa }),
+    betterChances: t => fill(c.betterChances, { t }),
+    evenChances: c.evenChances,
+    moreBall: t => fill(c.moreBall, { t }),
+  }
+}
+
+const W: Record<Language, Words> = { ...HAND_WRITTEN, ...fromCatalogues((_, lang) => fromTemplates(lang)) }
 
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v))
 const dist = (v: unknown) => String(Math.round(num(v)))

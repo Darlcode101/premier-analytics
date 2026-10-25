@@ -1,5 +1,6 @@
 // Commentator desk strings (CD-*). desk.test.ts checks every language has every string.
 import type { Language } from './types'
+import { fromCatalogues } from './locales'
 
 const en = {
   lineups: 'Line-ups',
@@ -583,5 +584,5 @@ const ar: Dict = {
   r_big_moment: 'لحظة كبيرة', r_fresh: 'حدث للتو', r_context: 'سياق واقعي', r_storyline: 'قصة المباراة', r_pattern: 'نمط',
 }
 
-export const deskDictionaries: Record<Language, Dict> = { en, es, ar }
+export const deskDictionaries: Record<Language, Dict> = { en, es, ar, ...fromCatalogues(c => c.desk) }
 export const dt = (lang: Language, key: DeskKey) => deskDictionaries[lang][key]

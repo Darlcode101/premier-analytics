@@ -157,7 +157,17 @@
     ],
     "translations": {
       "es": "Los goles esperados (xG) asignan a cada remate una probabilidad de gol, según datos históricos. Consideran ubicación, ángulo, parte del cuerpo y presión defensiva, y van de 0 a 1.",
-      "ar": "الأهداف المتوقعة (xG) تعطي احتمال تسجيل كل تسديدة استنادًا إلى بيانات تاريخية، وتشمل عوامل مثل مكان التسديدة وزاويتها وضغط الدفاع لتقييم جودة الفرص."
+      "ar": "الأهداف المتوقعة (xG) تعطي احتمال تسجيل كل تسديدة استنادًا إلى بيانات تاريخية، وتشمل عوامل مثل مكان التسديدة وزاويتها وضغط الدفاع لتقييم جودة الفرص.",
+      "fr": "Les buts attendus (xG) donnent à chaque tir une probabilité de but, d'après des tirs similaires du passé. Ils tiennent compte de la position, de l'angle, de la partie du corps et de la pression défensive, et vont de 0 à 1.",
+      "de": "Expected Goals (xG) geben jedem Schuss eine Torwahrscheinlichkeit, berechnet aus ähnlichen Schüssen der Vergangenheit. Berücksichtigt werden Position, Winkel, Körperteil und Gegnerdruck; der Wert liegt zwischen 0 und 1.",
+      "it": "Gli expected goals (xG) assegnano a ogni tiro una probabilità di gol, in base a tiri simili del passato. Considerano posizione, angolo, parte del corpo e pressione difensiva, con un valore tra 0 e 1.",
+      "pt": "Os gols esperados (xG) dão a cada chute uma probabilidade de gol, com base em chutes parecidos no passado. Consideram posição, ângulo, parte do corpo e pressão da defesa, e vão de 0 a 1.",
+      "nl": "Expected goals (xG) geven elk schot een kans op een doelpunt, op basis van vergelijkbare schoten uit het verleden. Positie, hoek, lichaamsdeel en verdedigende druk tellen mee; de waarde ligt tussen 0 en 1.",
+      "tr": "Gol beklentisi (xG), geçmişteki benzer şutlara bakarak her şuta bir gol olasılığı verir. Şutun yeri, açısı, vuruşta kullanılan vücut bölümü ve savunma baskısı hesaba katılır; değer 0 ile 1 arasındadır.",
+      "zh": "预期进球（xG）根据历史上类似射门的数据，为每次射门给出进球概率。它考虑射门位置、角度、触球部位和防守压力，数值介于 0 和 1 之间。",
+      "ja": "ゴール期待値（xG）は、過去の似たシュートのデータから各シュートが得点になる確率を示す指標です。位置、角度、体の部位、守備のプレッシャーを考慮し、値は 0 から 1 の間です。",
+      "ko": "기대 득점(xG)은 과거 비슷한 슈팅 데이터를 바탕으로 각 슈팅이 골이 될 확률을 나타냅니다. 슈팅 위치, 각도, 사용한 신체 부위, 수비 압박을 고려하며 값은 0과 1 사이입니다.",
+      "hi": "अपेक्षित गोल (xG) पुराने मिलते-जुलते शॉट्स के आधार पर हर शॉट के गोल बनने की संभावना बताते हैं। इसमें शॉट की जगह, कोण, शरीर का हिस्सा और डिफ़ेंस का दबाव गिना जाता है; मान 0 से 1 के बीच होता है।"
     }
   },
   {
@@ -183,7 +193,17 @@
     ],
     "translations": {
       "es": "Una \"gran oportunidad\" es cuando un jugador tiene alta probabilidad de marcar, como duelos uno a uno, tiros cercanos y penales, evaluada por expertos.",
-      "ar": "الفرصة الكبيرة هي موقف يتوقع فيه تسجيل الهدف بسهولة، غالباً في مواجهة واحدة مع الحارس أو تسديد قريب وواضح، ويشمل كل ركلات الجزاء. تقييم بشري، ليس حساباً."
+      "ar": "الفرصة الكبيرة هي موقف يتوقع فيه تسجيل الهدف بسهولة، غالباً في مواجهة واحدة مع الحارس أو تسديد قريب وواضح، ويشمل كل ركلات الجزاء. تقييم بشري، ليس حساباً.",
+      "fr": "Une « grosse occasion » est une situation où l'on attend raisonnablement un but : face-à-face avec le gardien, tir à bout portant. Chaque penalty en est une. C'est une appréciation humaine, pas une formule.",
+      "de": "Eine „Großchance“ ist eine Situation, in der ein Tor vernünftigerweise zu erwarten ist: allein vor dem Torwart oder aus kürzester Distanz. Jeder Elfmeter zählt dazu. Sie wird von Menschen bewertet, nicht per Formel.",
+      "it": "Una \"grande occasione\" è una situazione in cui ci si aspetta ragionevolmente il gol: uno contro uno col portiere o tiro da distanza ravvicinata. Ogni rigore lo è. È una valutazione umana, non una formula.",
+      "pt": "Uma \"grande chance\" é um lance em que se espera o gol: cara a cara com o goleiro ou chute de muito perto. Todo pênalti conta como uma. É uma avaliação humana, não uma fórmula.",
+      "nl": "Een \"grote kans\" is een situatie waarin je redelijkerwijs een doelpunt verwacht: alleen voor de keeper of een schot van dichtbij. Elke strafschop telt mee. Het is een menselijk oordeel, geen formule.",
+      "tr": "\"Büyük fırsat\", golün makul ölçüde beklendiği bir pozisyondur: kaleciyle karşı karşıya kalmak ya da çok yakından şut. Her penaltı büyük fırsat sayılır. Formülle değil, insan değerlendirmesiyle belirlenir.",
+      "zh": "“绝佳机会”指球员理应进球的情形，例如与门将一对一或近距离射门。每个点球都算作绝佳机会。它由人工判断，而不是公式计算。",
+      "ja": "「決定機」とは、得点が十分に期待できる場面のことです。GKと一対一の場面やゴール至近距離からのシュートなどが該当し、PKはすべて含まれます。数式ではなく人の判断による分類です。",
+      "ko": "'결정적 기회'는 득점이 충분히 기대되는 상황입니다. 골키퍼와의 일대일이나 아주 가까운 거리의 슈팅이 해당되며, 모든 페널티킥이 포함됩니다. 공식이 아니라 사람이 판단하는 분류입니다.",
+      "hi": "\"बड़ा मौका\" वह स्थिति है जिसमें गोल की पूरी उम्मीद होती है: गोलकीपर से आमने-सामने या बहुत क़रीब से शॉट। हर पेनल्टी बड़ा मौका गिनी जाती है। यह किसी फ़ॉर्मूले से नहीं, इंसानी आकलन से तय होता है।"
     }
   },
   {
@@ -214,7 +234,17 @@
     ],
     "translations": {
       "es": "El Field Tilt mide qué equipo domina el último tercio del campo, calculando el porcentaje de pases o toques respecto al total de ambos equipos en esa zona.",
-      "ar": "ميل الميدان هو مقياس تحليلي في كرة القدم يقيس سيطرة الفريق على الثلث الهجومي عبر نسبة التمريرات أو اللمسات في هذا الجزء مقارنةً بالمجموع. يبيّن الفريق الأكثر هيمنة في المناطق الهجومية الخطرة، على عكس الاستحواذ التقليدي."
+      "ar": "ميل الميدان هو مقياس تحليلي في كرة القدم يقيس سيطرة الفريق على الثلث الهجومي عبر نسبة التمريرات أو اللمسات في هذا الجزء مقارنةً بالمجموع. يبيّن الفريق الأكثر هيمنة في المناطق الهجومية الخطرة، على عكس الاستحواذ التقليدي.",
+      "fr": "Le field tilt mesure quelle équipe contrôle le dernier tiers : la part de ses passes ou touches dans cette zone par rapport au total des deux équipes. Contrairement à la possession, il ne compte que les zones dangereuses.",
+      "de": "Field Tilt misst, welches Team das Angriffsdrittel kontrolliert: der Anteil seiner Pässe oder Ballkontakte dort an allen Aktionen beider Teams in dieser Zone. Anders als Ballbesitz zählt er nur die gefährlichen Zonen.",
+      "it": "Il field tilt misura quale squadra controlla l'ultimo terzo: la quota dei suoi passaggi o tocchi in quella zona sul totale delle due squadre. A differenza del possesso, conta solo le zone pericolose.",
+      "pt": "O field tilt mede qual time controla o terço final: a parcela de seus passes ou toques nessa zona em relação ao total dos dois times. Ao contrário da posse de bola, conta só as zonas perigosas.",
+      "nl": "Field tilt meet welk team het laatste derde beheerst: het aandeel van zijn passes of balcontacten daar ten opzichte van het totaal van beide teams. Anders dan balbezit telt het alleen de gevaarlijke zones.",
+      "tr": "Saha üstünlüğü (field tilt), hücum bölgesini hangi takımın kontrol ettiğini ölçer: bir takımın o bölgedeki pas veya top temaslarının iki takımın toplamı içindeki payı. Topla oynamadan farklı olarak yalnızca tehlikeli bölgeleri sayar.",
+      "zh": "场地倾斜度（field tilt）衡量哪支球队控制进攻三区：一队在该区域的传球或触球占双方总数的比例。与控球率不同，它只统计危险区域。",
+      "ja": "フィールドティルトは、どちらのチームがアタッキングサードを支配しているかを示します。その区域での両チームのパスやタッチの合計のうち、一方のチームが占める割合です。ボール支配率と違い、危険な区域だけを数えます。",
+      "ko": "필드 틸트는 어느 팀이 공격 지역(파이널 서드)을 장악하는지 보여 줍니다. 그 지역에서 두 팀이 기록한 패스나 터치 전체 중 한 팀이 차지하는 비율입니다. 점유율과 달리 위험 지역만 셉니다.",
+      "hi": "फ़ील्ड टिल्ट बताता है कि आक्रमण वाले तिहाई पर किस टीम का नियंत्रण है: उस हिस्से में दोनों टीमों के कुल पास या टच में एक टीम का हिस्सा। कब्ज़े के विपरीत, यह सिर्फ़ ख़तरनाक इलाक़ों को गिनता है।"
     }
   },
   {
@@ -244,7 +274,17 @@
     ],
     "translations": {
       "es": "PPDA indica cuántos pases permite un equipo antes de actuar. Un PPDA bajo significa presión agresiva; uno alto, menos presión y más tiempo para el rival.",
-      "ar": "يقيس PPDA عدد التمريرات التي يسمح بها الفريق للخصم قبل اتخاذ إجراء دفاعي مثل التكتل أو القطع في منطقة بناء الخصم. PPDA منخفض يدل على ضغط عالي، ومرتفع يدل على ضغط أقل."
+      "ar": "يقيس PPDA عدد التمريرات التي يسمح بها الفريق للخصم قبل اتخاذ إجراء دفاعي مثل التكتل أو القطع في منطقة بناء الخصم. PPDA منخفض يدل على ضغط عالي، ومرتفع يدل على ضغط أقل.",
+      "fr": "Le PPDA (passes par action défensive) indique combien de passes une équipe laisse l'adversaire réussir avant un tacle ou une interception dans sa zone de construction. Un PPDA bas signifie un pressing agressif ; un PPDA élevé, un pressing plus léger.",
+      "de": "PPDA (Pässe pro Defensivaktion) zeigt, wie viele Pässe ein Team dem Gegner in dessen Aufbau erlaubt, bevor es tackelt oder abfängt. Ein niedriger PPDA bedeutet aggressives Pressing, ein hoher weniger Druck.",
+      "it": "Il PPDA (passaggi per azione difensiva) indica quanti passaggi una squadra concede all'avversario nella sua costruzione prima di un contrasto o un intercetto. Un PPDA basso significa pressing aggressivo; uno alto, meno pressione.",
+      "pt": "O PPDA (passes por ação defensiva) mostra quantos passes um time deixa o adversário completar na saída de bola antes de um desarme ou interceptação. PPDA baixo indica pressão agressiva; alto, menos pressão.",
+      "nl": "PPDA (passes per verdedigende actie) geeft aan hoeveel passes een team de tegenstander laat geven in diens opbouw voordat het tackelt of onderschept. Een lage PPDA betekent agressief druk zetten, een hoge minder druk.",
+      "tr": "PPDA (savunma aksiyonu başına pas), bir takımın rakibe oyun kurma bölgesinde müdahale veya pas arası yapmadan önce kaç pas izin verdiğini gösterir. Düşük PPDA agresif baskı, yüksek PPDA daha az baskı demektir.",
+      "zh": "PPDA（每次防守动作允许的传球数）表示一支球队在对手组织进攻区域内，做出抢断或拦截前允许对手完成多少次传球。PPDA 越低，逼抢越凶狠；越高，逼抢越弱。",
+      "ja": "PPDA（守備アクションあたりのパス数）は、相手のビルドアップ区域でタックルやインターセプトをするまでに、何本のパスを許したかを示します。低ければ積極的なプレス、高ければプレスが弱いことを意味します。",
+      "ko": "PPDA(수비 행동당 허용 패스)는 상대 빌드업 지역에서 태클이나 가로채기를 하기 전까지 상대에게 몇 개의 패스를 허용했는지 보여 줍니다. 낮으면 공격적인 압박, 높으면 약한 압박을 뜻합니다.",
+      "hi": "PPDA (हर डिफ़ेंसिव एक्शन पर पास) बताता है कि टैकल या इंटरसेप्शन से पहले कोई टीम विरोधी को उसके बिल्ड-अप इलाक़े में कितने पास पूरे करने देती है। कम PPDA यानी आक्रामक प्रेस, ज़्यादा PPDA यानी हल्का दबाव।"
     }
   },
   {
@@ -295,7 +335,17 @@
     ],
     "translations": {
       "es": "Las entradas en el último tercio son cuando un equipo lleva el balón a la zona de ataque, cerca del gol rival, mostrando control y creando oportunidades de gol.",
-      "ar": "تشير دخول الثلث الأخير إلى الوقت الذي تصل فيه الكرة إلى منطقة الهجوم، وهي أقرب مناطق للمرمى الخصم، مما يزيد فرص التسجيل ويظهر السيطرة الهجومية."
+      "ar": "تشير دخول الثلث الأخير إلى الوقت الذي تصل فيه الكرة إلى منطقة الهجوم، وهي أقرب مناطق للمرمى الخصم، مما يزيد فرص التسجيل ويظهر السيطرة الهجومية.",
+      "fr": "Les entrées dans le dernier tiers sont les moments où une équipe amène le ballon dans la zone la plus proche du but adverse. Elles montrent le contrôle territorial et le potentiel pour se créer des occasions.",
+      "de": "Einträge ins letzte Drittel sind die Momente, in denen ein Team den Ball in die Zone nahe dem gegnerischen Tor bringt. Sie zeigen Feldkontrolle und das Potenzial, Torchancen zu schaffen.",
+      "it": "Gli ingressi nell'ultimo terzo sono i momenti in cui una squadra porta il pallone nella zona più vicina alla porta avversaria. Mostrano il controllo del territorio e il potenziale per creare occasioni.",
+      "pt": "As entradas no terço final são os momentos em que um time leva a bola à zona mais perto do gol adversário. Mostram controle territorial e potencial para criar chances de gol.",
+      "nl": "Entries in het laatste derde zijn de momenten waarop een team de bal in de zone het dichtst bij het doel van de tegenstander brengt. Ze tonen terreinbeheersing en het vermogen om kansen te creëren.",
+      "tr": "Son üçte bire girişler, bir takımın topu rakip kaleye en yakın bölgeye taşıdığı anlardır. Saha hâkimiyetini ve gol pozisyonu üretme potansiyelini gösterir.",
+      "zh": "攻入最后三分之一区域，指球队把球推进到最靠近对方球门的区域。它体现了场地控制力和创造进球机会的潜力。",
+      "ja": "アタッキングサードへの進入とは、チームが相手ゴールに最も近い区域へボールを運んだ場面のことです。陣地の支配と、得点機を生み出す可能性を示します。",
+      "ko": "파이널 서드 진입은 팀이 상대 골문에 가장 가까운 지역으로 공을 운반한 순간을 말합니다. 지역 장악력과 득점 기회를 만들 잠재력을 보여 줍니다.",
+      "hi": "फ़ाइनल थर्ड में एंट्री वे पल हैं जब टीम गेंद को विरोधी गोल के सबसे क़रीब वाले हिस्से में ले जाती है। ये मैदान पर नियंत्रण और गोल के मौके बनाने की क्षमता दिखाती हैं।"
     }
   },
   {
@@ -316,7 +366,17 @@
     ],
     "translations": {
       "es": "El % de pases completados refleja precisión al comparar pases buenos vs intentados, pero no mide dificultad ni táctica, por lo que se requiere contexto para evaluar.",
-      "ar": "نسبة إكمال التمريرات تعبر عن دقة التمرير لكنها لا تعكس صعوبته أو تأثيره التكتيكي، فالتمريرات الآمنة والخطرة تُحسب بنفس القيمة."
+      "ar": "نسبة إكمال التمريرات تعبر عن دقة التمرير لكنها لا تعكس صعوبته أو تأثيره التكتيكي، فالتمريرات الآمنة والخطرة تُحسب بنفس القيمة.",
+      "fr": "Le taux de passes réussies compare les passes réussies aux passes tentées. Il ne mesure ni la difficulté ni l'impact : une passe courte et sûre compte autant qu'une passe risquée vers l'avant, d'où l'importance du contexte.",
+      "de": "Die Passquote vergleicht angekommene mit versuchten Pässen. Schwierigkeit und Wirkung misst sie nicht: Ein sicherer Kurzpass zählt so viel wie ein riskanter Pass nach vorn, deshalb braucht es Kontext.",
+      "it": "La precisione dei passaggi confronta i passaggi riusciti con quelli tentati. Non misura difficoltà né impatto: un passaggio corto e sicuro vale quanto uno rischioso in avanti, quindi serve contesto.",
+      "pt": "O aproveitamento de passes compara passes certos com passes tentados. Não mede dificuldade nem impacto: um passe curto e seguro vale o mesmo que um passe arriscado para frente, por isso o contexto importa.",
+      "nl": "Het passingpercentage vergelijkt geslaagde met geprobeerde passes. Moeilijkheid en impact meet het niet: een veilige korte pass telt even zwaar als een riskante pass vooruit, dus context is nodig.",
+      "tr": "Pas isabet oranı, isabetli pasları denenen paslarla karşılaştırır. Zorluğu ya da etkiyi ölçmez: güvenli kısa bir pas, riskli bir ileri pasla aynı sayılır; bu yüzden bağlam gerekir.",
+      "zh": "传球成功率是成功传球与尝试传球之比。它不衡量难度和战术作用：稳妥的短传与冒险的向前传球计数相同，因此需要结合情境来看。",
+      "ja": "パス成功率は、成功したパスを試みたパスと比べた割合です。難しさや効果は測れません。安全な短いパスもリスクのある縦パスも同じ一本として数えるため、文脈が必要です。",
+      "ko": "패스 성공률은 시도한 패스 중 성공한 패스의 비율입니다. 난이도나 효과는 측정하지 않습니다. 안전한 짧은 패스와 위험한 전진 패스를 똑같이 세기 때문에 맥락이 필요합니다.",
+      "hi": "पास सफलता दर सफल पास की तुलना कुल कोशिशों से करती है। यह कठिनाई या असर नहीं मापती: सुरक्षित छोटा पास और जोखिम भरा आगे का पास बराबर गिने जाते हैं, इसलिए संदर्भ ज़रूरी है।"
     }
   },
   {

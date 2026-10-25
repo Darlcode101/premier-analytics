@@ -18,7 +18,8 @@ import { formatClock, useMatchClock } from '../clock'
 import { whyLines } from '../why'
 import { startListening, type ListenStatus } from '../listen'
 import { localDigits } from '../digits'
-import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
+import { KIND_LABELS, t } from '../i18n'
+import { LanguageSelect } from '../components/LanguageSelect'
 import type { Action, State } from '../state'
 import type {
   AskResult, BriefSide, ClubInfo, SubCard, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
@@ -122,11 +123,7 @@ function Header({ state, ctx, setLang }: { state: State; ctx: Ctx; setLang: (l: 
           </div>
           <TeamHead club={h.away} side="away" incidents={state.incidents} ctx={ctx} possession={state.status === 'live' && state.possession === h.away.id} />
         </div>
-        <div className="cd-lang" role="group" aria-label={t(lang, 'language')}>
-          {(['en', 'es', 'ar'] as const).map(l => (
-            <button key={l} aria-pressed={lang === l} onClick={() => setLang(l)}>{LANGUAGE_NAMES[l]}</button>
-          ))}
-        </div>
+        <LanguageSelect className="cd-lang" lang={lang} setLang={setLang} />
       </div>
       <div className="cd-details">
         <span><b>{t(lang, 'venue')}</b> {h.venue}</span>

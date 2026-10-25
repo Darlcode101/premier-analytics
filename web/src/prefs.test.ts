@@ -20,7 +20,8 @@ describe('language preference', () => {
     expect(initialLanguage('?match=x')).toBe('ar')
   })
   it('ignores unknown values', () => {
-    expect(initialLanguage('?lang=fr')).toBe('en')
+    expect(initialLanguage('?lang=xx')).toBe('en')
+    expect(initialLanguage('?lang=fr')).toBe('fr')  // DK-12
     store.set('pa.language', 'xx')
     expect(initialLanguage('?lang=es')).toBe('es')
   })

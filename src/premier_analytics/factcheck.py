@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from .agents import _DIGIT_MAP, LLM
+from .languages import GENERATED, catalogue
 from .match_analyst import summary
 from .mcp_server import PLAYER_METRICS, MatchTools
 from mcp.server.fastmcp.exceptions import ToolError
@@ -161,6 +162,7 @@ _WORDS = {
            "interceptions": "الاعتراضات", "fouls": "الأخطاء", "corners": "الركنيات", "yellow_cards": "البطاقات الصفراء",
            "red_cards": "البطاقات الحمراء", "possession_pct": "الاستحواذ %"},
 }
+_WORDS.update({lang: catalogue(lang)["factcheck"]["metrics"] for lang in GENERATED})  # DK-12: labels, like Arabic
 
 
 def _num(v: float, metric: str) -> str:
@@ -173,6 +175,11 @@ def _stated(v: dict, language: str) -> str:
     """'Zane Kowalczyk: 1 shot' (since a minute, if the claim was)."""
     actual, metric, since = _num(v["actual"], v["metric"]), v["metric"], v["since_minute"]
     words = _WORDS[language][metric]
+    if language in GENERATED:
+        fc = catalogue(language)["factcheck"]
+        scope = fc["since"].format(m=since) if since else ""
+        value = fc.get("percent", "{n}%").format(n=actual) if metric == "possession_pct" else actual  # Turkish: %47
+        return fc["stated"].format(subject=v["subject"], label=words, value=value, scope=scope)
     if language == "ar":
         scope = f" منذ الدقيقة {since}" if since else ""
         return f"{v['subject']}: {words} {actual}{scope}"
@@ -185,6 +192,8 @@ def _stated(v: dict, language: str) -> str:
 def flag_text(v: dict, language: str) -> str:
     """'Zane Kowalczyk: 1 shot, not 3' — the right number first, then what was said."""
     claimed = _num(v["claimed"], v["metric"])
+    if language in GENERATED:
+        return catalogue(language)["factcheck"]["not"].format(stated=_stated(v, language), claimed=claimed)
     return f"{_stated(v, language)}{'، وليس' if language == 'ar' else ', no' if language == 'es' else ', not'} {claimed}"
 
 

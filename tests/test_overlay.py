@@ -7,6 +7,7 @@ from premier_analytics.overlay import (
     validate,
 )
 from premier_analytics.scout import MomentScout
+from premier_analytics.languages import LANGS
 
 NAMES = Names(
     players={"h9": "Kai Greaves", "h8": "Elias Ekwueme", "a9": "Rory Coldwell", "a4": "Ivo Varga", "h4": "Lars Lindqvist",
@@ -74,7 +75,7 @@ def test_overlay_is_machine_readable_and_timed():
     assert o.data["score_home"] == 1
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 @pytest.mark.parametrize("mode", ["fan", "analyst"])
 def test_every_kind_renders_in_every_language(match, league, language, mode):
     """Every moment kind the scout can produce has a template in every language and mode."""
@@ -96,7 +97,7 @@ def test_every_kind_renders_in_every_language(match, league, language, mode):
 def test_templates_exist_for_all_kinds():
     from premier_analytics.overlay import TEMPLATES
 
-    for language in ("en", "es", "ar"):
+    for language in LANGS:
         assert set(TEMPLATES[language]) == set(KINDS), language
 
 

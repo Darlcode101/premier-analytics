@@ -103,7 +103,7 @@ Product name: **Premier Analytics**. Fictional league/clubs/players only. No PL 
 | P-1 | M | **Analyst mode** vs **Fan mode**: measurably different output from the same events (density, vocabulary, which moments surface, stats shown) |
 | P-2 | M | Favourite club: fan-mode framing and moment selection favour that club |
 | P-3 | S | Player-focus mode: follow one player all match (their events, their stats, their story) |
-| P-4 | M | Multi-language: **English, Spanish, Arabic** for narrative, overlays and recaps; Arabic renders right-to-left correctly |
+| P-4 | M | Multi-language: **English, Spanish, Arabic** for narrative, overlays and recaps; Arabic renders right-to-left correctly (13 languages since DK-12) |
 | P-5 | C | "One metric I care about" mode |
 | P-6 | M | Multiple viewers with different profiles can watch the same match at the same time |
 
@@ -169,7 +169,7 @@ right now and over the last few minutes, and short verified talking points to us
 | CD-14 | S | **Season context** from a simulated season (every club home and away, 56 matches): table position and points, last-5 form, each player's season goals and assists, top scorers. Labelled "simulated season" |
 | CD-15 | M | On-air preview of the graphics currently on screen (smaller than today) |
 | CD-16 | S | Agent trace and recaps on secondary tabs, out of the main view |
-| CD-17 | M | EN / ES / AR with right-to-left Arabic; everything except talking points and recaps works with AI off or down |
+| CD-17 | M | EN / ES / AR (13 languages since DK-12) with right-to-left Arabic; everything except talking points and recaps works with AI off or down |
 | CD-18 | C | Keyboard shortcuts: switch panels, mark the newest point used |
 
 Not included: pronunciation guides (fictional names), real head-to-head history, corners and offsides (not in
@@ -188,7 +188,7 @@ with the web search tool returns sourced answers on this subscription (test 10-1
 | CX-2 | M | **Automatic context cards** beside big moments on the desk: a **Context agent** picks at most one relevant library entry and writes one sentence linking the moment to it. Real-world numbers must come from that entry and match numbers from the moment's facts (checked by the Critic); the source link is shown. No live web call, so it is fast and costs nothing extra |
 | CX-3 | M | **Ask box**: the commentator types a question, the Researcher searches the web live and answers in 1–3 sentences with at least one source link. Limited to football benchmarks and tactics (other topics politely declined). Labelled "From the web, not checked against match data". Answers cached; at most 15 searches per match; 15 s timeout with a clear message |
 | CX-4 | M | Real and fictional never mix: real-world facts are only ever comparisons. Automatic cards use league-wide benchmarks only, with no real club or player names |
-| CX-5 | M | Cards and answers in the desk's language (EN / ES / AR); sources stay as links |
+| CX-5 | M | Cards and answers in the desk's language (EN / ES / AR; 13 since DK-12); sources stay as links |
 | CX-6 | M | Everything else on the desk works if web search or the models are unavailable; context simply doesn't appear |
 | CX-7 | S | Traced like the other agents (searches counted); an evaluation spot-checks that card numbers match their sources |
 | CX-8 | S | Tactics explainers open from the stat labels on the desk (e.g. select "PPDA") |
@@ -325,6 +325,7 @@ overlay's fan wording (the brief's stage (e) allows on-screen storytelling as th
 | DK-9 | M | **No fan anywhere visible** (user decision 10-24): the product, the live demo and the docs present only the commentator desk and its broadcast overlay, which uses plain broadcast wording with no mode choice. Fan-only strings, styles and docs are removed; the backend's internal audience code stays, so the evaluation results remain valid |
 | DK-10 | M | **Premier League look**: deep purple base, neon green / cyan / magenta accents, a white score box, Inter body text and Barlow Condensed display type. No Premier League logos, crests or marks (§4.4). Body text contrast at least 7:1, everything else at least 4.5:1 |
 | DK-11 | S | **Modern and usable**: rounded cards, consistent spacing, one accent per meaning (green: live and on air; cyan: AI and interactive; magenta: flags and red cards), visible keyboard focus |
+| DK-12 | M | **13 languages** (user request 10-25, so a caster can work in their own language in more markets): English, Spanish, Arabic, French, German, Italian, Portuguese (Brazil), Dutch, Turkish, Chinese (Simplified), Japanese, Korean and Hindi. Every desk string, template caption, card reason, Say it simply line, pattern note, substitution line, storyline seed, fact-check verdict and tactics explainer exists in every language, with the same placeholders as English, so everything works with the AI off. Numbers, names and data stay as they are (names are never translated); only Arabic is right to left. A **dropdown** replaces the language buttons on the desk and landing page, each language named in itself. Listen uses that language's speech locale. AI text (Explainer, Translator, Ask, recaps) uses the same 13 |
 
 ## 4. Non-functional requirements
 
@@ -358,6 +359,7 @@ overlay's fan wording (the brief's stage (e) allows on-screen storytelling as th
 ## 7. Decisions log
 | Date | Decision |
 |---|---|
+| 10-25 | DK-12: 10 more languages (the user's "global set": the Premier League's biggest broadcast markets). EN/ES/AR keep their hand-written text; the 10 new ones live in one catalogue per language (frontend `web/src/locales`, backend `data/locales`), written by hand rather than by the live model so a bulk job could not throttle the deployment during the demo. Where a language has number agreement, catalogues use "label: n" (as Arabic already does) or one/other forms picked with `Intl.PluralRules`, so no sentence depends on English plural rules. Tests check every catalogue has every key with the same placeholders, and play a whole match in every language. Thirteen buttons do not fit the header, so the language choice is a dropdown |
 | 10-09 | Category: Best Multi-Agent System. Solo. Demo balances Analyst + Fan modes |
 | 10-09 | Registered ✅. Azure: $100 credit |
 | 10-09 | Languages: EN, ES, AR. ES = huge PL audience; AR = huge PL audience + proves RTL rendering |

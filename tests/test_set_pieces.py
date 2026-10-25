@@ -6,6 +6,7 @@ import pytest
 from premier_analytics.engine import MatchEngine, xg
 from premier_analytics.generator import generate_match
 from premier_analytics.schema import PITCH_LENGTH as L, PITCH_WIDTH as W, Event
+from premier_analytics.languages import LANGS
 
 
 def near(value, target, tol):
@@ -110,7 +111,7 @@ def test_a_penalty_is_a_moment_and_set_pieces_are_facts(league):
     assert tagged and all(f.value in ("corner", "penalty") for mo in tagged for f in mo.facts if f.label == "set_piece")
 
 
-@pytest.mark.parametrize("language", ["en", "es", "ar"])
+@pytest.mark.parametrize("language", LANGS)
 def test_penalty_has_template_wording(language, league):
     from premier_analytics.overlay import Audience, Names, fast_overlay
     from premier_analytics.scout import MomentScout

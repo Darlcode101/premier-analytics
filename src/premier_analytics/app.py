@@ -18,7 +18,7 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.responses import FileResponse
@@ -32,6 +32,7 @@ from .speech import DEFAULT_REGION, speech_token, token_getter_from_env
 from .context import AgentFrameworkWebSearch, AskDesk, ContextEntry, ResearcherAgent, load_library
 from .desk import SUBS_ALLOWED, Incidents, last_window
 from .generator import generate_match
+from .languages import LANGS, Language
 from .league import League, load_league
 from .momentum import AttackMomentum
 from .orchestrator import Orchestrator, TraceEvent
@@ -69,7 +70,7 @@ def build_researcher_from_env() -> ResearcherAgent | None:
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=300)
-    language: Literal["en", "es", "ar"] = "en"
+    language: Language = "en"
 
 
 def build_llm_from_env() -> LLM | None:
@@ -258,10 +259,10 @@ class MatchSession:
                 reply["status"] = "error"
                 claims = []
             verdicts = [v for v in (self.fact_checker.check(c) for c in claims) if v is not None]
-            flags = [v | {"text": {lang: flag_text(v, lang) for lang in ("en", "es", "ar")}}
+            flags = [v | {"text": {lang: flag_text(v, lang) for lang in LANGS}}
                      for v in verdicts if v["verdict"] == "wrong"]
             results = [{"verdict": v["verdict"], "text": {lang: (flag_text if v["verdict"] == "wrong" else confirm_text)(v, lang)
-                                                          for lang in ("en", "es", "ar")}} for v in verdicts]
+                                                          for lang in LANGS}} for v in verdicts]
             reply |= {"checked": len(verdicts), "flags": flags, "results": results}
             self.orch._trace("said", "*", "fact_checker", "published" if flags else "ok", self.claim_agent.model,
                              (time.perf_counter() - start) * 1000, detail=f"{len(verdicts)} claims checked, {len(flags)} flagged")

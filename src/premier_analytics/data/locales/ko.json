@@ -1,0 +1,64 @@
+{
+  "overlay": {
+    "goal": ["골! {home} {sh}-{sa} {away}", "{player}, {team} 득점 ({minute}분)", "{player} {minute}분 · xG {xg}, {dist}m 거리 · {team}: 슈팅 {tshots}회, xG {txg}"],
+    "milestone": ["{milestone}! {player}", "{player} 오늘 {pg}골", "{player}: {pg}골 · {team}"],
+    "big_chance": ["결정적 기회 · {team}", "{player}, {team}의 아쉬운 찬스!", "{player} {minute}분 · xG {xg}, {dist}m 거리 · {outcome}"],
+    "woodwork": ["골대 강타 · {team}", "{player}의 슈팅이 골대를 맞힌다!", "{player} {minute}분 · xG {xg}, {dist}m 거리"],
+    "shot_on_target": ["선방 · {opp}", "{player}의 슈팅, 골키퍼 선방", "{player} {minute}분 · xG {xg}, {dist}m 거리"],
+    "rocket_shot": ["시속 {speed}KM 강슛", "{player}의 엄청난 슈팅!", "{player} · 시속 {speed}km, {dist}m 거리 · xG {xg}"],
+    "yellow_card": ["옐로카드 · {team}", "{player} 경고 ({minute}분)", "{player} {minute}분 경고 · {team}"],
+    "penalty": ["페널티킥 · {team}", "{team} 페널티킥! 키커는 {player}", "{team} 페널티킥: 키커 {player} ({minute}분)"],
+    "red_card": ["레드카드 · {team}", "{player} 퇴장! {team} {remaining}명으로", "{player} {minute}분 퇴장 · {team} {remaining}명"],
+    "great_pass": ["키 패스 · {player}", "{player}의 환상적인 패스", "{player} · 난이도 {difficulty}, {pdist}m"],
+    "substitution": ["선수 교체 · {team}", "{player_in} 투입, {player_out} 아웃 ({out_stat})", "{minute}분 {player_in} 투입, {player_out} 아웃 · {out_stat}"],
+    "half_time": ["전반 종료: {home} {sh}-{sa} {away}", "하프타임 {home} {sh}-{sa} {away}", "슈팅 {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · 점유율 {poss}%-{poss_away}%"],
+    "full_time": ["경기 종료: {home} {sh}-{sa} {away}", "최종 스코어: {home} {sh}-{sa} {away}", "슈팅 {shots_home}-{shots_away} · xG {xg_home}-{xg_away} · 점유율 {poss}%-{poss_away}%"],
+    "momentum_shift": ["흐름 · {team}", "지금은 {team}의 흐름", "최근 {wmin}분: 슈팅 {wshots}회, xG {wxg}, 공격 지역 점유 {tilt}%"],
+    "pressure_spell": ["압박 · {team}", "{team}, {opp} 진영에서 맹공", "최근 {wmin}분: 공격 지역 점유 {tilt}%, 슈팅 {wshots}회, 분당 패스 {tempo}회"]
+  },
+  "labels": {"brace": "멀티골", "hat_trick": "해트트릭", "goals": "멈추지 않는다", "saved": "선방", "off_target": "빗나감", "blocked": "블록", "woodwork": "골대"},
+  "channels": {"left": "왼쪽 측면", "centre": "중앙", "right": "오른쪽 측면"},
+  "patterns": {
+    "flank.match": "{team}, 계속 {ch} 공략: 파이널 서드 진입 {total}회 중 {count}회",
+    "switch.second_half": "{team}, 후반 들어 {ch} 공략: {total}회 중 {count}회",
+    "high_regains.match": "{team}, 높은 위치에서 볼 탈취: 볼 획득 {total}회 중 {count}회가 공격 지역",
+    "long_shots.match": "{team}, 중거리 슈팅 시도: 슈팅 {total}회 중 {count}회가 박스 밖",
+    "hub.match": "{player}, {team} 공격의 중심: 파이널 서드 패스 {total}회 중 {count}회",
+    "counters.match": "{team}, 날카로운 역습: 슈팅 {total}회 중 {count}회가 볼 획득 후 {seconds}초 이내",
+    "unusual.match": "이례적: {team}, 오늘은 {ch} 공략이 드물다 ({total}회 중 {count}회, 이번 시즌 {season_share_pct}%)",
+    "flank.season": "{team}, 주로 {ch} 공략 (이번 시즌 {season_share_pct}%); 오늘 {today_total}회 중 {today_count}회",
+    "high_regains.season": "{team}, 높은 압박: 이번 시즌 볼 획득의 {season_share_pct}%가 공격 지역 (리그 {league_share_pct}%); 오늘 {today_total}회 중 {today_count}회",
+    "long_shots.season": "{team}, 다른 팀보다 중거리 슈팅이 많다: 이번 시즌 슈팅의 {season_share_pct}% (리그 {league_share_pct}%); 오늘 {today_total}회 중 {today_count}회",
+    "playmaker.season": "{player}, {team}의 플레이메이커: 이번 시즌 파이널 서드 패스의 {season_share_pct}%; 오늘 {today_total}회 중 {today_count}회"
+  },
+  "pattern_fan": {
+    "flank": "{team}, 주로 {ch} 공략", "switch": "{team}, {ch} 공략으로 전환",
+    "high_regains": "{team}, 전방에서 강하게 압박", "long_shots": "{team}, 중거리 슈팅을 즐긴다",
+    "hub": "{player}, {team} 공격을 이끈다", "playmaker": "{player}, {team} 공격을 이끈다",
+    "counters": "{team}, 날카로운 역습"
+  },
+  "stat_words": {"goals": "골", "assists": "도움", "shots": "슈팅", "ball_wins": "볼 획득", "passes": "패스"},
+  "sub_fan": {
+    "swap": "{on} 투입, {off} 아웃", "today": "{off} ({minutes}분) · {stat}",
+    "goals": "{on} 이번 시즌 골: {n}", "assists": "{on} 이번 시즌 도움: {n}",
+    "more_attacking": "더 공격적인 교체", "more_defensive": "더 수비적인 교체"
+  },
+  "storylines": {
+    "table": "{home} ({hpos}위, 승점 {hpts}) 홈에서 {away} ({apos}위, 승점 {apts}) 상대",
+    "meeting": "이번 시즌 앞선 맞대결: {score}",
+    "top_scorer": "{p}, 이번 시즌 {club}에서 {g}골",
+    "flank": "{club}, {side} 공략: 이번 시즌 공격의 {pct}%",
+    "long_shots": "{club}, 중거리 슈팅: 슈팅의 {pct}% (리그 {lg}%)",
+    "high_regains": "{club}, 높은 압박: 볼 획득의 {pct}%가 공격 지역 (리그 {lg}%)",
+    "playmaker": "{p}, {club} 공격의 중심: 파이널 서드 패스의 {pct}%",
+    "form": "{club}, 최근 {n}경기 {w}승"
+  },
+  "factcheck": {
+    "metrics": {"goals": "골", "assists": "도움", "shots": "슈팅", "shots_on_target": "유효 슈팅", "xg": "xG",
+      "passes": "패스", "passes_completed": "성공 패스", "tackles_won": "태클 성공", "interceptions": "가로채기",
+      "fouls": "파울", "corners": "코너킥", "yellow_cards": "옐로카드", "red_cards": "레드카드", "possession_pct": "점유율"},
+    "stated": "{subject}: {label} {value}{scope}",
+    "since": " ({m}분 이후)",
+    "not": "{stated}, {claimed} 아님"
+  }
+}

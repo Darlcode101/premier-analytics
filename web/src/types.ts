@@ -1,6 +1,7 @@
 // Wire format from the backend (src/premier_analytics/app.py). Keep in sync.
 
-export type Language = 'en' | 'es' | 'ar'
+export type { Language } from './languages'
+import type { Language } from './languages'
 export type Mode = 'fan' | 'analyst'
 
 export interface Profile {
