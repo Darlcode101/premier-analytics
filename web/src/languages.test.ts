@@ -54,8 +54,8 @@ describe('13 languages (DK-12)', () => {
     const p = { minute: 30, window: [25, 30], value: 0.6, home: { shots: 1, xg: 0.3, final_third_passes: 4, high_regains: 2 },
       away: { shots: 0, xg: 0, final_third_passes: 1, high_regains: 0 } } as unknown as AttackPoint
     for (const lang of LANGUAGES) {
-      const e = explainAttack(p, 'har', 'ngc', { har: 'Harbourside', ngc: 'Northgate' }, lang)
-      expect(e.headline, lang).toContain('Harbourside')
+      const e = explainAttack(p, 'har', 'ngc', { har: 'Hyperion', ngc: 'Selene' }, lang)
+      expect(e.headline, lang).toContain('Hyperion')
       expect(e.reasons, lang).toHaveLength(3)
       expect([e.headline, ...e.reasons, ...e.opponentReasons].join(' '), lang).not.toMatch(/undefined|\{/)
       expect(e.reasons.join(' '), lang).toMatch(/4/)

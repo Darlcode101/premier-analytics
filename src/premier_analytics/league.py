@@ -98,14 +98,14 @@ class Club:
 
 _CLUBS = [
     # id, name, short, city, stadium, colours, attack, defence, possession, pressing, discipline
-    ("har", "Harbourside Athletic", "Harbourside", "Harbourside", "The Quayside", ("#0B3D91", "#F2C14E"), 0.80, 0.76, 0.76, 0.70, 0.60),
-    ("ngc", "Northgate City", "Northgate", "Northgate", "Northgate Arena", ("#7FB7E8", "#FFFFFF"), 0.86, 0.72, 0.84, 0.76, 0.65),
-    ("kin", "Kingsmere Rovers", "Kingsmere", "Kingsmere", "Mere Park", ("#B3001B", "#FFFFFF"), 0.72, 0.70, 0.64, 0.55, 0.55),
-    ("sil", "Silverlake FC", "Silverlake", "Silverlake", "The Silverlake Bowl", ("#8A8D91", "#1C1C1C"), 0.68, 0.62, 0.56, 0.66, 0.50),
-    ("sto", "Stormfield Wanderers", "Stormfield", "Stormfield", "The Gale Ground", ("#3A6B35", "#E3B23C"), 0.64, 0.60, 0.42, 0.80, 0.40),
-    ("oak", "Oakhaven United", "Oakhaven", "Oakhaven", "Acorn Lane", ("#5C3317", "#F5E6C8"), 0.58, 0.74, 0.36, 0.50, 0.62),
-    ("iro", "Ironmoor Town", "Ironmoor", "Ironmoor", "Forge Road", ("#2F2F2F", "#D35400"), 0.54, 0.64, 0.28, 0.60, 0.45),
-    ("elm", "Elmstead Rangers", "Elmstead", "Elmstead", "The Elms", ("#1E5631", "#A4DE02"), 0.50, 0.56, 0.50, 0.45, 0.58),
+    ("har", "Hyperion Athletic", "Hyperion", "Hyperion", "The Sunspire", ("#0B3D91", "#F2C14E"), 0.80, 0.76, 0.76, 0.70, 0.60),
+    ("ngc", "Selene City", "Selene", "Selene", "Moonrise Arena", ("#7FB7E8", "#FFFFFF"), 0.86, 0.72, 0.84, 0.76, 0.65),
+    ("kin", "Boreas Rovers", "Boreas", "Boreas", "North Wind Park", ("#B3001B", "#FFFFFF"), 0.72, 0.70, 0.64, 0.55, 0.55),
+    ("sil", "Thalassa FC", "Thalassa", "Thalassa", "The Tidewater Bowl", ("#8A8D91", "#1C1C1C"), 0.68, 0.62, 0.56, 0.66, 0.50),
+    ("sto", "Zephyrus Wanderers", "Zephyrus", "Zephyrus", "The Gale Ground", ("#3A6B35", "#E3B23C"), 0.64, 0.60, 0.42, 0.80, 0.40),
+    ("oak", "Hemera United", "Hemera", "Hemera", "Daybreak Lane", ("#5C3317", "#F5E6C8"), 0.58, 0.74, 0.36, 0.50, 0.62),
+    ("iro", "Erebus Town", "Erebus", "Erebus", "Forge Road", ("#2F2F2F", "#D35400"), 0.54, 0.64, 0.28, 0.60, 0.45),
+    ("elm", "Tyche Rangers", "Tyche", "Tyche", "Fortune Park", ("#1E5631", "#A4DE02"), 0.50, 0.56, 0.50, 0.45, 0.58),
 ]
 
 # Playing styles (PA-1). Three balanced clubs let the Pattern Analyst's false alarms be measured (PA-9).

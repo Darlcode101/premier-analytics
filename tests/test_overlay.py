@@ -12,7 +12,7 @@ from premier_analytics.languages import LANGS
 NAMES = Names(
     players={"h9": "Kai Greaves", "h8": "Elias Ekwueme", "a9": "Rory Coldwell", "a4": "Ivo Varga", "h4": "Lars Lindqvist",
              "h10": "Teo Oakes", "h5": "Jonas Vale", "a5": "Milo Strand", "h6": "Abel Fenwick"},
-    clubs={HOME: "Northgate City", AWAY: "Harbourside Athletic"},
+    clubs={HOME: "Selene City", AWAY: "Hyperion Athletic"},
     home_id=HOME, away_id=AWAY,
 )
 

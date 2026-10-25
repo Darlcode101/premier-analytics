@@ -335,7 +335,7 @@ def test_pattern_alerts_appear_among_talking_points(server, page: Page):
     page.goto(f"{server}/desk?match={pattern_match(server)}")
     alert = page.get_by_test_id("pattern-alert").first
     expect(alert).to_be_visible(timeout=60_000)
-    expect(alert).to_contain_text("Harbourside keep going down the left")
+    expect(alert).to_contain_text("Hyperion keep going down the left")
 
 
 def test_desk_opened_after_full_time_still_has_recaps_and_agent_activity(server, browser):
@@ -450,7 +450,7 @@ def test_ask_box_answers_match_questions_from_the_match_data(server, page: Page)
     page.get_by_role("button", name="Ask").click()
     answer = page.get_by_test_id("match-answer").first
     expect(answer).to_have_attribute("data-status", "ok", timeout=15_000)
-    expect(answer).to_contain_text(re.compile(r"Harbourside \d+-\d+ Northgate"))
+    expect(answer).to_contain_text(re.compile(r"Hyperion \d+-\d+ Selene"))
     expect(answer).to_contain_text("From the match data, checked · as of")
     answer.get_by_test_id("how-i-know").click()
     expect(answer.locator(".cd-evidence")).to_contain_text("get_score()")

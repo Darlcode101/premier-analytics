@@ -13,7 +13,7 @@ from premier_analytics.scout import MomentScout
 
 NAMES = Names(
     players={"h9": "Kai Greaves", "h8": "Elias Ekwueme", "a9": "Rory Coldwell", "a4": "Ivo Varga"},
-    clubs={HOME: "Northgate", AWAY: "Harbourside"}, home_id=HOME, away_id=AWAY,
+    clubs={HOME: "Selene", AWAY: "Hyperion"}, home_id=HOME, away_id=AWAY,
 )
 LEAGUE_PLAYERS = set(NAMES.players.values()) | {"Hugo Marchetti"}  # someone not in this moment
 
@@ -44,13 +44,13 @@ def test_describe_facts_resolves_names_and_keeps_ids():
 
 # ---------- critic (A-6, E-2) ----------
 
-critic = CriticAgent(league_player_names=LEAGUE_PLAYERS, league_club_names={"Northgate", "Harbourside", "Ironmoor"})
+critic = CriticAgent(league_player_names=LEAGUE_PLAYERS, league_club_names={"Selene", "Hyperion", "Erebus"})
 
 
 def test_critic_accepts_grounded_text():
     m = goal_moment()
     xg = facts(m)["shot_xg"].value
-    ok = critic.review(f"Greaves makes it 1-0", f"Kai Greaves finishes a {xg} xG chance for Northgate", m, NAMES,
+    ok = critic.review(f"Greaves makes it 1-0", f"Kai Greaves finishes a {xg} xG chance for Selene", m, NAMES,
                        evidence=[facts(m)["shot_xg"].id])
     assert ok.ok, ok.problems
 
@@ -65,7 +65,7 @@ def test_critic_accepts_number_variants():
 
 def test_critic_rejects_invented_number():
     m = goal_moment()
-    v = critic.review("Goal", "Northgate have had 27 shots", m, NAMES, evidence=[m.facts[0].id])
+    v = critic.review("Goal", "Selene have had 27 shots", m, NAMES, evidence=[m.facts[0].id])
     assert not v.ok and any("27" in p for p in v.problems)
 
 
@@ -77,7 +77,7 @@ def test_critic_rejects_player_not_in_moment():
 
 def test_critic_rejects_club_not_in_match():
     m = goal_moment()
-    v = critic.review("Goal", "Ironmoor fans will enjoy this", m, NAMES, evidence=[m.facts[0].id])
+    v = critic.review("Goal", "Erebus fans will enjoy this", m, NAMES, evidence=[m.facts[0].id])
     assert not v.ok
 
 
@@ -100,7 +100,7 @@ def test_critic_blocks_jargon_for_fans_only():
     m = goal_moment()
     fan = Audience(mode="fan")
     analyst = Audience(mode="analyst")
-    text = "Northgate's xG keeps climbing"
+    text = "Selene's xG keeps climbing"
     assert not critic.review("Goal", text, m, NAMES, evidence=[m.facts[0].id], audience=fan).ok
     assert critic.review("Goal", text, m, NAMES, evidence=[m.facts[0].id], audience=analyst).ok
 
@@ -131,7 +131,7 @@ def test_personaliser_prompt_reflects_audience():
     asyncio.run(agent.run(exp, m, NAMES, Audience(mode="fan", club_id=AWAY, player_id="h9")))
     asyncio.run(agent.run(exp, m, NAMES, Audience(mode="analyst")))
     fan_prompt, analyst_prompt = fake.calls[0].prompt, fake.calls[1].prompt
-    assert "casual fan" in fan_prompt and "Harbourside" in fan_prompt and "Kai Greaves" in fan_prompt
+    assert "casual fan" in fan_prompt and "Hyperion" in fan_prompt and "Kai Greaves" in fan_prompt
     assert "analyst" in analyst_prompt
 
 
@@ -194,11 +194,11 @@ def test_translator_never_sees_names():
         return Personalised(headline="⟦A⟧ marca", body="⟦A⟧ adelanta al ⟦B⟧")
 
     fake = FakeLLM({"translator": tr})
-    out = asyncio.run(TranslatorAgent(fake, names=["Kai Greaves", "Northgate"]).run(
-        Personalised(headline="Kai Greaves scores", body="Kai Greaves puts Northgate ahead"), "es"))
-    assert "Kai Greaves" not in seen["prompt"] and "Northgate" not in seen["prompt"]
+    out = asyncio.run(TranslatorAgent(fake, names=["Kai Greaves", "Selene"]).run(
+        Personalised(headline="Kai Greaves scores", body="Kai Greaves puts Selene ahead"), "es"))
+    assert "Kai Greaves" not in seen["prompt"] and "Selene" not in seen["prompt"]
     assert out.headline == "Kai Greaves marca"
-    assert out.body == "Kai Greaves adelanta al Northgate"
+    assert out.body == "Kai Greaves adelanta al Selene"
 
 
 def test_critic_rejects_leftover_name_tokens():
@@ -210,7 +210,7 @@ def test_critic_rejects_leftover_name_tokens():
 def test_focus_player_only_allowed_when_involved():
     m = goal_moment()  # involves h9 (scorer) and h8 (assist), not a4
     follower = Audience(mode="fan", player_id="a4")
-    v = critic.review("Goal", "Ivo Varga watches on as Northgate score", m, NAMES, audience=follower)
+    v = critic.review("Goal", "Ivo Varga watches on as Selene score", m, NAMES, audience=follower)
     assert not v.ok
 
 
@@ -236,8 +236,8 @@ def equaliser_moment():
     return [m for e in fx.events for m in scout.observe(e) if m.kind == "goal"][1]
 
 
-@pytest.mark.parametrize("text", ["Greaves gives Northgate the lead", "Greaves breaks the deadlock",
-                                  "Northgate go ahead through Greaves", "Greaves puts Northgate in front"])
+@pytest.mark.parametrize("text", ["Greaves gives Selene the lead", "Greaves breaks the deadlock",
+                                  "Selene go ahead through Greaves", "Greaves puts Selene in front"])
 def test_critic_rejects_text_contradicting_goal_context(text):
     m = equaliser_moment()
     assert not critic.review("Goal", text, m, NAMES, evidence=[m.facts[0].id]).ok
@@ -245,7 +245,7 @@ def test_critic_rejects_text_contradicting_goal_context(text):
 
 def test_critic_accepts_correct_goal_context():
     m = equaliser_moment()
-    assert critic.review("Greaves levels it", "Kai Greaves equalises for Northgate", m, NAMES,
+    assert critic.review("Greaves levels it", "Kai Greaves equalises for Selene", m, NAMES,
                          evidence=[m.facts[0].id]).ok
 
 
@@ -264,7 +264,7 @@ def test_translator_masks_surnames_too():
         return Personalised(headline="⟦A⟧ marca", body="gol")
 
     fake = FakeLLM({"translator": tr})
-    out = asyncio.run(TranslatorAgent(fake, names=["Kai Greaves", "Northgate"]).run(
+    out = asyncio.run(TranslatorAgent(fake, names=["Kai Greaves", "Selene"]).run(
         Personalised(headline="Greaves scores", body="gol"), "ar"))
     assert "Greaves" not in seen["prompt"]
     assert out.headline == "Greaves marca"

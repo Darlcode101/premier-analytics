@@ -4,14 +4,14 @@ import { initialState, reducer } from './state'
 import type { FactFlag, Hello, Language } from './types'
 
 const hello = {
-  home: { short_name: 'Harbourside', name: 'Harbourside Athletic', lineup: [{ name: 'Zane Kowalczyk' }], bench: [{ name: 'Leandro Ashworth' }] },
-  away: { short_name: 'Northgate', name: 'Northgate City', lineup: [{ name: 'Pablo Wakefield-Ames' }], bench: [] },
+  home: { short_name: 'Hyperion', name: 'Hyperion Athletic', lineup: [{ name: 'Zane Kowalczyk' }], bench: [{ name: 'Leandro Ashworth' }] },
+  away: { short_name: 'Selene', name: 'Selene City', lineup: [{ name: 'Pablo Wakefield-Ames' }], bench: [] },
 } as unknown as Hello
 
 describe('Listen (FC-1)', () => {
   it('biases recognition towards the match\'s names: full names, surnames and clubs, once each', () => {
     const p = phrasesFor(hello)
-    for (const word of ['Zane Kowalczyk', 'Kowalczyk', 'Wakefield-Ames', 'Harbourside', 'Northgate City']) expect(p).toContain(word)
+    for (const word of ['Zane Kowalczyk', 'Kowalczyk', 'Wakefield-Ames', 'Hyperion', 'Selene City']) expect(p).toContain(word)
     expect(new Set(p).size).toBe(p.length)
   })
   it('listens in the desk\'s language', () => {

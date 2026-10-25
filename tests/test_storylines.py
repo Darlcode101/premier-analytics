@@ -102,14 +102,14 @@ def test_gendered_pronouns_fall_back_to_the_plain_seed(season, league, names, cr
 
 def test_storylines_from_suggestions_or_typed_and_at_most_four(names):
     st = Storylines(names)
-    suggestion = {"seed_id": "s1", "text": {"en": "Harbourside attack down the left"}, "players": [], "clubs": ["har"]}
+    suggestion = {"seed_id": "s1", "text": {"en": "Hyperion attack down the left"}, "players": [], "clubs": ["har"]}
     a = st.add_suggestion(suggestion)
     assert a["clubs"] == ["har"] and a["source"] == "suggested"
     b = st.add_custom("Can Kowalczyk make a difference off the bench?")
     assert [names.player(p) for p in b["players"]] == ["Zane Kowalczyk"]
     with pytest.raises(ValueError, match="player or club"):
         st.add_custom("Will it rain later?")
-    st.add_custom("Northgate's defence")
+    st.add_custom("Selene's defence")
     st.add_custom("Can Ashworth keep his discipline?")
     with pytest.raises(ValueError, match="4"):
         st.add_custom("Pablo Wakefield-Ames on target again?")
@@ -129,7 +129,7 @@ def test_which_moments_belong_to_which_storyline(names):
     st = Storylines(names)
     kowalczyk = next(p for p, n in names.players.items() if n == "Zane Kowalczyk")
     player_story = st.add_custom("Can Zane Kowalczyk make a difference?")
-    club_story = st.add_custom("Northgate's defence")
+    club_story = st.add_custom("Selene's defence")
     goal = moment("goal", 0.95, player=kowalczyk)
     sub = moment("substitution", 0.3, player=None, facts=[("player_in", kowalczyk), ("player_out", "har-06")])
     pressure = moment("pressure_spell", 0.5, team="ngc")

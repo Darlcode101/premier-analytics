@@ -46,7 +46,7 @@ Tick *Hold kick-off for the desk* to prepare before the match starts.
 - **Producer cue**: the best thing to say next, put **on air** at each natural break (free kick, substitution,
   goal…) with how long that break usually lasts.
 - **Live fact-check**: press *Listen* and talk. Every line is checked against the match: ✓ when you are right,
-  ⚑ with the correct number when you are not ("Northgate: 47% possession, not 60"). You can also type a line.
+  ⚑ with the correct number when you are not ("Selene: 47% possession, not 60"). You can also type a line.
 - **Talking points** with their evidence, real-world context with sources, and *Say it simply*: a plain line
   ready for casual viewers ("From 4 m out, chances like this go in about 6 times in 10").
 - **Ask** about the match ("How has Kowalczyk done since he came on?"), answered from the live data with the
@@ -119,7 +119,8 @@ always on screen.
 
 ## Data
 
-All matches are **synthetic**: a simulator generates realistic event streams for **8 fictional clubs** with
+All matches are **synthetic**: a simulator generates realistic event streams for **8 fictional clubs**, named
+after lesser-known Greek gods (Hyperion, Selene, Boreas, Thalassa, Zephyrus, Hemera, Erebus and Tyche), with
 fictional players, calibrated to published Premier League season averages (goals, shots, xG, cards and their
 reasons, corners, penalties, possession and more; see [docs/REALISM.md](docs/REALISM.md)). Seasons are simulated
 too, which gives the brief its table, form and known styles. Every match is reproducible from its seed. No real

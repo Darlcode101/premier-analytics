@@ -392,7 +392,7 @@ class ExplainerAgent:
         "'goalless', 'still 0-0'): say what the moment shows. For chances that didn't go in, the point is what they would have "
         "meant ('if it had gone in, it …'). For goals, say how the goal fits the game (run of play, how long it took) "
         "rather than retelling the goal. Treat club "
-        "names as plural (\"Northgate are\"). Headline at most 50 characters, why at most "
+        "names as plural (\"Selene are\"). Headline at most 50 characters, why at most "
         "160 characters. List the IDs of the facts you used in evidence."
     )
 
@@ -417,7 +417,7 @@ class PersonaliserAgent:
         "or tempo, km/h or percentages), at most one statistic (the score and the minute don't count). For a data analyst: precise and tactical, two or three numbers, xG "
         "allowed. If the viewer supports a club, frame it from their side. If they follow a player, mention "
         "that player only when the facts involve them. Use only facts given: no predictions about the rest of "
-        "the match, no events that are not in the facts. Treat club names as plural (\"Northgate are\"). "
+        "the match, no events that are not in the facts. Treat club names as plural (\"Selene are\"). "
         "Headline at most 55 characters, body at most 170 characters."
     )
 

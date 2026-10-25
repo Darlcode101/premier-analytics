@@ -36,16 +36,16 @@ def claim(subject, metric, value, since=None, quote="..."):
 
 
 def test_only_lines_with_numbers_are_worth_checking():
-    for line in ("That's Kowalczyk's third shot since he came on.", "Northgate have had 9 shots.",
-                 "Wakefield-Ames scored in the 13th minute.", "Dos goles para el Harbourside.", "٣ تسديدات"):
+    for line in ("That's Kowalczyk's third shot since he came on.", "Selene have had 9 shots.",
+                 "Wakefield-Ames scored in the 13th minute.", "Dos goles para el Hyperion.", "٣ تسديدات"):
         assert worth_checking(line), line
-    for line in ("What a game this is.", "Harbourside are pushing on.", ""):
+    for line in ("What a game this is.", "Hyperion are pushing on.", ""):
         assert not worth_checking(line), line
 
 
 def test_spoken_numbers_up_to_a_hundred_and_percentages_are_checked():
     """Live check 10-25: 'about sixty percent of the ball' was skipped."""
-    for line in ("Northgate have had about sixty percent of the ball", "seventy per cent possession",
+    for line in ("Selene have had about sixty percent of the ball", "seventy per cent possession",
                  "ninety minutes gone", "half a dozen shots", "sesenta por ciento de posesión"):
         assert worth_checking(line), line
 
@@ -58,20 +58,20 @@ def test_wrong_claims_are_flagged_with_the_right_number(checker):
 
 
 def test_team_claims_and_from_a_minute(checker):
-    assert checker.check(claim("Northgate", "shots", 9, since=46))["verdict"] == "correct"
-    wrong = checker.check(claim("Northgate", "shots", 7, since=46))
+    assert checker.check(claim("Selene", "shots", 9, since=46))["verdict"] == "correct"
+    wrong = checker.check(claim("Selene", "shots", 7, since=46))
     assert wrong["verdict"] == "wrong" and wrong["actual"] == 9 and wrong["since_minute"] == 46
-    assert checker.check(claim("Harbourside", "goals", 2))["verdict"] == "correct"
+    assert checker.check(claim("Hyperion", "goals", 2))["verdict"] == "correct"
 
 
 def test_tolerances_for_xg_and_possession(checker):
     tools = checker.tools
-    poss = tools.get_team_stats("Northgate")["possession_pct"]
-    assert checker.check(claim("Northgate", "possession_pct", round(poss) + 1))["verdict"] == "correct"
-    assert checker.check(claim("Northgate", "possession_pct", round(poss) + 6))["verdict"] == "wrong"
-    xg = tools.get_team_stats("Northgate")["xg"]
-    assert checker.check(claim("Northgate", "xg", round(xg + 0.04, 2)))["verdict"] == "correct"
-    assert checker.check(claim("Northgate", "xg", round(xg + 0.4, 2)))["verdict"] == "wrong"
+    poss = tools.get_team_stats("Selene")["possession_pct"]
+    assert checker.check(claim("Selene", "possession_pct", round(poss) + 1))["verdict"] == "correct"
+    assert checker.check(claim("Selene", "possession_pct", round(poss) + 6))["verdict"] == "wrong"
+    xg = tools.get_team_stats("Selene")["xg"]
+    assert checker.check(claim("Selene", "xg", round(xg + 0.04, 2)))["verdict"] == "correct"
+    assert checker.check(claim("Selene", "xg", round(xg + 0.4, 2)))["verdict"] == "wrong"
 
 
 def test_player_cards_and_fouls_can_be_checked(checker):
@@ -87,13 +87,13 @@ def test_player_cards_and_fouls_can_be_checked(checker):
 
 def test_claims_the_data_cannot_settle_are_left_alone(checker):
     assert checker.check(claim("Nobody Atall", "goals", 1)) is None
-    assert checker.check(claim("Northgate", "corners", 3, since=46)) is None  # not counted from a minute
-    assert checker.check(claim("Northgate", "goals", 1, since=200)) is None    # not played yet
+    assert checker.check(claim("Selene", "corners", 3, since=46)) is None  # not counted from a minute
+    assert checker.check(claim("Selene", "goals", 1, since=200)) is None    # not played yet
 
 
 @pytest.mark.parametrize("language", LANGS)
 def test_flags_say_the_right_number_plainly(checker, language):
-    for c in (claim("Kowalczyk", "shots", 3), claim("Northgate", "shots", 7, since=46)):
+    for c in (claim("Kowalczyk", "shots", 3), claim("Selene", "shots", 7, since=46)):
         v = checker.check(c)
         text = flag_text(v, language)
         assert "{" not in text and str(v["actual"]) in text and str(int(c.value)) in text

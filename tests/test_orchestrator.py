@@ -10,9 +10,9 @@ from premier_analytics.overlay import Audience, Names
 
 NAMES = Names(
     players={"h9": "Kai Greaves", "h8": "Elias Ekwueme", "a9": "Rory Coldwell", "a4": "Ivo Varga"},
-    clubs={HOME: "Northgate", AWAY: "Harbourside"}, home_id=HOME, away_id=AWAY,
+    clubs={HOME: "Selene", AWAY: "Hyperion"}, home_id=HOME, away_id=AWAY,
 )
-CRITIC = CriticAgent(set(NAMES.players.values()), {"Northgate", "Harbourside", "Ironmoor"})
+CRITIC = CriticAgent(set(NAMES.players.values()), {"Selene", "Hyperion", "Erebus"})
 
 FAN_EN = Audience(mode="fan", language="en")
 ANALYST_EN = Audience(mode="analyst", language="en")
@@ -24,17 +24,17 @@ def first_fact_id(prompt: str) -> str:
 
 
 def good_explainer(prompt):
-    return Explanation(headline="Greaves breaks the deadlock", why="Northgate lead 1-0", evidence=[first_fact_id(prompt)])
+    return Explanation(headline="Greaves breaks the deadlock", why="Selene lead 1-0", evidence=[first_fact_id(prompt)])
 
 
 def personaliser(prompt):
     if "casual fan" in prompt:
-        return Personalised(headline="Northgate strike first!", body="Kai Greaves gives Northgate the lead")
-    return Personalised(headline="Greaves 1-0", body="Northgate lead 1-0 from their first shot")
+        return Personalised(headline="Selene strike first!", body="Kai Greaves gives Selene the lead")
+    return Personalised(headline="Greaves 1-0", body="Selene lead 1-0 from their first shot")
 
 
 def translator(prompt):
-    return Personalised(headline="¡Golpe de Northgate!", body="Kai Greaves adelanta al Northgate")
+    return Personalised(headline="¡Golpe de Selene!", body="Kai Greaves adelanta al Selene")
 
 
 def fake(delay=0.0, **overrides):
@@ -84,7 +84,7 @@ def test_fast_overlay_is_immediate_and_ai_upgrades_it():
         assert {o.id for o in ai} == {o.id for o in goal_fast}, "upgrades keep the same overlay IDs"
         assert all(o.version == 2 for o in ai)
         by_aud = {o.audience: o for o in ai}
-        assert by_aud[FAN_EN.key].headline == "Northgate strike first!"
+        assert by_aud[FAN_EN.key].headline == "Selene strike first!"
         assert by_aud[ANALYST_EN.key].headline == "Greaves 1-0"
         assert by_aud[FAN_ES.key].language == "es" and by_aud[FAN_ES.key].headline.startswith("¡")
 
@@ -169,7 +169,7 @@ def test_late_ai_is_discarded():
 def test_critic_rejects_twice_keeps_fast_overlay():
     async def go():
         def liar(prompt):
-            return Explanation(headline="Rout", why="Northgate have had 27 shots", evidence=[first_fact_id(prompt)])
+            return Explanation(headline="Rout", why="Selene have had 27 shots", evidence=[first_fact_id(prompt)])
 
         llm = fake(explainer=liar)
         orch = make(llm, audiences=[FAN_EN])
@@ -231,7 +231,7 @@ def test_runs_without_any_model():
 def test_fan_output_with_jargon_is_rejected():
     async def go():
         def nerdy(prompt):
-            return Personalised(headline="Greaves 1-0", body="Northgate's xG climbs")
+            return Personalised(headline="Greaves 1-0", body="Selene's xG climbs")
 
         orch = make(fake(personaliser=nerdy), audiences=[FAN_EN])
         await play(orch, goal_events())
@@ -246,7 +246,7 @@ def test_recaps_at_half_time_once_per_mode_and_language():
 
     async def go():
         def recap(prompt):
-            return Recap(headline="Northgate 1-0 Harbourside", summary="Kai Greaves scored the only goal.", key_points=[])
+            return Recap(headline="Selene 1-0 Hyperion", summary="Kai Greaves scored the only goal.", key_points=[])
 
         llm = fake(recap=recap)
         orch = make(llm, recaps=True)

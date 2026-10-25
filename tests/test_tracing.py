@@ -91,7 +91,7 @@ def test_recaps_are_traced(spans):
     from premier_analytics.recap import RecapDraft
 
     async def go():
-        llm = fake(recap=lambda p: RecapDraft(headline="Northgate 1-0 Harbourside", summary="One goal.", key_points=[]))
+        llm = fake(recap=lambda p: RecapDraft(headline="Selene 1-0 Hyperion", summary="One goal.", key_points=[]))
         orch = Orchestrator(HOME, AWAY, "fx", NAMES, [FAN_EN], llm=llm, critic=CRITIC, recaps=True)
         fx = Fx()
         fx.events = list(goal_events())

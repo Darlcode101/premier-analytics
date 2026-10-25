@@ -3,7 +3,7 @@ import { odds, whyLines } from './why'
 import type { Language, Overlay } from './types'
 import { LANGUAGES } from './languages'
 
-const names = { har: 'Harbourside', ngc: 'Northgate', p9: 'Ezra Jovanovic', p20: 'Kai Greaves' }
+const names = { har: 'Hyperion', ngc: 'Selene', p9: 'Ezra Jovanovic', p20: 'Kai Greaves' }
 const ov = (kind: string, data: Overlay['data'], extra: Partial<Overlay> = {}): Overlay => ({
   id: 'o', match_id: 'm', moment_id: 'mo', audience: 'fan.en.-.-', kind, team_id: 'har', player_id: 'p9', priority: 0.5,
   slot: 'lower_third', clock_in_ms: 0, clock_out_ms: 1, minute: '23', elapsed_in_ms: 0, headline: 'h', body: 'b',
@@ -36,7 +36,7 @@ describe('plain-words Why? (F-7)', () => {
     expect(odds(0.001).outOf).toBe(100)
   })
   it('explains a goal by what it does to the game and how hard the chance was', () => {
-    expect(why(ALL[0])).toEqual(['It puts Harbourside ahead.', 'From 18 m out, chances like this go in about 1 time in 8.'])
+    expect(why(ALL[0])).toEqual(['It puts Hyperion ahead.', 'From 18 m out, chances like this go in about 1 time in 8.'])
     expect(why(ALL[1])).toEqual(['It levels the game at 1-1.', 'It came from the penalty spot.'])
   })
   it('says what a missed chance would have meant', () => {
@@ -44,10 +44,10 @@ describe('plain-words Why? (F-7)', () => {
   })
   it('explains cards and pressure without jargon', () => {
     expect(why(ALL[8])).toEqual(['Late tackle on Kai Greaves.', 'Ezra Jovanovic is on a yellow: another one means a red card.'])
-    expect(why(ALL[9])).toEqual(['Violent conduct.', 'Harbourside play the rest of the match with 10 players.'])
+    expect(why(ALL[9])).toEqual(['Violent conduct.', 'Hyperion play the rest of the match with 10 players.'])
     expect(why(ALL[12])).toEqual([
-      'Harbourside had 3 shots in the last 10 minutes.',
-      "Most of the play was in Northgate's half, so Harbourside kept them pinned back.",
+      'Hyperion had 3 shots in the last 10 minutes.',
+      "Most of the play was in Selene's half, so Hyperion kept them pinned back.",
       'They scored 1 goal in that spell.',
     ])
   })

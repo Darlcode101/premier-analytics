@@ -33,11 +33,11 @@ describe('fitting text to the pop-up (OV-2)', () => {
     expect(fitText('Short and sweet.', 50)).toBe('Short and sweet.')
   })
   it('trims to the last whole sentence that fits', () => {
-    const text = 'Greaves scores from close range. Northgate lead for the first time. It ends a long wait.'
-    expect(fitText(text, 70)).toBe('Greaves scores from close range. Northgate lead for the first time.')
+    const text = 'Greaves scores from close range. Selene lead for the first time. It ends a long wait.'
+    expect(fitText(text, 70)).toBe('Greaves scores from close range. Selene lead for the first time.')
   })
   it('falls back to a word boundary with an ellipsis, never mid-word', () => {
-    const text = 'Northgate have dominated the ball and the territory for twenty minutes without a shot on target'
+    const text = 'Selene have dominated the ball and the territory for twenty minutes without a shot on target'
     const out = fitText(text, 40)
     expect(out.length).toBeLessThanOrEqual(40)
     expect(out.endsWith('…')).toBe(true)

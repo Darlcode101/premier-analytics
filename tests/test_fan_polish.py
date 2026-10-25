@@ -42,8 +42,8 @@ def test_throttle_ignores_other_moments():
 
 def _play(audiences, llm=None):
     league_match = generate_match("har", "ngc", 42)
-    names = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"}, players={})
-    critic = CriticAgent(set(), {"Harbourside", "Northgate"})
+    names = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"}, players={})
+    critic = CriticAgent(set(), {"Hyperion", "Selene"})
 
     async def go():
         orch = Orchestrator("har", "ngc", "m", names, audiences, llm=llm, critic=critic)
@@ -86,9 +86,9 @@ def test_late_joiner_sees_the_same_cards():
 def _producer(llm):
     from premier_analytics.orchestrator import MatchState
     from premier_analytics.scout import MomentScout
-    names = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"}, players={})
+    names = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"}, players={})
     state = MatchState(names=names, scout=MomentScout("har", "ngc", "m"))
-    return RecapProducer(llm, CriticAgent(set(), {"Harbourside", "Northgate"}), state)
+    return RecapProducer(llm, CriticAgent(set(), {"Hyperion", "Selene"}), state)
 
 
 def test_fan_recap_is_written_separately_with_plain_instructions():
@@ -110,7 +110,7 @@ def test_fan_recap_is_written_separately_with_plain_instructions():
 def test_fan_recap_with_decimals_or_jargon_is_rejected():
     p = _producer(FakeLLM({}))
     from premier_analytics.recap import Recap
-    bad = Recap(headline="Northgate on top", summary="Northgate had 0.5 more xG.", key_points=[], mode="fan")
+    bad = Recap(headline="Selene on top", summary="Selene had 0.5 more xG.", key_points=[], mode="fan")
     problems = p.review(bad)
     assert any("jargon" in x for x in problems) and any("whole numbers" in x for x in problems)
     ok_for_analysts = bad.model_copy(update={"mode": "analyst"})

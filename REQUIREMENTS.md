@@ -359,6 +359,7 @@ overlay's fan wording (the brief's stage (e) allows on-screen storytelling as th
 ## 7. Decisions log
 | Date | Decision |
 |---|---|
+| 10-25 | Clubs renamed after lesser-known Greek gods (user request): Hyperion Athletic, Selene City, Boreas Rovers, Thalassa FC, Zephyrus Wanderers, Hemera United, Erebus Town, Tyche Rangers, with matching grounds. Avoided the famous gods and names real clubs use (Apollo, Aris/Ares, Atlas, Olympia). Club ids stay (`har`, `ngc`, ...), and names never feed the simulator, so every seed plays the same match; the evaluation records in `evals/` keep the names they were run with. Two prompts' example of a plural club name now says "Selene are" |
 | 10-25 | DK-12: 10 more languages (the user's "global set": the Premier League's biggest broadcast markets). EN/ES/AR keep their hand-written text; the 10 new ones live in one catalogue per language (frontend `web/src/locales`, backend `data/locales`), written by hand rather than by the live model so a bulk job could not throttle the deployment during the demo. Where a language has number agreement, catalogues use "label: n" (as Arabic already does) or one/other forms picked with `Intl.PluralRules`, so no sentence depends on English plural rules. Tests check every catalogue has every key with the same placeholders, and play a whole match in every language. Thirteen buttons do not fit the header, so the language choice is a dropdown |
 | 10-09 | Category: Best Multi-Agent System. Solo. Demo balances Analyst + Fan modes |
 | 10-09 | Registered ✅. Azure: $100 credit |

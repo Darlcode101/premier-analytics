@@ -134,13 +134,13 @@ def test_cues_are_only_published_when_they_change():
 
 # ---------- GP-5: the AI note ----------
 
-NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"},
+NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"},
               players={"har-14": "Zane Kowalczyk", "har-04": "Leandro Ashworth"})
-CRITIC = CriticAgent({"Zane Kowalczyk", "Leandro Ashworth", "Kai Greaves"}, {"Harbourside", "Northgate"})
+CRITIC = CriticAgent({"Zane Kowalczyk", "Leandro Ashworth", "Kai Greaves"}, {"Hyperion", "Selene"})
 ITEMS = [
-    cand("m9", 0.9, 76, text="Zane Kowalczyk wins a penalty for Harbourside (90+7')", numbers={"90", "7"},
+    cand("m9", 0.9, 76, text="Zane Kowalczyk wins a penalty for Hyperion (90+7')", numbers={"90", "7"},
          players={"Zane Kowalczyk"}),
-    cand("p1", 0.7, 45, kind="pattern", text="Harbourside attack down the left: 31 of 52 entries",
+    cand("p1", 0.7, 45, kind="pattern", text="Hyperion attack down the left: 31 of 52 entries",
          numbers={"31", "52"}, players=set(), source="pattern_analyst"),
 ]
 
@@ -151,7 +151,7 @@ def note_with(text):
 
 
 def test_a_grounded_note_is_kept():
-    assert note_with("Harbourside's 31 entries down the left made this.") == "Harbourside's 31 entries down the left made this."
+    assert note_with("Hyperion's 31 entries down the left made this.") == "Hyperion's 31 entries down the left made this."
 
 
 def test_nothing_useful_means_no_note():
@@ -215,7 +215,7 @@ def test_fans_never_get_cues_or_can_mark_used(client):
 def test_ai_note_reaches_each_desk_in_its_language():
     """GP-5 through the live pipeline: English desk gets the note, the Spanish desk the checked translation."""
     llm = fake_llm()
-    llm.responders["producer"] = lambda p: ProducerNote(text="Harbourside need a response here.")
+    llm.responders["producer"] = lambda p: ProducerNote(text="Hyperion need a response here.")
     with TestClient(create_app(llm=llm, live_session=False)) as c:
         mid = start(c, home="har", away="ngc", seed=292, autostart=False)
         with c.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as en, \
@@ -226,14 +226,14 @@ def test_ai_note_reaches_each_desk_in_its_language():
     on_air = {m["cue"]["ref"] for m in got_en if m["type"] == "cue" and m["cue"] and m["cue"]["state"] == "on_air"}
     notes_en = [m for m in got_en if m["type"] == "cue_note"]
     notes_es = [m for m in got_es if m["type"] == "cue_note"]
-    assert notes_en and all(n["text"] == "Harbourside need a response here." and n["ref"] in on_air for n in notes_en)
+    assert notes_en and all(n["text"] == "Hyperion need a response here." and n["ref"] in on_air for n in notes_en)
     assert len({n["ref"] for n in notes_en}) == len(notes_en)  # one note per talking point, not per break
     assert notes_es and all(n["language"] == "es" and n["text"] == "Cuerpo IA" for n in notes_es)
 
 
 def test_a_note_for_a_cue_that_moved_on_is_dropped():
     notes = []
-    llm = FakeLLM({"producer": lambda p: ProducerNote(text="Harbourside need a response.")}, delay={"producer": 0.05})
+    llm = FakeLLM({"producer": lambda p: ProducerNote(text="Hyperion need a response.")}, delay={"producer": 0.05})
     orch = Orchestrator("har", "ngc", "m", NAMES, [], llm=llm, critic=CRITIC, on_cue_note=lambda *a: notes.append(a))
 
     async def run():

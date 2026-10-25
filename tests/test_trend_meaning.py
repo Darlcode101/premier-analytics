@@ -67,8 +67,8 @@ def test_meaning_is_consistent_with_the_numbers(seed):
 
 # ---------- E-5: comparisons ----------
 
-NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"}, players={})
-CRITIC = CriticAgent(set(), {"Harbourside", "Northgate"})
+NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"}, players={})
+CRITIC = CriticAgent(set(), {"Hyperion", "Selene"})
 
 
 def trend(**values):
@@ -78,14 +78,14 @@ def trend(**values):
 
 
 def problems(text, m):
-    return CRITIC.review("Harbourside on top", text, m, NAMES).problems
+    return CRITIC.review("Hyperion on top", text, m, NAMES).problems
 
 
 def test_double_needs_two_facts_in_that_ratio():
     m = trend(team_shots=6, opponent_shots=5, window_shots=3, window_shots_before=3, spell_rank="back on top")
-    assert any("double" in p for p in problems("Harbourside have double the shots of Northgate.", m))
+    assert any("double" in p for p in problems("Hyperion have double the shots of Selene.", m))
     ok = trend(team_shots=10, opponent_shots=5, spell_rank="back on top")
-    assert problems("Harbourside have double the shots of Northgate.", ok) == []
+    assert problems("Hyperion have double the shots of Selene.", ok) == []
     ok2 = trend(window_shots=4, window_shots_before=2, spell_rank="back on top")
     assert problems("Twice as many shots as in the ten minutes before.", ok2) == []
 
@@ -112,12 +112,12 @@ def test_first_half_is_not_a_superlative():
 def test_score_wording_must_match_the_stakes():
     from premier_analytics.scout import STAKES
     level = trend(stakes=STAKES["opener"], spell_rank="back on top", score_home=0, score_away=0)
-    assert any("trail" in p for p in problems("Northgate dominate but trail 0-0.", level))
-    assert problems("Northgate dominate but it's still 0-0.", level) == []
+    assert any("trail" in p for p in problems("Selene dominate but trail 0-0.", level))
+    assert problems("Selene dominate but it's still 0-0.", level) == []
     up = trend(stakes=STAKES["one_up"], spell_rank="back on top")
-    assert any("equalis" in p for p in problems("Harbourside push for an equaliser.", up))
+    assert any("equalis" in p for p in problems("Hyperion push for an equaliser.", up))
     down = trend(stakes=STAKES["one_down"], spell_rank="back on top")
-    assert any("protect" in p for p in problems("Harbourside protect their lead.", down))
+    assert any("protect" in p for p in problems("Hyperion protect their lead.", down))
 
 
 # ---------- E-6: missed chances ----------
@@ -198,9 +198,9 @@ def test_captions_must_not_contradict_the_run_of_play():
 
 def test_doubling_a_lead_is_football_language_not_a_ratio():
     m = trend(team_shots=6, opponent_shots=5, spell_rank="back on top")
-    assert problems("Harbourside double their lead.", m) == []
+    assert problems("Hyperion double their lead.", m) == []
     assert problems("A goal that doubles the advantage.", m) == []
-    assert any("double" in p for p in problems("Double the shots of Northgate.", m))
+    assert any("double" in p for p in problems("Double the shots of Selene.", m))
 
 
 def test_the_score_a_missed_chance_would_have_made_is_allowed():
@@ -222,15 +222,15 @@ def test_the_score_a_missed_chance_would_have_made_is_allowed():
 def test_cutting_the_lead_is_not_taking_it():
     from premier_analytics.scout import IF_SCORED
     back = trend(if_scored=IF_SCORED["back"], score_home=2, score_away=0)
-    assert problems("Kingsmere still ahead 2-0; it would have cut the lead.", back) == []
+    assert problems("Boreas still ahead 2-0; it would have cut the lead.", back) == []
     assert any("level" in p for p in problems("It would have levelled the score.", back))
     goal = Moment(id="g", kind="goal", severity=1, event_id="e", period=2, clock_ms=60 * MIN, elapsed_ms=60 * MIN,
                   team_id="ngc", facts=[Fact(id="g-f0", label="goal_context", value="pulls_one_back", subject="ngc",
                                              source_event_ids=["e"]),
                                         Fact(id="g-f1", label="score_home", value=2, source_event_ids=["e"]),
                                         Fact(id="g-f2", label="score_away", value=1, source_event_ids=["e"])])
-    assert problems("Northgate cut the lead to 2-1, Harbourside still ahead.", goal) == []
-    assert any("take" in p.lower() or "lead" in p for p in problems("Northgate take the lead!", goal))
+    assert problems("Selene cut the lead to 2-1, Hyperion still ahead.", goal) == []
+    assert any("take" in p.lower() or "lead" in p for p in problems("Selene take the lead!", goal))
 
 
 # ---------- E-8: nothing meaningless early on ----------
@@ -271,6 +271,6 @@ def test_an_early_goal_may_still_break_the_deadlock():
 def test_fans_never_get_final_third():
     from premier_analytics.overlay import Audience
     m = early(30, spell_rank="first spell on top")
-    fan = CRITIC.review("Harbourside on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="fan")).problems
-    analyst = CRITIC.review("Harbourside on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="analyst")).problems
+    fan = CRITIC.review("Hyperion on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="fan")).problems
+    analyst = CRITIC.review("Hyperion on top", "Lots of attacks into the final third.", m, NAMES, audience=Audience(mode="analyst")).problems
     assert any("final third" in p for p in fan) and not any("final third" in p for p in analyst)

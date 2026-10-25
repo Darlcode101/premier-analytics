@@ -7,13 +7,13 @@ const point = (value: number, home: Partial<AttackPoint['home']>, away: Partial<
   home: { shots: 0, xg: 0, final_third_passes: 0, high_regains: 0, ...home },
   away: { shots: 0, xg: 0, final_third_passes: 0, high_regains: 0, ...away },
 })
-const names = { har: 'Harbourside', ngc: 'Northgate' }
+const names = { har: 'Hyperion', ngc: 'Selene' }
 
 describe('explainAttack', () => {
   it('names the team on top and the reasons, with the real numbers', () => {
     const e = explainAttack(point(0.6, { shots: 2, xg: 0.38, final_third_passes: 7, high_regains: 3 }), 'har', 'ngc', names, 'en')
     expect(e.leader).toBe('har')
-    expect(e.headline).toBe('Harbourside on top')
+    expect(e.headline).toBe('Hyperion on top')
     expect(e.reasons).toEqual(['2 shots (0.38 xG)', '7 passes into the final third', 'won the ball 3 times in the opponent\'s half'])
   })
 
@@ -30,7 +30,7 @@ describe('explainAttack', () => {
 
   it('uses singular forms and works in every language', () => {
     expect(explainAttack(point(0.5, { shots: 1, xg: 0.1 }), 'har', 'ngc', names, 'en').reasons).toEqual(['1 shot (0.1 xG)'])
-    expect(explainAttack(point(0.5, { shots: 2, xg: 0.3 }), 'har', 'ngc', names, 'es').headline).toBe('Harbourside domina')
+    expect(explainAttack(point(0.5, { shots: 2, xg: 0.3 }), 'har', 'ngc', names, 'es').headline).toBe('Hyperion domina')
     expect(explainAttack(point(0.5, { shots: 2, xg: 0.3 }), 'har', 'ngc', names, 'ar').reasons[0]).toContain('2')
   })
 })

@@ -24,14 +24,14 @@ describe('on-air timing (GP-2)', () => {
 })
 
 describe('cue text (GP-1)', () => {
-  const overlay = { id: 'o', moment_id: 'm1', headline: 'GOAL', body: 'Northgate lead' } as Overlay
+  const overlay = { id: 'o', moment_id: 'm1', headline: 'GOAL', body: 'Selene lead' } as Overlay
   const sub = { id: 'inc-1', kind: 'sub', card: { fan: { en: ['A comes on for B', 'B: 34 passes'], es: ['Entra A por B'], ar: ['x'] } } } as unknown as Incident
   const state: State = {
     ...initialState, feed: [overlay], incidents: [sub],
     patterns: { minute: '45', elapsed_ms: 0, language: 'en', notes: [{ pattern_id: 'p1', text: 'Left side again' }], alerts: [], fan_lines: {} },
   } as unknown as State
   it('finds the words for moments, patterns and substitutions', () => {
-    expect(cueText(cue(), state, 'en')).toEqual({ headline: 'GOAL', body: 'Northgate lead' })
+    expect(cueText(cue(), state, 'en')).toEqual({ headline: 'GOAL', body: 'Selene lead' })
     expect(cueText(cue({ kind: 'pattern', ref: 'p1' }), state, 'en')?.headline).toBe('Left side again')
     expect(cueText(cue({ kind: 'sub', ref: 'inc-1' }), state, 'en')).toEqual({ headline: 'A comes on for B', body: 'B: 34 passes' })
     expect(cueText(cue({ kind: 'sub', ref: 'inc-1' }), state, 'es')?.headline).toBe('Entra A por B')

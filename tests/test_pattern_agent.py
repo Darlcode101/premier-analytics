@@ -16,9 +16,9 @@ from premier_analytics.languages import LANGS
 
 from test_app import collect, start
 
-NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"},
+NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"},
               players={"har-08": "Ezra Jovanovic"})
-CRITIC = CriticAgent({"Ezra Jovanovic", "Kai Greaves"}, {"Harbourside", "Northgate"})
+CRITIC = CriticAgent({"Ezra Jovanovic", "Kai Greaves"}, {"Hyperion", "Selene"})
 
 
 def pat(kind, scope="match", value="left", team="har", **numbers):
@@ -63,7 +63,7 @@ def test_agent_writes_notes_and_the_critic_checks_them():
     def write(prompt):
         assert "[har:flank:match:left]" in prompt
         return PatternNotes(notes=[PatternNote(pattern_id="har:flank:match:left",
-                                               text="Harbourside keep attacking down the left: 9 of 14 attacks.")])
+                                               text="Hyperion keep attacking down the left: 9 of 14 attacks.")])
     agent = PatternAnalystAgent(FakeLLM({"pattern_analyst": write}), CRITIC)
     notes = asyncio.run(agent.run([ALL[0], ALL[2]], NAMES))
     assert [n.pattern_id for n in notes] == ["har:flank:match:left"]
@@ -71,7 +71,7 @@ def test_agent_writes_notes_and_the_critic_checks_them():
 
 def test_invented_numbers_fall_back_to_the_plain_wording():
     def liar(prompt):
-        return PatternNotes(notes=[PatternNote(pattern_id="har:flank:match:left", text="Harbourside: 12 of 13 down the left.")])
+        return PatternNotes(notes=[PatternNote(pattern_id="har:flank:match:left", text="Hyperion: 12 of 13 down the left.")])
     agent = PatternAnalystAgent(FakeLLM({"pattern_analyst": liar}), CRITIC)
     notes = asyncio.run(agent.run([ALL[0]], NAMES))
     assert notes[0].text == pattern_text(ALL[0], NAMES, "en")
@@ -133,9 +133,9 @@ def test_late_joiner_gets_the_latest_patterns(client):
 def test_a_known_style_that_today_contradicts_cannot_be_called_confirmed():
     agent = PatternAnalystAgent(FakeLLM({}), CRITIC)
     quiet = pat("playmaker", "season", "har-08", season_share_pct=28, today_count=2, today_total=12)
-    bad = "Ezra Jovanovic remains Harbourside's key playmaker this season, directing 2 of 12 passes today."
+    bad = "Ezra Jovanovic remains Hyperion's key playmaker this season, directing 2 of 12 passes today."
     assert any("today" in p for p in agent.problems(bad, quiet, NAMES))
-    good = "Ezra Jovanovic, usually Harbourside's playmaker this season, is quiet today: 2 of 12."
+    good = "Ezra Jovanovic, usually Hyperion's playmaker this season, is quiet today: 2 of 12."
     assert agent.problems(good, quiet, NAMES) == []
     busy = pat("playmaker", "season", "har-08", season_share_pct=28, today_count=5, today_total=12)
-    assert agent.problems("Ezra Jovanovic remains Harbourside's playmaker this season: 5 of 12 today.", busy, NAMES) == []
+    assert agent.problems("Ezra Jovanovic remains Hyperion's playmaker this season: 5 of 12 today.", busy, NAMES) == []

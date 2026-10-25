@@ -11,7 +11,7 @@ from premier_analytics.context import (
 from premier_analytics.overlay import Names
 from premier_analytics.scout import Fact, Moment
 
-NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Harbourside", "ngc": "Northgate"},
+NAMES = Names(home_id="har", away_id="ngc", clubs={"har": "Hyperion", "ngc": "Selene"},
               players={"p9": "Kai Greaves"})
 SRC = [Source(url="https://example.org/pl-2024-25", title="PL 2024/25 in numbers")]
 
@@ -116,7 +116,7 @@ def test_researcher_builds_entries_only_from_cited_answers():
 
 def test_card_numbers_must_come_from_the_entry_or_the_moment():
     m, e = moment(), entry()
-    ok = ContextCard(entry_id=e.id, text="Harbourside's 2.31 xG already tops a typical real PL match, which averages 2.93 goals.")
+    ok = ContextCard(entry_id=e.id, text="Hyperion's 2.31 xG already tops a typical real PL match, which averages 2.93 goals.")
     assert check_card(ok, e, m, NAMES) == []
     made_up = ContextCard(entry_id=e.id, text="Real PL matches average 3.4 goals.")
     assert any("3.4" in p for p in check_card(made_up, e, m, NAMES))
