@@ -24,7 +24,7 @@ export function phrasesFor(h: Hello): string[] {
 export type ListenStatus = 'listening' | 'unavailable' | 'mic_error' | 'off'
 
 export async function startListening(h: Hello, lang: Language, onLine: (text: string) => void,
-  onStatus: (s: ListenStatus) => void): Promise<() => void> {
+  onStatus: (s: ListenStatus) => void, onHearing: (text: string) => void = () => {}): Promise<() => void> {
   const auth = await fetchSpeechToken()
   if (auth.status !== 'ok' || !auth.token || !auth.region) {
     onStatus('unavailable')
@@ -38,6 +38,8 @@ export async function startListening(h: Hello, lang: Language, onLine: (text: st
   recognizer.recognized = (_s, e) => {
     if (e.result.reason === sdk.ResultReason.RecognizedSpeech && e.result.text.trim()) onLine(e.result.text.trim())
   }
+  // 10-25: show words as they are heard, so the desk visibly responds while the commentator is still talking.
+  recognizer.recognizing = (_s, e) => { if (e.result.text) onHearing(e.result.text) }
   recognizer.canceled = () => onStatus('mic_error')
   // Entra tokens for Speech last about 10 minutes: refresh well before.
   const refresh = window.setInterval(async () => {

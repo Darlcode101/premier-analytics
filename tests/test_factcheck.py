@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from premier_analytics.agents import FakeLLM
 from premier_analytics.app import create_app
-from premier_analytics.factcheck import Claim, ClaimAgent, Claims, FactChecker, flag_text, worth_checking
+from premier_analytics.factcheck import Claim, ClaimAgent, Claims, FactChecker, confirm_text, flag_text, worth_checking
 from premier_analytics.generator import generate_match
 from premier_analytics.mcp_server import MatchState, MatchTools
 from premier_analytics.overlay import Names
@@ -42,6 +42,13 @@ def test_only_lines_with_numbers_are_worth_checking():
         assert not worth_checking(line), line
 
 
+def test_spoken_numbers_up_to_a_hundred_and_percentages_are_checked():
+    """Live check 10-25: 'about sixty percent of the ball' was skipped."""
+    for line in ("Northgate have had about sixty percent of the ball", "seventy per cent possession",
+                 "ninety minutes gone", "half a dozen shots", "sesenta por ciento de posesión"):
+        assert worth_checking(line), line
+
+
 def test_wrong_claims_are_flagged_with_the_right_number(checker):
     v = checker.check(claim("Kowalczyk", "shots", 3))
     assert v["verdict"] == "wrong" and v["actual"] == 1 and v["subject"] == "Zane Kowalczyk"
@@ -66,6 +73,17 @@ def test_tolerances_for_xg_and_possession(checker):
     assert checker.check(claim("Northgate", "xg", round(xg + 0.4, 2)))["verdict"] == "wrong"
 
 
+def test_player_cards_and_fouls_can_be_checked(checker):
+    """Live check 10-25: 'Ashworth has been booked twice' could not be checked. A second yellow is recorded
+    as a red card, so bookings count the yellow plus the second yellow."""
+    assert checker.check(claim("Ashworth", "yellow_cards", 2))["verdict"] == "correct"   # booked twice
+    assert checker.check(claim("Ashworth", "red_cards", 1))["verdict"] == "correct"      # sent off
+    wrong = checker.check(claim("Ashworth", "yellow_cards", 3))
+    assert wrong["verdict"] == "wrong" and wrong["actual"] == 2
+    fouls = checker.check(claim("Ashworth", "fouls", 0))
+    assert fouls is not None and fouls["verdict"] in ("correct", "wrong")
+
+
 def test_claims_the_data_cannot_settle_are_left_alone(checker):
     assert checker.check(claim("Nobody Atall", "goals", 1)) is None
     assert checker.check(claim("Northgate", "corners", 3, since=46)) is None  # not counted from a minute
@@ -79,6 +97,15 @@ def test_flags_say_the_right_number_plainly(checker, language):
         text = flag_text(v, language)
         assert "{" not in text and str(v["actual"]) in text and str(int(c.value)) in text
         assert set(re.findall(r"\d+", text)) <= {str(v["actual"]), str(int(c.value)), "46"}
+
+
+@pytest.mark.parametrize("language", ["en", "es", "ar"])
+def test_correct_claims_get_a_short_confirmation(checker, language):
+    """Live check 10-25: correct claims were silent, so the desk looked unresponsive."""
+    v = checker.check(claim("Kowalczyk", "goals", 1))
+    text = confirm_text(v, language)
+    assert "Zane Kowalczyk" in text and "1" in text and "{" not in text
+    assert "not" not in text and " no " not in f" {text} "
 
 
 def test_claim_agent_returns_structured_claims():
@@ -111,12 +138,13 @@ def test_desk_says_a_line_and_only_that_desk_gets_the_flag(league):
                 c.websocket_connect(f"/ws/matches/{mid}?mode=fan&language=en") as fan:
             for ws in (me, other, fan):
                 collect(ws)
-            me.send_json({"type": "said", "text": "That's Kowalczyk's third shot since he came on."})
+            me.send_json({"type": "said", "text": "That's Kowalczyk's third shot since he came on.", "id": "line-7"})
             got = me.receive_json()
             while got["type"] != "fact_check":
                 got = me.receive_json()
             fan.send_json({"type": "said", "text": "That's Kowalczyk's third shot."})
-        assert got["checked"] == 1 and len(got["flags"]) == 1
+        assert got["checked"] == 1 and len(got["flags"]) == 1 and got["id"] == "line-7"  # the desk matches reply to line
+        assert [r["verdict"] for r in got["results"]] == ["wrong"]
         flag = got["flags"][0]
         assert flag["actual"] == 1 and "not 3" in flag["text"]["en"] and flag["evidence"]
         with c.websocket_connect(f"/ws/matches/{mid}?mode=analyst&language=en") as late:

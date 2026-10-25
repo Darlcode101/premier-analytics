@@ -32,3 +32,16 @@ describe('fact-check flags (FC-2)', () => {
     expect(s.factFlags).toHaveLength(10)
   })
 })
+
+describe('fact-check log (FC-2, 10-25)', () => {
+  it('a line shows at once as checking, then gets its results by id', () => {
+    let s = reducer(initialState, { type: 'said_local', id: 'l1', line: 'Kowalczyk has 3 shots' })
+    s = reducer(s, { type: 'said_local', id: 'l2', line: 'What a game' })
+    expect(s.factLog.map(l => [l.id, l.status])).toEqual([['l2', 'checking'], ['l1', 'checking']])
+    s = reducer(s, { type: 'fact_check', id: 'l1', checked: 1, flags: [], status: 'ok',
+      results: [{ verdict: 'correct', text: { en: 'Zane Kowalczyk: 1 shot', es: '', ar: '' } }] })
+    s = reducer(s, { type: 'fact_check', id: 'l2', checked: 0, flags: [], status: 'ok', results: [] })
+    expect(s.factLog.find(l => l.id === 'l1')?.results[0].verdict).toBe('correct')
+    expect(s.factLog.map(l => l.status)).toEqual(['done', 'done'])
+  })
+})

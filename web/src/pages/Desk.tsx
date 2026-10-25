@@ -19,7 +19,7 @@ import { whyLines } from '../why'
 import { startListening, type ListenStatus } from '../listen'
 import { localDigits } from '../digits'
 import { KIND_LABELS, LANGUAGE_NAMES, t } from '../i18n'
-import type { State } from '../state'
+import type { Action, State } from '../state'
 import type {
   AskResult, BriefSide, ClubInfo, SubCard, ClubSeason, ContextCard, Hello, Incident, Language, Overlay, PatternNote, PlayerInfo, PlayerLine, Profile, SourceLink,
   TeamStats,
@@ -286,7 +286,9 @@ function TalkingPoint({ o, used, next, toggle, ctx, contexts }: {
   )
 }
 
-function TalkingPoints({ state, ctx, toggle, send }: { state: State; ctx: Ctx; toggle: (ref: string) => void; send: (msg: object) => void }) {
+function TalkingPoints({ state, ctx, toggle, send, dispatch }: {
+  state: State; ctx: Ctx; toggle: (ref: string) => void; send: (msg: object) => void; dispatch: (a: Action) => void
+}) {
   const [team, setTeam] = useState<string | null>(null)
   const used = state.used
   const feed = team ? state.feed.filter(o => o.team_id === team) : state.feed
@@ -316,7 +318,7 @@ function TalkingPoints({ state, ctx, toggle, send }: { state: State; ctx: Ctx; t
         <OnAirCard state={state} ctx={ctx} toggle={toggle} />
       </div>
       <div className="cd-block" data-testid="block-factcheck">
-        <FactCheckPanel state={state} ctx={ctx} send={send} />
+        <FactCheckPanel state={state} ctx={ctx} send={send} dispatch={dispatch} />
       </div>
       <header className="cd-panel-head" data-testid="block-points">
         <h2 id="tp-title">{t(lang, 'talkingPoints')}</h2>
@@ -339,7 +341,7 @@ function TalkingPoints({ state, ctx, toggle, send }: { state: State; ctx: Ctx; t
 }
 
 /** FC-1..FC-3: listen to (or type) what the commentator says; flag only clear errors, with the right number. */
-function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (msg: object) => void }) {
+function FactCheckPanel({ state, ctx, send, dispatch }: { state: State; ctx: Ctx; send: (msg: object) => void; dispatch: (a: Action) => void }) {
   const [status, setStatus] = useState<ListenStatus>('off')
   const [heard, setHeard] = useState('')
   const [text, setText] = useState('')
@@ -347,7 +349,14 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
   const stop = useRef<(() => void) | null>(null)
   useEffect(() => () => stop.current?.(), [])
   const lang = ctx.lang
-  const say = (line: string) => send({ type: 'said', text: line })
+  const [hearing, setHearing] = useState('')
+  const said = useRef(0)
+  // Each line shows at once as "checking…" and fills in when its check returns (10-25).
+  const say = (line: string) => {
+    const id = `l${++said.current}`
+    dispatch({ type: 'said_local', id, line })
+    send({ type: 'said', text: line, id })
+  }
   const toggle = async () => {
     if (stop.current) {
       stop.current()
@@ -355,7 +364,7 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
       return
     }
     setStatus('listening')
-    stop.current = await startListening(ctx.hello, lang, line => { setHeard(line); say(line) }, setStatus)
+    stop.current = await startListening(ctx.hello, lang, line => { setHeard(line); setHearing(''); say(line) }, setStatus, setHearing)
   }
   const flags = state.factFlags.filter(f => !dismissed.has(`${f.subject}|${f.metric}|${f.claimed}|${f.quote}`))
   return (
@@ -376,7 +385,25 @@ function FactCheckPanel({ state, ctx, send }: { state: State; ctx: Ctx; send: (m
           <button type="submit" disabled={!text.trim()}>{dt(lang, 'check')}</button>
         </form>
       </div>
-      {heard && <p className="fc-heard"><span>{dt(lang, 'heard')}:</span> <i dir="auto">{heard}</i></p>}
+      {hearing && <p className="fc-heard fc-live" data-testid="hearing"><span>{dt(lang, 'hearing')}:</span> <i dir="auto">{hearing}</i></p>}
+      {!hearing && heard && <p className="fc-heard"><span>{dt(lang, 'heard')}:</span> <i dir="auto">{heard}</i></p>}
+      {state.factLog.length > 0 && (
+        <ul className="fc-log" data-testid="fact-log">
+          {state.factLog.slice(0, 3).map(l => (
+            <li key={l.id} data-status={l.status}>
+              <span className="fc-line" dir="auto">“{l.line}”</span>
+              {l.status === 'checking' && <span className="fc-state">{dt(lang, 'checking')}</span>}
+              {l.status === 'done' && !l.results.length && <span className="fc-state">{dt(lang, 'noStatToCheck')}</span>}
+              {(l.status === 'error' || l.status === 'unavailable') && <span className="fc-state">{dt(lang, 'couldNotCheck')}</span>}
+              {l.results.map((r, i) => (
+                <span key={i} className={`fc-result ${r.verdict}`} data-testid={`fact-${r.verdict}`}>
+                  {r.verdict === 'correct' ? '✓' : '⚑'} {ctx.num(r.text[lang] ?? r.text.en)}
+                </span>
+              ))}
+            </li>
+          ))}
+        </ul>
+      )}
       {flags.slice(0, 3).map(f => {
         const key = `${f.subject}|${f.metric}|${f.claimed}|${f.quote}`
         return (
@@ -974,7 +1001,7 @@ function ProductionTab({ state, ctx }: { state: State; ctx: Ctx }) {
 
 export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Language; setLang: (l: Language) => void }) {
   const profile: Profile = { mode: 'analyst', language: lang, club_id: null, player_id: null }
-  const { state, send } = useMatch(matchId, profile)
+  const { state, send, dispatch } = useMatch(matchId, profile)
   const [chosenTab, setTab] = useState<Tab | null>(null)
   const [focus, setFocus] = useState<string | null>(null)  // DK-4
   const [asked, setAsked] = useState<Asked[]>([])
@@ -1038,7 +1065,7 @@ export function Desk({ matchId, lang, setLang }: { matchId: string; lang: Langua
       <Header state={state} ctx={ctx} setLang={setLang} />
       <main className="cd-main">
         <Lineup club={h.home} side="home" state={state} ctx={ctx} season={h.season?.home} />
-        <TalkingPoints state={state} ctx={ctx} toggle={toggleUsed} send={send} />
+        <TalkingPoints state={state} ctx={ctx} toggle={toggleUsed} send={send} dispatch={dispatch} />
         <section className="cd-panel cd-tabs" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <div className="cd-tablist" role="tablist">
             {TABS.map((id, i) => (

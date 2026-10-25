@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from .agents import LLM, AgentFrameworkLLM, CriticAgent, ResilientLLM, _number_forms
-from .factcheck import MAX_LINE, ClaimAgent, FactChecker, flag_text, worth_checking
+from .factcheck import MAX_LINE, ClaimAgent, FactChecker, confirm_text, flag_text, worth_checking
 from .match_analyst import MatchAnalyst
 from .mcp_server import MatchTools
 from .speech import DEFAULT_REGION, speech_token, token_getter_from_env
@@ -243,10 +243,10 @@ class MatchSession:
             return
         self.orch.publish_storylines()
 
-    async def fact_check(self, line: str, viewer: Viewer) -> None:
+    async def fact_check(self, line: str, viewer: Viewer, line_id: str | None = None) -> None:
         """FC-2: check one line the commentator said or typed; flags only clear errors, to that desk only.
         The line itself is never stored or logged (FC-1)."""
-        reply = {"type": "fact_check", "checked": 0, "flags": [], "status": "ok"}
+        reply = {"type": "fact_check", "id": line_id, "checked": 0, "flags": [], "results": [], "status": "ok"}
         if self.claim_agent is None:
             reply["status"] = "unavailable"
         elif worth_checking(line):
@@ -260,7 +260,9 @@ class MatchSession:
             verdicts = [v for v in (self.fact_checker.check(c) for c in claims) if v is not None]
             flags = [v | {"text": {lang: flag_text(v, lang) for lang in ("en", "es", "ar")}}
                      for v in verdicts if v["verdict"] == "wrong"]
-            reply |= {"checked": len(verdicts), "flags": flags}
+            results = [{"verdict": v["verdict"], "text": {lang: (flag_text if v["verdict"] == "wrong" else confirm_text)(v, lang)
+                                                          for lang in ("en", "es", "ar")}} for v in verdicts]
+            reply |= {"checked": len(verdicts), "flags": flags, "results": results}
             self.orch._trace("said", "*", "fact_checker", "published" if flags else "ok", self.claim_agent.model,
                              (time.perf_counter() - start) * 1000, detail=f"{len(verdicts)} claims checked, {len(flags)} flagged")
         viewer.queue.put_nowait(reply)
@@ -652,7 +654,8 @@ def create_app(llm: LLM | None | str = "env", live_session: bool = True, max_ses
                     elif msg.get("type") in ("storyline_add", "storyline_remove"):
                         s.storyline_action(msg, viewer)
                     elif msg.get("type") == "said" and isinstance(msg.get("text"), str) and msg["text"].strip():
-                        task = asyncio.create_task(s.fact_check(msg["text"], viewer))
+                        line_id = msg["id"] if isinstance(msg.get("id"), str) and len(msg["id"]) <= 64 else None
+                        task = asyncio.create_task(s.fact_check(msg["text"], viewer, line_id))
                         s.background.add(task)  # keep a reference until it finishes
                         task.add_done_callback(s.background.discard)
 

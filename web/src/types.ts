@@ -310,7 +310,7 @@ export type Message =
   | { type: 'brief'; brief: Brief }
   | { type: 'storylines'; storylines: Storyline[] }
   | { type: 'storyline_error'; error: string }
-  | { type: 'fact_check'; checked: number; flags: FactFlag[]; status: 'ok' | 'unavailable' | 'error' }
+  | { type: 'fact_check'; id?: string | null; checked: number; flags: FactFlag[]; results?: FactResult[]; status: 'ok' | 'unavailable' | 'error' }
   | { type: 'context'; context: ContextCard }
   | { type: 'overlay'; overlay: Overlay }
   | { type: 'screen'; overlays: Overlay[] }
@@ -363,3 +363,6 @@ export interface FactFlag {
   verdict: 'wrong'; subject: string; metric: string; claimed: number; actual: number; since_minute: number | null
   quote: string; evidence: string; text: Record<Language, string>
 }
+
+/** FC-2 (10-25): every checked claim, right or wrong, so the desk can show it responded. */
+export interface FactResult { verdict: 'correct' | 'wrong'; text: Record<Language, string> }

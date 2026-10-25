@@ -21,12 +21,17 @@ from mcp.server.fastmcp.exceptions import ToolError
 Metric = Literal["goals", "assists", "shots", "shots_on_target", "xg", "passes", "passes_completed", "tackles_won",
                  "interceptions", "fouls", "corners", "yellow_cards", "red_cards", "possession_pct"]
 TOLERANCE = {"xg": 0.05, "possession_pct": 2.0}
+# What a player's match line holds (beyond the tools' PLAYER_METRICS: passes, fouls, cards; 10-25)
+PLAYER_LINE = ("goals", "assists", "shots", "xg", "passes", "passes_completed", "tackles_won", "interceptions", "fouls",
+               "yellow_cards", "red_cards")
 MAX_LINE = 500
 
 _NUMBER_WORDS = re.compile(
-    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|first|second|third|"
-    r"fourth|fifth|sixth|seventh|eighth|ninth|tenth|twice|brace|hat-trick|"
-    r"uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|primer|primero|segundo|tercer|tercero)\b", re.IGNORECASE)
+    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|seventy|"
+    r"eighty|ninety|hundred|percent|per cent|half|dozen|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|"
+    r"tenth|twice|brace|hat-trick|"
+    r"uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|"
+    r"ochenta|noventa|cien|ciento|mitad|primer|primero|segundo|tercer|tercero)\b", re.IGNORECASE)  # 10-25: + sixty… percent
 
 
 def worth_checking(line: str) -> bool:
@@ -52,7 +57,8 @@ CLAIM_INSTRUCTIONS = (
     "match: a player or club, one of the listed stats, and the number claimed. 'Third shot' means 3 shots; 'a "
     "brace' means 2 goals; a scoreline gives each club's goals. Only set since_minute if the commentator said "
     "from when (second half = 46); 'since he came on' needs none, because a substitute's figures already start "
-    "then. Always give the player or club by name, never 'the opponents' (in a scoreline, each club is named in "
+    "then. Cards: 'booked' or 'a yellow' counts yellow_cards ('booked twice' = 2), 'sent off' is red_cards 1. "
+    "Always give the player or club by name, never 'the opponents' (in a scoreline, each club is named in "
     "the match). Ignore opinions, history, other matches, and anything without a number. Return an empty list when "
     "there is nothing to check."
 )
@@ -87,11 +93,16 @@ class FactChecker:
             except ToolError:
                 pid = None
             if pid is not None:
-                if c.metric not in PLAYER_METRICS:
+                if c.metric not in PLAYER_LINE:
                     return None
                 name = self.state.names.player(pid)
-                tool, args = "get_player_stats", {"player": name, **({"since_minute": c.since_minute} if c.since_minute else {})}
-                result = self.tools.get_player_stats(name, c.since_minute)
+                args = {"player": name, **({"since_minute": c.since_minute} if c.since_minute else {})}
+                if c.metric in PLAYER_METRICS:
+                    tool, result = "get_player_stats", self.tools.get_player_stats(name, c.since_minute)
+                else:
+                    tool, result = "player_line", self._player_line(pid, name, c.metric, c.since_minute)
+                    if result is None:
+                        return None
             else:
                 tid = self.state.team_id(c.subject)
                 if c.since_minute is not None and c.metric not in PLAYER_METRICS:
@@ -108,6 +119,26 @@ class FactChecker:
         return {"verdict": "correct" if ok else "wrong", "subject": name, "metric": c.metric, "claimed": c.value,
                 "actual": actual, "since_minute": c.since_minute, "quote": c.quote,
                 "evidence": summary({"tool": tool, "args": args, "result": result})}
+
+
+    def _player_line(self, pid: str, name: str, metric: str, since: int | None) -> dict | None:
+        """Passes, fouls and cards straight from the player's line. A second yellow is recorded as a red card,
+        so bookings count the yellow plus any second yellow ('booked twice')."""
+        now = self.tools.engine.players.get(pid)
+        data = now.model_dump() if now else {}
+        before: dict = {}
+        if since is not None:
+            then = self.state.players_at(since)
+            if then is None:
+                return None
+            before = then.get(pid, {})
+        value = data.get(metric, 0) - before.get(metric, 0)
+        if metric == "yellow_cards":
+            start = (2 if since and since > 45 else 1, ((since or 1) - 1) * 60_000)
+            value += sum(1 for m in self.state.moments if m.kind == "red_card" and m.player_id == pid
+                         and any(f.label == "card" and f.value == "second_yellow" for f in m.facts)
+                         and (m.period, m.clock_ms) >= start)
+        return {"name": name, metric: value}
 
 
 # ---------- the flag the commentator sees ----------
@@ -138,17 +169,25 @@ def _num(v: float, metric: str) -> str:
     return str(round(v))
 
 
-def flag_text(v: dict, language: str) -> str:
-    """'Zane Kowalczyk: 1 shot, not 3' — the right number first, then what was said."""
-    actual, claimed, metric, since = _num(v["actual"], v["metric"]), _num(v["claimed"], v["metric"]), v["metric"], v["since_minute"]
+def _stated(v: dict, language: str) -> str:
+    """'Zane Kowalczyk: 1 shot' (since a minute, if the claim was)."""
+    actual, metric, since = _num(v["actual"], v["metric"]), v["metric"], v["since_minute"]
     words = _WORDS[language][metric]
     if language == "ar":
         scope = f" منذ الدقيقة {since}" if since else ""
-        return f"{v['subject']}: {words} {actual}{scope}، وليس {claimed}"
+        return f"{v['subject']}: {words} {actual}{scope}"
     word = words[0] if actual == "1" else words[1]
     joined = f"{actual}{word}" if word.startswith("%") else f"{actual} {word}"
-    if language == "es":
-        scope = f" desde el {since}'" if since else ""
-        return f"{v['subject']}: {joined}{scope}, no {claimed}"
-    scope = f" since {since}'" if since else ""
-    return f"{v['subject']}: {joined}{scope}, not {claimed}"
+    scope = (f" desde el {since}'" if language == "es" else f" since {since}'") if since else ""
+    return f"{v['subject']}: {joined}{scope}"
+
+
+def flag_text(v: dict, language: str) -> str:
+    """'Zane Kowalczyk: 1 shot, not 3' — the right number first, then what was said."""
+    claimed = _num(v["claimed"], v["metric"])
+    return f"{_stated(v, language)}{'، وليس' if language == 'ar' else ', no' if language == 'es' else ', not'} {claimed}"
+
+
+def confirm_text(v: dict, language: str) -> str:
+    """A correct claim, confirmed: 'Zane Kowalczyk: 1 goal' (10-25: correct claims were silent)."""
+    return _stated(v, language)

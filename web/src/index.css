@@ -636,3 +636,14 @@ html.overlay-page, html.overlay-page body { background: transparent; }
 /* stats table and pitch */
 .cd-table th, .cd-stats th { color: var(--cd-faint); }
 .zone-card { background: var(--cd-raise); border-color: var(--cd-line); }
+
+/* fact-check log (10-25): every line gets a visible answer */
+.fc-live i { color: #fff; }
+.fc-log { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.fc-log li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 12px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,.04); }
+.fc-line { color: var(--cd-dim); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 160px; }
+.fc-state { color: var(--cd-faint); font-style: italic; }
+.fc-log li[data-status='checking'] .fc-state { color: var(--cd-cyan); }
+.fc-result { font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+.fc-result.correct { color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 12%, transparent); }
+.fc-result.wrong { color: #fff; background: color-mix(in srgb, var(--cd-magenta) 55%, transparent); }

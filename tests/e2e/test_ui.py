@@ -471,9 +471,14 @@ def test_desk_fact_checks_a_typed_line_and_flags_the_right_number(server, page: 
     expect(flag).to_contain_text("Zane Kowalczyk: 1 shot, not 3", timeout=10_000)
     expect(flag).to_contain_text("get_player_stats")
     expect(panel.get_by_test_id("fact-count")).to_contain_text("1 checked · 1 flagged")
-    panel.get_by_test_id("say-input").fill("Kowalczyk has 1 shot")  # correct: no new flag
+    panel.get_by_test_id("say-input").fill("Kowalczyk has 1 shot")  # correct: confirmed, no new flag
     panel.get_by_role("button", name="Check").click()
     expect(panel.get_by_test_id("fact-count")).to_contain_text("2 checked · 1 flagged", timeout=10_000)
+    log = panel.get_by_test_id("fact-log")  # 10-25: every line gets a visible answer
+    expect(log.get_by_test_id("fact-correct").first).to_contain_text("Zane Kowalczyk: 1 shot")
+    panel.get_by_test_id("say-input").fill("What an atmosphere")
+    panel.get_by_role("button", name="Check").click()
+    expect(log.locator("li").first).to_contain_text("no stat to check", timeout=10_000)
 
 
 # ---------- one product: the desk (DK-*) ----------

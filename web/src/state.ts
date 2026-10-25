@@ -1,8 +1,10 @@
-import type { AttackPoint, Brief, ContextCard, Cue, FactFlag, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
+import type { AttackPoint, Brief, ContextCard, Cue, FactFlag, FactResult, Hello, Storyline, PatternNote, PatternsUpdate, TeamShape, Incident, MatchEvent, Message, Overlay, PlayerLine, Recap, TeamStats, TraceEvent } from './types'
 
 const POSSESSION_EVENTS = new Set(['kickoff', 'possession_change', 'pass', 'shot'])
 
-export type Action = Message
+/** A line the desk said or typed, shown at once and filled in when its check comes back (FC-2, 10-25). */
+export interface SaidLine { id: string; line: string; status: 'checking' | 'done' | 'unavailable' | 'error'; results: FactResult[] }
+export type Action = Message | { type: 'said_local'; id: string; line: string }
 
 const TRAIL = 12
 const FEED = 100
@@ -46,6 +48,7 @@ export interface State {
   factFlags: FactFlag[]          // FC-2: this desk's flags, newest first (never stored server-side)
   factChecked: number
   factStatus: 'ok' | 'unavailable' | 'error' | null
+  factLog: SaidLine[]            // newest first, a handful kept
 }
 
 export const initialState: State = {
@@ -54,7 +57,7 @@ export const initialState: State = {
   counts: { published: 0, rejected: 0, stale: 0, error: 0 }, recaps: {},
   possession: null, incidents: [], players: {}, contexts: [], clockMs: 0, patterns: null, patternAlerts: [], shape: null,
   cue: null, cueNote: null, used: new Set(), brief: null, storylines: [], storylineError: null,
-  factFlags: [], factChecked: 0, factStatus: null,
+  factFlags: [], factChecked: 0, factStatus: null, factLog: [],
 }
 
 function mergeFeed(feed: Overlay[], incoming: Overlay[]): Overlay[] {
@@ -170,8 +173,13 @@ export function reducer(s: State, m: Action): State {
       return { ...s, storylines: m.storylines, storylineError: null }
     case 'storyline_error':
       return { ...s, storylineError: m.error }
-    case 'fact_check':
-      return { ...s, factFlags: [...m.flags, ...s.factFlags].slice(0, 10), factChecked: s.factChecked + m.checked, factStatus: m.status }
+    case 'said_local':
+      return { ...s, factLog: [{ id: m.id, line: m.line, status: 'checking' as const, results: [] }, ...s.factLog].slice(0, 6) }
+    case 'fact_check': {
+      const factLog = s.factLog.map(l => l.id === m.id
+        ? { ...l, status: m.status === 'ok' ? 'done' as const : m.status, results: m.results ?? [] } : l)
+      return { ...s, factFlags: [...m.flags, ...s.factFlags].slice(0, 10), factChecked: s.factChecked + m.checked, factStatus: m.status, factLog }
+    }
     case 'recap':
       return { ...s, recaps: { ...s.recaps, [m.recap.kind]: m.recap } }
     case 'end':

@@ -145,8 +145,8 @@ npm --prefix web test
 pytest tests/e2e
 ```
 
-- **Python (474 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, real-world context checks (sources, second source, invented numbers), tracing, evaluation metrics.
-- **Frontend (87 tests, Vitest)**: state, the Producer cue's timing and wording, storylines and fact-check flags, Listen's phrase list, pitch zones, momentum explanations, plain-words explanations, card reasons, line-up markers and formation, digits, translations, saved preferences.
+- **Python (479 tests)**: data realism against the season targets, stats engine, Moment Scout, Critic, agents with fake models (including timeouts, outages and models that make things up), orchestrator, MCP server, recaps, WebSocket app, commentator data feed and simulated season, real-world context checks (sources, second source, invented numbers), tracing, evaluation metrics.
+- **Frontend (88 tests, Vitest)**: state, the Producer cue's timing and wording, storylines and fact-check flags, Listen's phrase list, pitch zones, momentum explanations, plain-words explanations, card reasons, line-up markers and formation, digits, translations, saved preferences.
 - **Browser (36 tests, Playwright)**: the real app with scripted agents: landing, the desk staying neutral and fitting 1280×720 to 1920×1080, the Producer cue, prep and storylines, Ask, fact-check, focus player, Say it simply, the broadcast overlay, languages and right-to-left Arabic, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
 - **Evaluations** against live models: `python scripts/run_evals.py` (≈ 15 min, under $1).
 
