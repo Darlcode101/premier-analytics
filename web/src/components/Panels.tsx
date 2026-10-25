@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { localDigits } from '../digits'
 import { t } from '../i18n'
 import type { State } from '../state'
@@ -10,6 +10,20 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
   state: State; colors: Record<string, string>; names: Record<string, string>; lang: Language; topTeam: string | null
 }) {
   const [picked, setPicked] = useState<number | null>(null)
+  // DK-13: a picked bar holds while it is read, then the chart goes back to following the match
+  useEffect(() => {
+    if (picked === null) return
+    const off = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.('[data-testid=attack-bar], [data-testid=attack-why]')) setPicked(null)
+    }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPicked(null) }
+    document.addEventListener('pointerdown', off)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('pointerdown', off)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [picked])
   const h = state.hello
   const series = state.attack
   if (!h || !series.length) return null
@@ -43,7 +57,7 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
           const hgt = Math.max(Math.abs(v) * (mid - 6), v === 0 ? 0 : 1)
           const isSel = p.minute === selected.minute
           return (
-            <g key={p.minute} onClick={() => setPicked(p.minute)} className={`bar${isSel ? ' sel' : ''}`}
+            <g key={p.minute} onClick={() => setPicked(cur => (cur === p.minute ? null : p.minute))} className={`bar${isSel ? ' sel' : ''}`}
               data-testid="attack-bar" role="button" aria-label={`${label(p.minute)}'`}>
               <rect x={p.minute * 3} y={0} width={3} height={H} fill="transparent" />
               <rect x={p.minute * 3 + 0.4} y={v >= 0 ? mid - hgt : mid} width={2.2} height={hgt} rx={0.6}
@@ -57,6 +71,11 @@ export function AttackMomentumChart({ state, colors, names, lang, topTeam }: {
         <div className="attack-why-head">
           <b>{localDigits(`${label(selected.window[0])}'–${label(selected.window[1])}'`, lang)}</b>
           <span style={{ color: why.leader ? colors[why.leader] : undefined }} className="leader">{why.headline}</span>
+          {picked !== null && (
+            <button type="button" className="attack-live" data-testid="attack-live" onClick={() => setPicked(null)}>
+              <i aria-hidden /> {t(lang, 'live')}
+            </button>
+          )}
         </div>
         {why.reasons.length > 0 && <ul>{why.reasons.map(r => <li key={r}>{localDigits(r, lang)}</li>)}</ul>}
         {why.leader && why.opponentReasons.length > 0 && (

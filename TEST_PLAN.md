@@ -181,6 +181,7 @@ Hand-written mini-matches (5–30 events) with hand-calculated answers:
 | Speech locale for every language; the language dropdown lists 13, each in its own name, and switching sets lang= in the address, the page language and direction | DK-12 | unit + e2e |
 | Desk in English, French, German (longest words) and Japanese fits 1280×720 without page scroll, all six tabs in view | DK-12, DK-8 | e2e |
 | Every data file (catalogues included) is covered by the package data the image installs | DK-12 | pytest |
+| Momentum: a picked bar shows its window; a click off the chart, Escape, the LIVE button and a second click on the bar each return to the latest bar; a click inside the explanation keeps the pick | DK-13 | e2e |
 
 ### Live fact-check (FC-*)
 | Test | Covers | Layer |

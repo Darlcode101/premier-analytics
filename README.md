@@ -198,7 +198,7 @@ pytest tests/e2e
   Match Analyst, storylines, orchestrator, MCP tools, recaps, WebSocket app, tracing, evaluation metrics.
 - **Frontend (115 tests, Vitest)**: state, the cue's timing, storylines, fact-check log, Listen's phrase list,
   plain-words explanations, card reasons, line-ups, every language's catalogue.
-- **Browser (41 tests, Playwright)**: the real app with scripted agents: prep and kick-off, the Producer cue,
+- **Browser (42 tests, Playwright)**: the real app with scripted agents: prep and kick-off, the Producer cue,
   fact-check, Ask, focus player, Say it simply, the overlay, fitting 1280×720 to 1920×1080 (in French, German and Japanese too), contrast,
   the language dropdown and right-to-left Arabic, AI off and model outages. Needs the web build and `python -m playwright install chromium`.
 - **Evaluations** against live models: `python scripts/run_evals.py` (about 15 min, under $1).

@@ -273,6 +273,38 @@ def test_attack_momentum_bars_explain_themselves(server, page: Page):
     expect(why).to_contain_text(re.compile(r"\d+'–\d+'"))
 
 
+def test_a_picked_momentum_bar_returns_to_live(server, page: Page):
+    """DK-13 (user report 10-25: a clicked bar stayed stuck)."""
+    page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
+    page.wait_for_timeout(5000)
+    page.get_by_role("tab", name="Stats").click()
+    why, live, bar = page.get_by_test_id("attack-why"), page.get_by_test_id("attack-live"), page.get_by_test_id("attack-bar").nth(2)
+
+    def pick():
+        bar.dispatch_event("click")
+        expect(live).to_be_visible()
+        expect(why.locator(".hint")).to_have_count(0)
+
+    def is_live():
+        expect(live).to_have_count(0)
+        expect(why.locator(".hint")).to_be_visible()
+
+    pick()
+    why.locator(".attack-why-head b").click()  # reading the explanation keeps the pick
+    expect(live).to_be_visible()
+    page.locator(".cd-details").click()  # a click off the chart
+    is_live()
+    pick()
+    page.keyboard.press("Escape")
+    is_live()
+    pick()
+    live.click()
+    is_live()
+    pick()
+    bar.dispatch_event("click")  # the same bar again
+    is_live()
+
+
 def test_desk_shows_sourced_context_beside_moments(server, page: Page):
     page.goto(f"{server}/desk?match={new_match(server, speed=300)}")
     card = page.get_by_test_id("context-card").first

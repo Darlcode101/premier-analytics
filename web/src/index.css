@@ -370,6 +370,9 @@ button, select, input { font: inherit; color: inherit; }
 .attack-why ul { margin: 6px 0 0; padding-inline-start: 18px; }
 .attack-why .opp { margin: 6px 0 0; opacity: .7; }
 .attack-why .hint { margin: 6px 0 0; opacity: .6; font-size: 12px; }
+.attack-live { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid currentColor; border-radius: 999px;
+  background: none; color: var(--cd-accent, #00ff85); font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 10px; cursor: pointer; }
+.attack-live i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .attack-ai { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(127,127,127,.25); }
 .attack-ai p { margin: 2px 0 0; opacity: .85; }
 
